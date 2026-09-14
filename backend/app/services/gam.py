@@ -320,27 +320,43 @@ class GAMService:
                         # 3. Parse Site Domain (Using SITE_NAME / CUSTOM_TARGETING / AD_EXCHANGE_URL)
                         domain = extract_domain_from_row(row, ad_unit)
 
-                        # 4. Parse Impressions
+                        # 4. Parse Impressions (AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS)
                         impressions = 0
                         for k, v in row.items():
-                            if k and 'IMPRESSIONS' in k.upper() and v:
+                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS' in k.upper() and v:
                                 try:
                                     impressions = int(float(v))
                                     break
                                 except ValueError:
                                     pass
+                        if impressions == 0:
+                            for k, v in row.items():
+                                if k and 'IMPRESSIONS' in k.upper() and v:
+                                    try:
+                                        impressions = int(float(v))
+                                        break
+                                    except ValueError:
+                                        pass
 
-                        # 5. Parse Clicks
+                        # 5. Parse Clicks (AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS)
                         clicks = 0
                         for k, v in row.items():
-                            if k and 'CLICKS' in k.upper() and v:
+                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS' in k.upper() and v:
                                 try:
                                     clicks = int(float(v))
                                     break
                                 except ValueError:
                                     pass
+                        if clicks == 0:
+                            for k, v in row.items():
+                                if k and 'CLICKS' in k.upper() and v:
+                                    try:
+                                        clicks = int(float(v))
+                                        break
+                                    except ValueError:
+                                        pass
 
-                        # 6. Parse Revenue (Explicitly prioritize AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE)
+                        # 6. Parse Revenue (AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE)
                         raw_rev = 0.0
                         for k, v in row.items():
                             if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE' in k.upper() and v:
@@ -381,24 +397,41 @@ class GAMService:
                                         pass
                             ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 0 else 0.0
 
-                        # 7. Parse Total Requests & Responses Served
+                        # 7. Parse Total Requests (AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS) & Responses Served (AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED)
                         ad_requests = 0
                         matched_requests = 0
 
                         for k, v in row.items():
-                            if not k or not v:
-                                continue
-                            k_up = k.upper()
-                            try:
-                                val_num = int(float(v))
-                                if ('TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up or 'QUERIES' in k_up) and 'MATCH' not in k_up and 'RESPONSES' not in k_up:
-                                    if val_num > ad_requests:
-                                        ad_requests = val_num
-                                elif ('RESPONSES_SERVED' in k_up or 'MATCHED' in k_up or 'RESPONSES' in k_up):
-                                    if val_num > matched_requests:
-                                        matched_requests = val_num
-                            except ValueError:
-                                pass
+                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS' in k.upper() and v:
+                                try:
+                                    ad_requests = int(float(v))
+                                    break
+                                except ValueError:
+                                    pass
+
+                        for k, v in row.items():
+                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED' in k.upper() and v:
+                                try:
+                                    matched_requests = int(float(v))
+                                    break
+                                except ValueError:
+                                    pass
+
+                        if ad_requests == 0 or matched_requests == 0:
+                            for k, v in row.items():
+                                if not k or not v:
+                                    continue
+                                k_up = k.upper()
+                                try:
+                                    val_num = int(float(v))
+                                    if ad_requests == 0 and ('TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up or 'QUERIES' in k_up) and 'MATCH' not in k_up and 'RESPONSES' not in k_up:
+                                        if val_num > ad_requests:
+                                            ad_requests = val_num
+                                    elif matched_requests == 0 and ('RESPONSES_SERVED' in k_up or 'MATCHED' in k_up or 'RESPONSES' in k_up):
+                                        if val_num > matched_requests:
+                                            matched_requests = val_num
+                                except ValueError:
+                                    pass
 
                         if matched_requests == 0 and impressions > 0:
                             matched_requests = impressions
