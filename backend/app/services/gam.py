@@ -29,7 +29,7 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
         k_up = k.upper()
         v_str = str(v).strip()
 
-        if ('SITE_NAME' in k_up or 'DOMAIN_NAME' in k_up or 'URL_NAME' in k_up or 'SITE' in k_up) and v_str:
+        if any(kw in k_up for kw in ['URL', 'DOMAIN', 'SITE', 'HOST']) and 'DATE' not in k_up and 'UNIT' not in k_up and 'ID' not in k_up and 'TYPE' not in k_up and 'STATUS' not in k_up and v_str:
             clean_val = v_str.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].strip().lower()
             if clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown", "standard ad unit"]:
                 return clean_val
@@ -194,8 +194,11 @@ class GAMService:
             ['DATE', 'PLATFORM_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'AD_EXCHANGE_URL_NAME'],
             ['DATE', 'SITE_NAME'],
+            ['DATE', 'DOMAIN_NAME'],
             ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
             ['DATE', 'AD_UNIT_NAME'],
             ['DATE']
