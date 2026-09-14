@@ -63,56 +63,56 @@ export const authService = {
 
 export const dashboardService = {
   getSummary: async (startDate, endDate) => {
-    const params = {};
+    const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     const res = await api.get('/api/dashboard/summary', { params });
     return res.data;
   },
   getTrend: async (startDate, endDate) => {
-    const params = {};
+    const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     const res = await api.get('/api/dashboard/trend', { params });
     return res.data;
   },
   getAccounts: async (startDate, endDate) => {
-    const params = {};
+    const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     const res = await api.get('/api/dashboard/accounts', { params });
     return res.data;
   },
   getSites: async (startDate, endDate) => {
-    const params = {};
+    const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     const res = await api.get('/api/dashboard/sites', { params });
     return res.data;
   },
   getSiteCountries: async (domain, startDate, endDate) => {
-    const params = {};
+    const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     const res = await api.get(`/api/dashboard/sites/${encodeURIComponent(domain)}/countries`, { params });
     return res.data;
   },
   getSiteCountryPlacements: async (domain, country, startDate, endDate) => {
-    const params = {};
+    const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     const res = await api.get(`/api/dashboard/sites/${encodeURIComponent(domain)}/countries/${encodeURIComponent(country)}/placements`, { params });
     return res.data;
   },
   getPlacements: async (startDate, endDate) => {
-    const params = {};
+    const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     const res = await api.get('/api/dashboard/placements', { params });
     return res.data;
   },
   getDomains: async (startDate, endDate) => {
-    const params = {};
+    const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     const res = await api.get('/api/dashboard/domains', { params });
