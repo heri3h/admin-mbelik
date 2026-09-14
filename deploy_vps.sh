@@ -27,10 +27,9 @@ echo "📂 4. Menyalin berkas frontend dist ke public_html..."
 cp -r frontend/dist/* "$PUBLIC_HTML/"
 
 echo "🔑 4.5. Memperbarui hak akses file database SQLite (ad_analytics.db)..."
-chmod 666 ad_analytics.db 2>/dev/null || true
-chmod 666 backend/ad_analytics.db 2>/dev/null || true
-chmod 777 . 2>/dev/null || true
-chmod 777 backend 2>/dev/null || true
+sudo chmod 777 . backend 2>/dev/null || true
+sudo chmod 777 ad_analytics.db* backend/ad_analytics.db* 2>/dev/null || true
+sudo chown -R mbummm:mbummm . backend 2>/dev/null || true
 
 echo "🔄 5. Merestart ad-analytics service..."
 sudo systemctl restart ad-analytics.service
