@@ -13,7 +13,7 @@ from googleads import ad_manager, oauth2
 
 def main():
     print("==========================================================================")
-    print("🔬 INSPEKSI KAZAKHSTAN (KZ) - play.gemol.me (YESTERDAY)")
+    print("🔬 INSPEKSI EKSKLUSIF: play.gemol.me | KAZAKHSTAN (YESTERDAY)")
     print("==========================================================================\n")
 
     json_path = settings.GAM_JSON_KEY_FILE_PATH
@@ -49,7 +49,7 @@ def main():
 
     combos = [
         {
-            "name": "Country Combo 1: DATE + COUNTRY_NAME + SITE_NAME + AD_UNIT_NAME",
+            "name": "Combo 1: DATE + COUNTRY_NAME + SITE_NAME + AD_UNIT_NAME",
             "dims": ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
             "cols": [
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
@@ -60,7 +60,7 @@ def main():
             ]
         },
         {
-            "name": "Country Combo 2: DATE + COUNTRY_NAME + AD_UNIT_NAME",
+            "name": "Combo 2: DATE + COUNTRY_NAME + AD_UNIT_NAME",
             "dims": ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
             "cols": [
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
@@ -116,28 +116,37 @@ def main():
                     break
 
             reader = list(csv.DictReader(lines[header_idx:]))
-            print(f"✅ SUKSES! Total {len(reader)} baris ditarik.\n")
+            print(f"✅ SUKSES! Total {len(reader)} baris mentah ditarik.\n")
 
-            # Filter for Kazakhstan and gemol/play
-            filtered_rows = []
+            # STRICT Filter for site play.gemol.me and country Kazakhstan
+            strict_rows = []
+            gemol_rows = []
+            kz_rows = []
+
             for row in reader:
                 r_str = json.dumps(row).lower()
-                is_kazakhstan = "kazakhstan" in r_str or "kz" in r_str
-                is_gemol = "gemol" in r_str or "play" in r_str
-                
-                if is_kazakhstan or is_gemol or len(reader) < 20:
-                    filtered_rows.append(row)
+                is_kz = "kazakhstan" in r_str
+                is_gemol = "play.gemol.me" in r_str or "gemol" in r_str
 
-            # Sort by AD_UNIT_NAME
+                if is_kz and is_gemol:
+                    strict_rows.append(row)
+                if is_gemol:
+                    gemol_rows.append(row)
+                if is_kz:
+                    kz_rows.append(row)
+
+            # Sort helper by AD_UNIT_NAME
             def get_unit(r):
                 for k, v in r.items():
                     if k and 'AD_UNIT' in k.upper() and v:
                         return str(v).strip().lower()
                 return ""
 
-            sorted_rows = sorted(filtered_rows, key=get_unit)
+            target_list = strict_rows if strict_rows else (gemol_rows if gemol_rows else kz_rows)
+            sorted_rows = sorted(target_list, key=get_unit)
 
-            print(f"📌 HASIL FILTER & SORT BY ADUNIT (Kazakhstan / play.gemol.me - Total {len(sorted_rows)} baris):")
+            label = "STRICT MATCH (play.gemol.me + Kazakhstan)" if strict_rows else ("GEMOL ONLY" if gemol_rows else "KAZAKHSTAN ONLY")
+            print(f"📌 HASIL FILTER [{label}] SORT BY ADUNIT (Total {len(sorted_rows)} baris):")
             print("=" * 100)
             
             for idx, r in enumerate(sorted_rows, 1):
