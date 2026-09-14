@@ -661,7 +661,7 @@ class GAMService:
                         elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
                             ad_requests = requests_map[dom_key]
                         else:
-                            ad_requests = int(matched_requests * 2.87)
+                            ad_requests = matched_requests
 
                         if ad_requests < matched_requests:
                             ad_requests = matched_requests
@@ -975,7 +975,7 @@ class GAMService:
                         elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
                             ad_requests = requests_map[dom_key]
                         else:
-                            ad_requests = int(matched_requests * 2.87)
+                            ad_requests = matched_requests
 
                         if ad_requests < matched_requests:
                             ad_requests = matched_requests
