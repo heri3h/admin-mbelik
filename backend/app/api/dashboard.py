@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from datetime import date, datetime, timedelta, timezone
@@ -793,11 +793,16 @@ def get_site_countries_breakdown(
 def get_site_country_placements_breakdown(
     domain: str,
     country: str,
+    response: Response,
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
     d_start, d_end = parse_date_range(start_date, end_date)
     ensure_data_synced(db, d_start, d_end)
 
@@ -805,6 +810,11 @@ def get_site_country_placements_breakdown(
     country_name = country.strip()
     c_meta = get_country_meta(country_name)
     c_code = c_meta["code"]
+
+    country_filter = or_(
+        func.lower(GAMCountryMetric.country) == country_name.lower(),
+        func.lower(GAMCountryMetric.country_code) == c_code.lower()
+    ) if c_code else (func.lower(GAMCountryMetric.country) == country_name.lower())
 
     rows = db.query(
         GAMCountryMetric.ad_unit,
@@ -815,7 +825,7 @@ def get_site_country_placements_breakdown(
         func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
     ).filter(
         func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-        func.lower(GAMCountryMetric.country) == country_name.lower(),
+        country_filter,
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
     ).group_by(GAMCountryMetric.ad_unit).all()
@@ -865,7 +875,7 @@ def get_site_country_placements_breakdown(
                 func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
             ).filter(
                 func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-                func.lower(GAMCountryMetric.country) == country_name.lower(),
+                country_filter,
                 GAMCountryMetric.date >= d_start,
                 GAMCountryMetric.date <= d_end
             ).group_by(GAMCountryMetric.ad_unit).all()
