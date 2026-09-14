@@ -312,9 +312,9 @@ class GAMService:
             ['DATE', 'SITE_NAME']
         ]
         req_col_sets = [
-            ['TOTAL_CODE_SERVED_COUNT', 'TOTAL_INVENTORY_LEVEL_UNFILLED_IMPRESSIONS', 'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS'],
-            ['TOTAL_CODE_SERVED_COUNT', 'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS'],
-            ['TOTAL_INVENTORY_LEVEL_UNFILLED_IMPRESSIONS', 'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS'],
+            ['TOTAL_INVENTORY_LEVEL_AD_REQUESTS', 'TOTAL_INVENTORY_LEVEL_IMPRESSIONS', 'TOTAL_INVENTORY_LEVEL_UNFILLED_IMPRESSIONS'],
+            ['TOTAL_INVENTORY_LEVEL_AD_REQUESTS', 'TOTAL_INVENTORY_LEVEL_IMPRESSIONS'],
+            ['TOTAL_CODE_SERVED_COUNT', 'TOTAL_INVENTORY_LEVEL_UNFILLED_IMPRESSIONS'],
             ['TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS', 'TOTAL_LINE_ITEM_LEVEL_CLICKS']
         ]
 
@@ -364,7 +364,7 @@ class GAMService:
                     header_idx = 0
                     for idx, line in enumerate(lines):
                         line_up = line.upper()
-                        if ('DATE' in line_up or 'UNIT' in line_up or 'SITE' in line_up) and ('IMPRESSION' in line_up or 'SERVED' in line_up or 'COLUMN' in line_up):
+                        if ('DATE' in line_up or 'UNIT' in line_up or 'SITE' in line_up) and ('IMPRESSION' in line_up or 'SERVED' in line_up or 'REQUEST' in line_up or 'COLUMN' in line_up):
                             header_idx = idx
                             break
 
@@ -388,7 +388,7 @@ class GAMService:
                                     pass
                             elif 'UNIT' in k_up or 'SITE' in k_up:
                                 unit_or_site = v_str.lower()
-                            elif ('CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
+                            elif ('INVENTORY_LEVEL_AD_REQUESTS' in k_up or 'CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
                                 try:
                                     code_served = int(float(v_str))
                                 except ValueError:
@@ -425,9 +425,10 @@ class GAMService:
 
                     if requests_map:
                         successful = True
+                        logger.info(f"Pass 2 successfully retrieved inventory requests: {len(requests_map)} keys")
                         break
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.info(f"Pass 2 requests query dims={dims} cols={cols} notice: {e}")
             if successful:
                 break
 
