@@ -81,6 +81,11 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
         if len(pref) >= 3 and pref in unit_lower:
             return dom
 
+    # General TLD domain regex extraction from ad_unit string
+    domain_match = re.search(r'([a-zA-Z0-9-]+\.(?:com|top|me|skuy\.me|nubmaster\.com|id|net|org|co\.id|xyz|site|info|online|tech|app|io|cc|vip|store|shop|biz))', unit_lower)
+    if domain_match:
+        return domain_match.group(1).lower()
+
     if ' > ' in unit_str:
         first_part = unit_str.split(' > ')[0].strip().lower()
         if '.' in first_part:
