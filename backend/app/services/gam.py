@@ -340,10 +340,10 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                        # 6. Parse Revenue (GAM Microamounts: 1,000,000 micros = 1 IDR/USD)
+                        # 6. Parse Revenue (Explicitly prioritize AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE)
                         raw_rev = 0.0
                         for k, v in row.items():
-                            if k and ('REVENUE' in k.upper() or 'EARNINGS' in k.upper()) and v:
+                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE' in k.upper() and v:
                                 try:
                                     val = float(v)
                                     if val > 0:
@@ -351,6 +351,17 @@ class GAMService:
                                         break
                                 except ValueError:
                                     pass
+
+                        if raw_rev == 0.0:
+                            for k, v in row.items():
+                                if k and ('REVENUE' in k.upper() or 'EARNINGS' in k.upper()) and v:
+                                    try:
+                                        val = float(v)
+                                        if val > 0:
+                                            raw_rev = val
+                                            break
+                                    except ValueError:
+                                        pass
 
                         # GAM API ALWAYS returns revenue in microamounts (1,000,000 micros = 1 currency unit)
                         revenue = (raw_rev / 1000000.0) if raw_rev > 0 else 0.0
