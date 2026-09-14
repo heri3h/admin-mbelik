@@ -23,8 +23,9 @@ class SyncService:
         gam_data = []
 
         try:
-            from app.database import Base
-            Base.metadata.create_all(bind=db.get_bind())
+            from app.database import Base, engine
+            import app.models
+            Base.metadata.create_all(bind=engine)
         except Exception as e:
             logger.warning(f"Sync table creation notice: {e}")
 
