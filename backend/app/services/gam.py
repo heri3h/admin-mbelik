@@ -334,10 +334,10 @@ class GAMService:
 
         # Standard valid GAM API dimension sets (DATE and SITE_NAME prioritized based on empirical GAM API test)
         dimension_sets = [
-            ['DATE', 'SITE_NAME'],
             ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
-            ['DATE', 'DOMAIN_NAME'],
+            ['DATE', 'SITE_NAME'],
             ['DATE', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'DOMAIN_NAME'],
             ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
             ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE', 'PLATFORM_NAME', 'SITE_NAME'],
@@ -730,8 +730,8 @@ class GAMService:
         report_service = client.GetService('ReportService', version='v202602')
 
         dimension_sets = [
-            ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
             ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
             ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
