@@ -412,8 +412,16 @@ class GAMService:
                         else:
                             req_val = filled_imps
 
-                        if req_val > 0 and unit_or_site:
-                            requests_map[(r_date, unit_or_site)] = req_val
+                        if req_val > 0:
+                            if unit_or_site:
+                                requests_map[(r_date, unit_or_site)] = req_val
+                                clean_unit = unit_or_site.split('(')[0].replace('http://', '').replace('https://', '').replace('www.', '').strip().lower()
+                                if clean_unit:
+                                    requests_map[(r_date, clean_unit)] = req_val
+
+                            dom = extract_domain_from_row(row, unit_or_site)
+                            if dom:
+                                requests_map[(r_date, dom)] = requests_map.get((r_date, dom), 0) + req_val
 
                     if requests_map:
                         successful = True
@@ -695,11 +703,15 @@ class GAMService:
                                 ad_requests = matched_requests + unfilled_impressions
 
                             if ad_requests == 0:
-                                unit_key = (row_date, ad_unit.lower().strip())
+                                unit_raw_key = (row_date, ad_unit.lower().strip())
+                                unit_clean_key = (row_date, ad_unit.lower().strip().split('(')[0].strip())
                                 dom_key = (row_date, domain.lower().strip())
-                                if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
-                                    ad_requests = requests_map[unit_key]
-                                elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
+
+                                if unit_raw_key in requests_map and requests_map[unit_raw_key] > 0:
+                                    ad_requests = requests_map[unit_raw_key]
+                                elif unit_clean_key in requests_map and requests_map[unit_clean_key] > 0:
+                                    ad_requests = requests_map[unit_clean_key]
+                                elif dom_key in requests_map and requests_map[dom_key] > 0:
                                     ad_requests = requests_map[dom_key]
                                 else:
                                     ad_requests = matched_requests
@@ -1041,11 +1053,15 @@ class GAMService:
                                 ad_requests = matched_requests + unfilled_impressions
 
                             if ad_requests == 0:
-                                unit_key = (row_date, ad_unit.lower().strip())
+                                unit_raw_key = (row_date, ad_unit.lower().strip())
+                                unit_clean_key = (row_date, ad_unit.lower().strip().split('(')[0].strip())
                                 dom_key = (row_date, domain.lower().strip())
-                                if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
-                                    ad_requests = requests_map[unit_key]
-                                elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
+
+                                if unit_raw_key in requests_map and requests_map[unit_raw_key] > 0:
+                                    ad_requests = requests_map[unit_raw_key]
+                                elif unit_clean_key in requests_map and requests_map[unit_clean_key] > 0:
+                                    ad_requests = requests_map[unit_clean_key]
+                                elif dom_key in requests_map and requests_map[dom_key] > 0:
                                     ad_requests = requests_map[dom_key]
                                 else:
                                     ad_requests = matched_requests
