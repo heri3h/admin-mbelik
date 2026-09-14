@@ -535,7 +535,14 @@ class GAMService:
                         matched_requests = 0
 
                         for k, v in row.items():
-                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS' in k.upper() and v:
+                            if not k or not v:
+                                continue
+                            k_up = k.upper()
+                            if any(req_name in k_up for req_name in [
+                                'AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS',
+                                'AD_EXCHANGE_TOTAL_REQUESTS',
+                                'AD_EXCHANGE_AD_REQUESTS'
+                            ]):
                                 try:
                                     ad_requests = int(float(v))
                                     break
@@ -543,26 +550,18 @@ class GAMService:
                                     pass
 
                         for k, v in row.items():
-                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED' in k.upper() and v:
+                            if not k or not v:
+                                continue
+                            k_up = k.upper()
+                            if any(resp_name in k_up for resp_name in [
+                                'AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED',
+                                'AD_EXCHANGE_RESPONSES_SERVED',
+                                'AD_EXCHANGE_MATCHED_REQUESTS',
+                                'AD_EXCHANGE_MATCHED_QUERIES'
+                            ]):
                                 try:
                                     matched_requests = int(float(v))
                                     break
-                                except ValueError:
-                                    pass
-
-                        if ad_requests == 0 or matched_requests == 0:
-                            for k, v in row.items():
-                                if not k or not v:
-                                    continue
-                                k_up = k.upper()
-                                try:
-                                    val_num = int(float(v))
-                                    if ad_requests == 0 and ('TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up or 'QUERIES' in k_up) and 'MATCH' not in k_up and 'RESPONSES' not in k_up:
-                                        if val_num > ad_requests:
-                                            ad_requests = val_num
-                                    elif matched_requests == 0 and ('RESPONSES_SERVED' in k_up or 'MATCHED' in k_up or 'RESPONSES' in k_up):
-                                        if val_num > matched_requests:
-                                            matched_requests = val_num
                                 except ValueError:
                                     pass
 
@@ -877,20 +876,37 @@ class GAMService:
 
                         ad_requests = 0
                         matched_requests = 0
+
                         for k, v in row.items():
                             if not k or not v:
                                 continue
                             k_up = k.upper()
-                            try:
-                                val_num = int(float(v))
-                                if ('TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'MATCH' not in k_up and 'RESPONSES' not in k_up:
-                                    if val_num > ad_requests:
-                                        ad_requests = val_num
-                                elif ('RESPONSES_SERVED' in k_up or 'MATCHED' in k_up):
-                                    if val_num > matched_requests:
-                                        matched_requests = val_num
-                            except ValueError:
-                                pass
+                            if any(req_name in k_up for req_name in [
+                                'AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS',
+                                'AD_EXCHANGE_TOTAL_REQUESTS',
+                                'AD_EXCHANGE_AD_REQUESTS'
+                            ]):
+                                try:
+                                    ad_requests = int(float(v))
+                                    break
+                                except ValueError:
+                                    pass
+
+                        for k, v in row.items():
+                            if not k or not v:
+                                continue
+                            k_up = k.upper()
+                            if any(resp_name in k_up for resp_name in [
+                                'AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED',
+                                'AD_EXCHANGE_RESPONSES_SERVED',
+                                'AD_EXCHANGE_MATCHED_REQUESTS',
+                                'AD_EXCHANGE_MATCHED_QUERIES'
+                            ]):
+                                try:
+                                    matched_requests = int(float(v))
+                                    break
+                                except ValueError:
+                                    pass
 
                         if matched_requests == 0 and impressions > 0:
                             matched_requests = impressions
