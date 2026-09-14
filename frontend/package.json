@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "if [ -d \"/home/mbummm/web/admin.mbelik.com/public_html\" ]; then sudo cp -r dist/* /home/mbummm/web/admin.mbelik.com/public_html/ && sudo chown -R mbummm:mbummm /home/mbummm/web/admin.mbelik.com/public_html/; fi",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
