@@ -88,9 +88,14 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
             return dom
 
     # General TLD domain regex extraction from ad_unit string
-    domain_match = re.search(r'([a-zA-Z0-9-]+\.(?:com|top|me|skuy\.me|nubmaster\.com|id|net|org|co\.id|xyz|site|info|online|tech|app|io|cc|vip|store|shop|biz))', unit_lower)
+    domain_match = re.search(r'([a-zA-Z0-9-]+\.(?:com|top|me|skuy\.me|nubmaster\.com|id|net|org|co\.id|xyz|site|info|online|tech|app|io|cc|vip|store|shop|biz|pro|asia|club|live|news|space|work|media|digital))', unit_lower)
     if domain_match:
         return domain_match.group(1).lower()
+
+    # Underscore domain regex extraction (e.g., site_com, site_id, site_co_id)
+    und_match = re.search(r'([a-zA-Z0-9-]+)_(com|top|me|id|net|org|xyz|site|info)(?:_|$)', unit_lower)
+    if und_match:
+        return f"{und_match.group(1)}.{und_match.group(2)}".lower()
 
     if ' > ' in unit_str:
         first_part = unit_str.split(' > ')[0].strip().lower()
@@ -200,20 +205,20 @@ class GAMService:
 
         report_service = client.GetService('ReportService', version='v202602')
 
-        # Standard valid GAM API dimension sets (Targeting domain, URL, Site prioritized)
+        # Standard valid GAM API dimension sets (URL, Site, Custom Targeting, and Ad Unit prioritized)
         dimension_sets = [
-            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
-            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
-            ['DATE', 'PLATFORM_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
-            ['DATE', 'PLATFORM_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'URL_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+            ['DATE', 'PLATFORM_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'PLATFORM_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'AD_UNIT_NAME'],
             ['DATE', 'AD_EXCHANGE_URL_NAME'],
             ['DATE', 'SITE_NAME'],
             ['DATE', 'DOMAIN_NAME'],
-            ['DATE', 'AD_UNIT_NAME'],
+            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE']
         ]
 
@@ -245,8 +250,10 @@ class GAMService:
 
         last_error = None
         aggregated_results = {}
+        seen_domains_per_date = set()
 
         for dims in dimension_sets:
+            successful_dim = False
             for cols in column_sets:
                 try:
                     report_job = {
@@ -319,6 +326,9 @@ class GAMService:
 
                         # 3. Parse Site Domain (Using SITE_NAME / CUSTOM_TARGETING / AD_EXCHANGE_URL)
                         domain = extract_domain_from_row(row, ad_unit)
+
+                        domain_date_key = (row_date, domain)
+                        is_new_domain = domain_date_key not in seen_domains_per_date
 
                         # 4. Parse Impressions (AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS)
                         impressions = 0
@@ -457,7 +467,7 @@ class GAMService:
                             ad_requests = int(matched_requests / (match_rate / 100.0)) if match_rate > 0 else int(matched_requests * 2.8)
 
                         key = (row_date, domain, ad_unit)
-                        if key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
+                        if is_new_domain or key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
                             aggregated_results[key] = {
                                 "date": row_date,
                                 "domain": domain,
@@ -470,18 +480,23 @@ class GAMService:
                                 "matched_requests": matched_requests,
                                 "match_rate": round(match_rate, 2)
                             }
+                            seen_domains_per_date.add(domain_date_key)
+
                         found_any_row = True
 
                     if found_any_row:
-                        logger.info(f"Successfully fetched {len(aggregated_results)} rows from GAM API using dims {dims}")
-                        return list(aggregated_results.values())
+                        successful_dim = True
+                        break
 
                 except Exception as e:
                     last_error = e
                     logger.warning(f"GAM combination dims={dims} cols={cols} failed: {e}")
 
+            if successful_dim:
+                logger.info(f"Dim set {dims} completed. Current total domains parsed: {len(seen_domains_per_date)}")
+
         if aggregated_results:
-            logger.info(f"Successfully fetched {len(aggregated_results)} aggregated rows from GAM API")
+            logger.info(f"Successfully fetched {len(aggregated_results)} aggregated rows covering {len(seen_domains_per_date)} date-domain pairs from GAM API")
             return list(aggregated_results.values())
 
         if last_error:
@@ -591,12 +606,12 @@ class GAMService:
         report_service = client.GetService('ReportService', version='v202602')
 
         dimension_sets = [
-            ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
-            ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME'],
             ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME']
         ]
@@ -627,7 +642,11 @@ class GAMService:
         ]
 
         last_error = None
+        results = []
+        seen_domain_countries = set()
+
         for dims in dimension_sets:
+            successful_dim = False
             for cols in column_sets:
                 try:
                     report_job = {
@@ -673,8 +692,8 @@ class GAMService:
                     csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
                     lines = [line for line in csv_text.splitlines() if line.strip()]
 
-                    results = []
                     reader = csv.DictReader(lines)
+                    found_any_row = False
 
                     for row in reader:
                         row_date = start_date
@@ -700,6 +719,10 @@ class GAMService:
 
                         domain = extract_domain_from_row(row, ad_unit)
                         c_meta = get_country_meta(country)
+
+                        dc_key = (row_date, domain, country, ad_unit)
+                        if dc_key in seen_domain_countries:
+                            continue
 
                         impressions = 0
                         for k, v in row.items():
@@ -768,13 +791,21 @@ class GAMService:
                             "matched_requests": matched_requests,
                             "match_rate": round(match_rate, 2)
                         })
+                        seen_domain_countries.add(dc_key)
+                        found_any_row = True
 
-                    if results:
-                        logger.info(f"Fetched {len(results)} GAM country rows")
-                        return results
+                    if found_any_row:
+                        successful_dim = True
+                        break
 
                 except Exception as e:
                     last_error = e
+
+            if successful_dim:
+                logger.info(f"Country Dim set {dims} completed. Total country records: {len(results)}")
+
+        if results:
+            return results
 
         if last_error:
             raise last_error
