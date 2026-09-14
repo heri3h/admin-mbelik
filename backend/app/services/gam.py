@@ -14,9 +14,9 @@ WIB = timezone(timedelta(hours=7))
 def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     """
     Extract site domain directly from GAM API response row:
-    1. Dimension.SITE_NAME (Native GAM Site Dimension)
+    1. Dimension.SITE_NAME / AD_EXCHANGE_URL_NAME / DOMAIN_NAME / URL_NAME
     2. CUSTOM_TARGETING_VALUE_PAIR
-    3. AD_EXCHANGE_URL_NAME / DOMAIN_NAME
+    3. Known domain matching in ad_unit string
     4. Custom SITE_MAPPING in .env
     5. Fallback domain
     """
@@ -26,9 +26,9 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
         k_up = k.upper()
         v_str = v.strip()
 
-        if ('SITE_NAME' in k_up or 'DOMAIN_NAME' in k_up or 'URL_NAME' in k_up) and v_str:
+        if ('SITE_NAME' in k_up or 'DOMAIN_NAME' in k_up or 'URL_NAME' in k_up or 'SITE' in k_up) and v_str:
             clean_val = v_str.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].strip().lower()
-            if clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown"]:
+            if clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown", "standard ad unit"]:
                 return clean_val
 
         # Check custom targeting
@@ -39,11 +39,17 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
                 if clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown"]:
                     return clean_val
 
-    # Check custom SITE_MAPPING in .env
     unit_str = ad_unit.strip() if ad_unit else ""
+
+    # Check known domain names directly in ad_unit string
+    for known_dom in ["spotgames.top", "2b.nubmaster.com", "baleq.me", "dpr.skuy.me", "polpasulsa.com"]:
+        if known_dom in unit_str.lower():
+            return known_dom
+
+    # Check custom SITE_MAPPING in .env
     site_mapping = getattr(settings, "SITE_MAPPING_DICT", {})
     for prefix, mapped_domain in site_mapping.items():
-        if unit_str.lower().startswith(prefix.lower()):
+        if prefix.lower() in unit_str.lower():
             return mapped_domain.lower().strip()
 
     if ' > ' in unit_str:
@@ -53,7 +59,7 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
 
     if '.' in unit_str and not unit_str.startswith('.'):
         for p in unit_str.split():
-            if '.' in p:
+            if '.' in p and not p.endswith('.'):
                 return p.strip().lower()
 
     return "mbelik.com"
@@ -148,11 +154,14 @@ class GAMService:
 
         report_service = client.GetService('ReportService', version='v202602')
 
-        # Standard valid GAM API dimension sets
+        # Standard valid GAM API dimension sets (domain/site prioritized)
         dimension_sets = [
-            ['DATE', 'AD_UNIT_NAME'],
+            ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'AD_EXCHANGE_URL_NAME'],
-            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
+            ['DATE', 'SITE_NAME'],
+            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+            ['DATE', 'AD_UNIT_NAME'],
             ['DATE']
         ]
 
@@ -478,6 +487,10 @@ class GAMService:
         report_service = client.GetService('ReportService', version='v202602')
 
         dimension_sets = [
+            ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
             ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME']
         ]
