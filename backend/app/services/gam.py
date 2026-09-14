@@ -88,8 +88,14 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
 
     if ' > ' in unit_str:
         first_part = unit_str.split(' > ')[0].strip().lower()
-        if '.' in first_part:
-            return first_part
+        if first_part and first_part not in ["all", "global", "root", "standard ad unit"]:
+            return first_part.replace(' ', '-')
+
+    if '/' in unit_str and not unit_str.startswith('http'):
+        parts = [p.strip() for p in unit_str.split('/') if p.strip()]
+        if len(parts) > 1:
+            site_candidate = parts[0] if parts[0].lower() not in ["all", "global", "root"] else parts[1]
+            return site_candidate.lower().replace(' ', '-')
 
     if '.' in unit_str and not unit_str.startswith('.'):
         for p in unit_str.split():
