@@ -642,20 +642,41 @@ class GAMService:
                                         pass
                             ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 0 else 0.0
 
-                        # 7. Parse Total Requests & Responses Served (Matched Requests)
+                        # 7. Parse Total Requests & Unfilled Impressions / Matched Requests
                         matched_requests = impressions
                         ad_requests = 0
+                        unfilled_impressions = 0
 
-                        # Dual Query Pass 2 Lookup: Priority for exact ad_unit, then domain/site
-                        unit_key = (row_date, ad_unit.lower().strip())
-                        dom_key = (row_date, domain.lower().strip())
+                        for k, v in row.items():
+                            if not k or not v:
+                                continue
+                            k_up = k.upper()
+                            try:
+                                val_num = int(float(v))
+                                if ('CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
+                                    if val_num > ad_requests:
+                                        ad_requests = val_num
+                                elif 'UNFILLED' in k_up:
+                                    if val_num > unfilled_impressions:
+                                        unfilled_impressions = val_num
+                                elif 'MATCHED' in k_up or 'RESPONSES_SERVED' in k_up:
+                                    if val_num > matched_requests:
+                                        matched_requests = val_num
+                            except ValueError:
+                                pass
 
-                        if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
-                            ad_requests = requests_map[unit_key]
-                        elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
-                            ad_requests = requests_map[dom_key]
-                        else:
-                            ad_requests = matched_requests
+                        if ad_requests == 0 and unfilled_impressions > 0:
+                            ad_requests = matched_requests + unfilled_impressions
+
+                        if ad_requests == 0:
+                            unit_key = (row_date, ad_unit.lower().strip())
+                            dom_key = (row_date, domain.lower().strip())
+                            if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
+                                ad_requests = requests_map[unit_key]
+                            elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
+                                ad_requests = requests_map[dom_key]
+                            else:
+                                ad_requests = matched_requests
 
                         if ad_requests < matched_requests:
                             ad_requests = matched_requests
@@ -960,16 +981,38 @@ class GAMService:
 
                         matched_requests = impressions
                         ad_requests = 0
+                        unfilled_impressions = 0
 
-                        unit_key = (row_date, ad_unit.lower().strip())
-                        dom_key = (row_date, domain.lower().strip())
+                        for k, v in row.items():
+                            if not k or not v:
+                                continue
+                            k_up = k.upper()
+                            try:
+                                val_num = int(float(v))
+                                if ('CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
+                                    if val_num > ad_requests:
+                                        ad_requests = val_num
+                                elif 'UNFILLED' in k_up:
+                                    if val_num > unfilled_impressions:
+                                        unfilled_impressions = val_num
+                                elif 'MATCHED' in k_up or 'RESPONSES_SERVED' in k_up:
+                                    if val_num > matched_requests:
+                                        matched_requests = val_num
+                            except ValueError:
+                                pass
 
-                        if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
-                            ad_requests = requests_map[unit_key]
-                        elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
-                            ad_requests = requests_map[dom_key]
-                        else:
-                            ad_requests = matched_requests
+                        if ad_requests == 0 and unfilled_impressions > 0:
+                            ad_requests = matched_requests + unfilled_impressions
+
+                        if ad_requests == 0:
+                            unit_key = (row_date, ad_unit.lower().strip())
+                            dom_key = (row_date, domain.lower().strip())
+                            if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
+                                ad_requests = requests_map[unit_key]
+                            elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
+                                ad_requests = requests_map[dom_key]
+                            else:
+                                ad_requests = matched_requests
 
                         if ad_requests < matched_requests:
                             ad_requests = matched_requests
