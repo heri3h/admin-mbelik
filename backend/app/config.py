@@ -46,6 +46,18 @@ class Settings(BaseSettings):
     )
 
     @property
+    def REAL_DATABASE_URL(self) -> str:
+        if self.DATABASE_URL.startswith("sqlite:///./"):
+            rel_name = self.DATABASE_URL.replace("sqlite:///./", "")
+            abs_db_path = os.path.join(BASE_DIR, rel_name)
+            return f"sqlite:///{abs_db_path}"
+        elif self.DATABASE_URL.startswith("sqlite:///") and not os.path.isabs(self.DATABASE_URL.replace("sqlite:///", "")):
+            rel_name = self.DATABASE_URL.replace("sqlite:///", "")
+            abs_db_path = os.path.join(BASE_DIR, rel_name)
+            return f"sqlite:///{abs_db_path}"
+        return self.DATABASE_URL
+
+    @property
     def SITE_MAPPING_DICT(self) -> Dict[str, str]:
         if not self.SITE_MAPPING:
             return {}

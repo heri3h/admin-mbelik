@@ -4,12 +4,12 @@ from app.config import settings
 
 # For SQLite, check if connect_args needs check_same_thread=False
 connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
+if settings.REAL_DATABASE_URL.startswith("sqlite"):
     connect_args["check_same_thread"] = False
     connect_args["timeout"] = 30
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.REAL_DATABASE_URL,
     connect_args=connect_args,
     pool_pre_ping=True
 )
