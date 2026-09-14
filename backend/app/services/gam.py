@@ -1125,13 +1125,6 @@ class GAMService:
                 logger.info(f"Country Query config r_type={r_type} completed successfully.")
                 break
 
-                except Exception as e:
-                    last_error = e
-
-            if successful_dim:
-                logger.info(f"Country Dim set {dims} completed. Total country records: {len(results)}")
-                break
-
         if results:
             return results
 
