@@ -681,6 +681,11 @@ def get_site_countries_breakdown(
     if not country_rows:
         try:
             live_country_data = gam_service.fetch_country_metrics(d_start, d_end)
+            db.query(GAMCountryMetric).filter(
+                GAMCountryMetric.date >= d_start,
+                GAMCountryMetric.date <= d_end
+            ).delete(synchronize_session=False)
+
             for item in live_country_data:
                 raw_rev = item.get("revenue", 0.0)
                 adj_rev = round(raw_rev * 0.92, 2)
