@@ -811,11 +811,6 @@ def get_site_country_placements_breakdown(
     c_meta = get_country_meta(country_name)
     c_code = c_meta["code"]
 
-    country_filter = or_(
-        func.lower(GAMCountryMetric.country) == country_name.lower(),
-        func.lower(GAMCountryMetric.country_code) == c_code.lower()
-    ) if c_code else (func.lower(GAMCountryMetric.country) == country_name.lower())
-
     rows = db.query(
         GAMCountryMetric.ad_unit,
         func.sum(GAMCountryMetric.revenue).label("total_revenue"),
@@ -825,10 +820,25 @@ def get_site_country_placements_breakdown(
         func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
     ).filter(
         func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-        country_filter,
+        func.lower(GAMCountryMetric.country) == country_name.lower(),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
     ).group_by(GAMCountryMetric.ad_unit).all()
+
+    if not rows and c_code:
+        rows = db.query(
+            GAMCountryMetric.ad_unit,
+            func.sum(GAMCountryMetric.revenue).label("total_revenue"),
+            func.sum(GAMCountryMetric.impressions).label("total_impressions"),
+            func.sum(GAMCountryMetric.clicks).label("total_clicks"),
+            func.sum(GAMCountryMetric.ad_requests).label("total_ad_requests"),
+            func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
+        ).filter(
+            func.lower(GAMCountryMetric.domain) == domain_name.lower(),
+            func.lower(GAMCountryMetric.country_code) == c_code.lower(),
+            GAMCountryMetric.date >= d_start,
+            GAMCountryMetric.date <= d_end
+        ).group_by(GAMCountryMetric.ad_unit).all()
 
     if not rows:
         try:
@@ -875,7 +885,7 @@ def get_site_country_placements_breakdown(
                 func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
             ).filter(
                 func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-                country_filter,
+                func.lower(GAMCountryMetric.country) == country_name.lower(),
                 GAMCountryMetric.date >= d_start,
                 GAMCountryMetric.date <= d_end
             ).group_by(GAMCountryMetric.ad_unit).all()
