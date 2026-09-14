@@ -13,6 +13,17 @@ WIB = timezone(timedelta(hours=7))
 
 import re
 
+def parse_gam_date(v_str: Any, default_date: date) -> date:
+    if not v_str:
+        return default_date
+    clean_v = str(v_str).strip().split('T')[0].split(' ')[0]
+    for fmt in ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%Y/%m/%d", "%d-%m-%Y"]:
+        try:
+            return datetime.strptime(clean_v, fmt).date()
+        except ValueError:
+            pass
+    return default_date
+
 def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     """
     Extract site domain directly from GAM API response row:
@@ -383,10 +394,7 @@ class GAMService:
                             k_up = k.upper()
                             v_str = str(v).strip()
                             if 'DATE' in k_up:
-                                try:
-                                    r_date = datetime.strptime(v_str, "%Y-%m-%d").date()
-                                except ValueError:
-                                    pass
+                                r_date = parse_gam_date(v_str, start_date)
                             elif 'UNIT' in k_up or 'SITE' in k_up:
                                 unit_or_site = v_str.lower()
                             elif ('INVENTORY_LEVEL_AD_REQUESTS' in k_up or 'CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
@@ -579,11 +587,8 @@ class GAMService:
                             row_date = start_date
                             for k, v in row.items():
                                 if k and 'DATE' in k.upper() and v:
-                                    try:
-                                        row_date = datetime.strptime(v.strip(), "%Y-%m-%d").date()
-                                        break
-                                    except ValueError:
-                                        pass
+                                    row_date = parse_gam_date(v, start_date)
+                                    break
 
                             # 2. Parse Ad Unit Name
                             ad_unit = ""
@@ -975,11 +980,8 @@ class GAMService:
                             row_date = start_date
                             for k, v in row.items():
                                 if k and 'DATE' in k.upper() and v:
-                                    try:
-                                        row_date = datetime.strptime(v.strip(), "%Y-%m-%d").date()
-                                        break
-                                    except ValueError:
-                                        pass
+                                    row_date = parse_gam_date(v, start_date)
+                                    break
 
                             country = "Indonesia"
                             for k, v in row.items():
