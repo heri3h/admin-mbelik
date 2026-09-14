@@ -118,24 +118,34 @@ class SyncService:
         # 2. Deduplicate & Upsert GAM metrics (Apply -8% fee deduction)
         aggregated_gam = {}
         for item in gam_data:
-            key = (item["date"], item["domain"], item["ad_unit"])
-            if key not in aggregated_gam:
-                aggregated_gam[key] = {
+            dom = (item.get("domain") or "").strip().lower()
+            unit = (item.get("ad_unit") or "Standard Ad Unit").strip()
+            if not dom:
+                continue
+            norm_key = (item["date"], dom, unit.lower())
+            if norm_key not in aggregated_gam:
+                aggregated_gam[norm_key] = {
                     "date": item["date"],
-                    "domain": item["domain"],
-                    "ad_unit": item["ad_unit"],
+                    "domain": dom,
+                    "ad_unit": unit,
                     "revenue": 0.0,
                     "impressions": 0,
                     "clicks": 0,
                     "ad_requests": 0,
                     "matched_requests": 0
                 }
-            agg = aggregated_gam[key]
+            agg = aggregated_gam[norm_key]
             agg["revenue"] += item.get("revenue", 0.0)
             agg["impressions"] += item.get("impressions", 0)
             agg["clicks"] += item.get("clicks", 0)
             agg["ad_requests"] += item.get("ad_requests", 0)
             agg["matched_requests"] += item.get("matched_requests", 0)
+
+        existing_gam = db.query(GAMMetric).filter(
+            GAMMetric.date >= gam_sync_start,
+            GAMMetric.date <= end_date
+        ).all()
+        existing_gam_map = {(m.date, m.domain.lower().strip(), m.ad_unit.lower().strip()): m for m in existing_gam if m.domain and m.ad_unit}
 
         for item in aggregated_gam.values():
             raw_rev = item.get("revenue", 0.0)
@@ -148,11 +158,8 @@ class SyncService:
             matched_reqs = item.get("matched_requests", 0)
             mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
 
-            existing = db.query(GAMMetric).filter(
-                GAMMetric.date == item["date"],
-                GAMMetric.domain == item["domain"],
-                GAMMetric.ad_unit == item["ad_unit"]
-            ).first()
+            norm_key = (item["date"], item["domain"].lower().strip(), item["ad_unit"].lower().strip())
+            existing = existing_gam_map.get(norm_key)
 
             if existing:
                 existing.revenue = adj_rev
@@ -178,6 +185,7 @@ class SyncService:
                     synced_at=datetime.utcnow()
                 )
                 db.add(new_metric)
+                existing_gam_map[norm_key] = new_metric
             records_synced += 1
 
         db.commit()
@@ -187,26 +195,37 @@ class SyncService:
             gam_country_data = gam_service.fetch_country_metrics(start_date, end_date)
             aggregated_country = {}
             for item in gam_country_data:
-                key = (item["date"], item["domain"], item["country"], item.get("ad_unit", ""))
-                if key not in aggregated_country:
-                    aggregated_country[key] = {
+                dom = (item.get("domain") or "").strip().lower()
+                c_name = (item.get("country") or "Indonesia").strip()
+                unit = (item.get("ad_unit") or "Standard Ad Unit").strip()
+                if not dom:
+                    continue
+                norm_c_key = (item["date"], dom, c_name.lower(), unit.lower())
+                if norm_c_key not in aggregated_country:
+                    aggregated_country[norm_c_key] = {
                         "date": item["date"],
-                        "domain": item["domain"],
-                        "country": item["country"],
+                        "domain": dom,
+                        "country": c_name,
                         "country_code": item.get("country_code", "ID"),
-                        "ad_unit": item.get("ad_unit", ""),
+                        "ad_unit": unit,
                         "revenue": 0.0,
                         "impressions": 0,
                         "clicks": 0,
                         "ad_requests": 0,
                         "matched_requests": 0
                     }
-                agg = aggregated_country[key]
+                agg = aggregated_country[norm_c_key]
                 agg["revenue"] += item.get("revenue", 0.0)
                 agg["impressions"] += item.get("impressions", 0)
                 agg["clicks"] += item.get("clicks", 0)
                 agg["ad_requests"] += item.get("ad_requests", 0)
                 agg["matched_requests"] += item.get("matched_requests", 0)
+
+            existing_c_metrics = db.query(GAMCountryMetric).filter(
+                GAMCountryMetric.date >= start_date,
+                GAMCountryMetric.date <= end_date
+            ).all()
+            existing_c_map = {(m.date, m.domain.lower().strip(), m.country.lower().strip(), m.ad_unit.lower().strip()): m for m in existing_c_metrics if m.domain and m.country and m.ad_unit}
 
             for item in aggregated_country.values():
                 raw_rev = item.get("revenue", 0.0)
@@ -220,12 +239,8 @@ class SyncService:
                 country_code = item.get("country_code", "ID")
                 c_mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
 
-                existing_c = db.query(GAMCountryMetric).filter(
-                    GAMCountryMetric.date == item["date"],
-                    GAMCountryMetric.domain == item["domain"],
-                    GAMCountryMetric.country == item["country"],
-                    GAMCountryMetric.ad_unit == item.get("ad_unit", "")
-                ).first()
+                norm_c_key = (item["date"], item["domain"].lower().strip(), item["country"].lower().strip(), item["ad_unit"].lower().strip())
+                existing_c = existing_c_map.get(norm_c_key)
 
                 if existing_c:
                     existing_c.revenue = adj_rev
@@ -243,7 +258,7 @@ class SyncService:
                         domain=item["domain"],
                         country=item["country"],
                         country_code=country_code,
-                        ad_unit=item.get("ad_unit", ""),
+                        ad_unit=item["ad_unit"],
                         revenue=adj_rev,
                         impressions=imps,
                         ecpm=adj_ecpm,
@@ -254,6 +269,7 @@ class SyncService:
                         synced_at=datetime.utcnow()
                     )
                     db.add(new_c_metric)
+                    existing_c_map[norm_c_key] = new_c_metric
             db.commit()
         except Exception as e:
             db.rollback()
