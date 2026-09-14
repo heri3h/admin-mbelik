@@ -231,18 +231,17 @@ class SyncService:
                     domain=item["domain"],
                     country=item["country"],
                     country_code=country_code,
-                        ad_unit=item["ad_unit"],
-                        revenue=adj_rev,
-                        impressions=imps,
-                        ecpm=adj_ecpm,
-                        clicks=clicks,
-                        match_rate=round(c_mr, 2),
-                        ad_requests=ad_reqs,
-                        matched_requests=matched_reqs,
-                        synced_at=datetime.utcnow()
-                    )
-                    db.add(new_c_metric)
-                    existing_c_map[norm_c_key] = new_c_metric
+                    ad_unit=item["ad_unit"],
+                    revenue=adj_rev,
+                    impressions=imps,
+                    ecpm=adj_ecpm,
+                    clicks=clicks,
+                    match_rate=round(c_mr, 2),
+                    ad_requests=ad_reqs,
+                    matched_requests=matched_reqs,
+                    synced_at=datetime.utcnow()
+                )
+                db.add(new_c_metric)
             db.commit()
         except Exception as e:
             db.rollback()
