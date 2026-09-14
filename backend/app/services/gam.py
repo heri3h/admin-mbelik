@@ -314,9 +314,9 @@ class GAMService:
             ['DATE']
         ]
         req_col_sets = [
-            ['TOTAL_LINE_ITEM_LEVEL_TOTAL_REQUESTS'],
-            ['TOTAL_INVENTORY_LEVEL_AD_REQUESTS'],
-            ['TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS']
+            ['TOTAL_LINE_ITEM_LEVEL_TOTAL_REQUESTS', 'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS'],
+            ['TOTAL_INVENTORY_LEVEL_AD_REQUESTS', 'TOTAL_INVENTORY_LEVEL_IMPRESSIONS'],
+            ['AD_EXCHANGE_TOTAL_REQUESTS', 'AD_EXCHANGE_IMPRESSIONS']
         ]
 
         for dims in req_dim_sets:
@@ -387,7 +387,7 @@ class GAMService:
                                     pass
                             elif 'UNIT' in k_up or 'SITE' in k_up or 'TARGETING' in k_up:
                                 unit_or_site = v_str.lower()
-                            elif any(term in k_up for term in ['REQUEST', 'TOTAL', 'IMPRESSION']):
+                            elif ('REQUEST' in k_up or 'TOTAL' in k_up) and 'IMPRESSION' not in k_up and 'SERVED' not in k_up and 'RESPONSE' not in k_up:
                                 try:
                                     req_val = int(float(v_str))
                                 except ValueError:
