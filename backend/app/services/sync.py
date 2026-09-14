@@ -48,7 +48,9 @@ class SyncService:
                 messages.append(f"Google Ads API Error: {err_msg}")
 
         try:
-            gam_data = gam_service.fetch_daily_metrics(start_date, end_date)
+            # Ensure GAM sync fetches 30 days of site activity so all 51 registered domains are stored in DB
+            gam_sync_start = min(start_date, date.today() - timedelta(days=30))
+            gam_data = gam_service.fetch_daily_metrics(gam_sync_start, end_date)
         except Exception as e:
             err_msg = str(e)
             logger.error(f"GAM API Error: {err_msg}")
