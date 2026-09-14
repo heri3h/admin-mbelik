@@ -597,7 +597,9 @@ def get_placements_breakdown(
         GAMMetric.ad_unit,
         func.sum(GAMMetric.revenue).label("total_revenue"),
         func.sum(GAMMetric.impressions).label("total_impressions"),
-        func.sum(GAMMetric.clicks).label("total_clicks")
+        func.sum(GAMMetric.clicks).label("total_clicks"),
+        func.sum(GAMMetric.ad_requests).label("total_ad_requests"),
+        func.sum(GAMMetric.matched_requests).label("total_matched_requests")
     ).filter(
         GAMMetric.date >= d_start,
         GAMMetric.date <= d_end
@@ -608,7 +610,10 @@ def get_placements_breakdown(
         tot_rev = row.total_revenue or 0.0
         tot_imps = row.total_impressions or 0
         tot_clicks = row.total_clicks or 0
+        tot_reqs = int(row.total_ad_requests or 0)
+        tot_matched = int(row.total_matched_requests or 0)
         ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
+        mr = round((tot_matched / tot_reqs * 100.0), 2) if tot_reqs > 0 else 0.0
 
         key = (row.domain, row.ad_unit)
         prev_data = prev_placement_map.get(key, {"revenue": 0.0, "impressions": 0})
@@ -626,6 +631,9 @@ def get_placements_breakdown(
             impressions=tot_imps,
             clicks=tot_clicks,
             ecpm=round(ecpm, 2),
+            ad_requests=tot_reqs,
+            matched_requests=tot_matched,
+            match_rate=mr,
             revenue_change_pct=rev_change,
             ecpm_change_pct=ecpm_change,
             comparison_period_label=comp_label
@@ -845,7 +853,9 @@ def get_site_country_placements_breakdown(
         GAMCountryMetric.ad_unit,
         func.sum(GAMCountryMetric.revenue).label("total_revenue"),
         func.sum(GAMCountryMetric.impressions).label("total_impressions"),
-        func.sum(GAMCountryMetric.clicks).label("total_clicks")
+        func.sum(GAMCountryMetric.clicks).label("total_clicks"),
+        func.sum(GAMCountryMetric.ad_requests).label("total_ad_requests"),
+        func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
     ).filter(
         GAMCountryMetric.domain == domain_name,
         GAMCountryMetric.country == country_name,
@@ -858,7 +868,9 @@ def get_site_country_placements_breakdown(
             GAMMetric.ad_unit,
             func.sum(GAMMetric.revenue).label("total_revenue"),
             func.sum(GAMMetric.impressions).label("total_impressions"),
-            func.sum(GAMMetric.clicks).label("total_clicks")
+            func.sum(GAMMetric.clicks).label("total_clicks"),
+            func.sum(GAMMetric.ad_requests).label("total_ad_requests"),
+            func.sum(GAMMetric.matched_requests).label("total_matched_requests")
         ).filter(
             GAMMetric.domain == domain_name,
             GAMMetric.date >= d_start,
@@ -870,7 +882,10 @@ def get_site_country_placements_breakdown(
         tot_rev = r.total_revenue or 0.0
         tot_imps = r.total_impressions or 0
         tot_clicks = r.total_clicks or 0
+        tot_reqs = int(r.total_ad_requests or 0)
+        tot_matched = int(r.total_matched_requests or 0)
         ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
+        mr = round((tot_matched / tot_reqs * 100.0), 2) if tot_reqs > 0 else 0.0
 
         items.append(PlacementBreakdownItem(
             domain=domain_name,
@@ -878,7 +893,10 @@ def get_site_country_placements_breakdown(
             total_revenue=round(tot_rev, 2),
             impressions=tot_imps,
             clicks=tot_clicks,
-            ecpm=round(ecpm, 2)
+            ecpm=round(ecpm, 2),
+            ad_requests=tot_reqs,
+            matched_requests=tot_matched,
+            match_rate=mr
         ))
 
     items.sort(key=lambda x: x.total_revenue, reverse=True)

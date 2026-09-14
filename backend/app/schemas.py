@@ -103,6 +103,9 @@ class PlacementBreakdownItem(BaseModel):
     impressions: int
     clicks: int
     ecpm: float
+    ad_requests: int = 0
+    matched_requests: int = 0
+    match_rate: float = 0.0
     revenue_change_pct: Optional[float] = None
     ecpm_change_pct: Optional[float] = None
     comparison_period_label: Optional[str] = None
