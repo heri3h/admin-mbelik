@@ -894,11 +894,11 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
-                    ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME']
                 ],
                 'column_sets': [
@@ -933,7 +933,6 @@ class GAMService:
 
         last_error = None
         results = []
-        seen_domain_countries = set()
 
         for config in query_configs:
             successful_config = False
@@ -993,6 +992,7 @@ class GAMService:
 
                         reader = csv.DictReader(lines[header_idx:])
                         found_any_row = False
+                        aggregated_country_results = {}
 
                         for row in reader:
                             row_date = start_date
@@ -1013,12 +1013,11 @@ class GAMService:
                                     ad_unit = v.strip()
                                     break
 
-                            domain = extract_domain_from_row(row, ad_unit)
+                            clean_ad_unit = ad_unit or "Standard Ad Unit"
+                            domain = extract_domain_from_row(row, clean_ad_unit)
                             c_meta = get_country_meta(country)
 
-                            dc_key = (row_date, domain, country, ad_unit)
-                            if dc_key in seen_domain_countries:
-                                continue
+                            dc_key = (row_date, domain, country, clean_ad_unit)
 
                             impressions = 0
                             for k, v in row.items():
@@ -1047,7 +1046,6 @@ class GAMService:
                                         pass
 
                             revenue = (raw_rev / 1000000.0) if raw_rev > 0 else 0.0
-                            ecpm = (revenue / impressions * 1000.0) if impressions > 0 else 0.0
 
                             matched_requests = impressions
                             ad_requests = 0
@@ -1075,8 +1073,8 @@ class GAMService:
                                 ad_requests = matched_requests + unfilled_impressions
 
                             if ad_requests == 0:
-                                unit_raw_key = (row_date, ad_unit.lower().strip())
-                                unit_clean_key = (row_date, ad_unit.lower().strip().split('(')[0].strip())
+                                unit_raw_key = (row_date, clean_ad_unit.lower().strip())
+                                unit_clean_key = (row_date, clean_ad_unit.lower().strip().split('(')[0].strip())
                                 dom_key = (row_date, domain.lower().strip())
 
                                 if unit_raw_key in requests_map and requests_map[unit_raw_key] > 0:
@@ -1091,26 +1089,43 @@ class GAMService:
                             if ad_requests < matched_requests:
                                 ad_requests = matched_requests
 
-                            match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
+                            if dc_key not in aggregated_country_results:
+                                aggregated_country_results[dc_key] = {
+                                    "date": row_date,
+                                    "domain": domain,
+                                    "country": country,
+                                    "country_code": c_meta["code"],
+                                    "ad_unit": clean_ad_unit,
+                                    "revenue": revenue,
+                                    "impressions": impressions,
+                                    "clicks": clicks,
+                                    "ad_requests": ad_requests,
+                                    "matched_requests": matched_requests,
+                                }
+                            else:
+                                item = aggregated_country_results[dc_key]
+                                item["revenue"] += revenue
+                                item["impressions"] += impressions
+                                item["clicks"] += clicks
+                                item["ad_requests"] += ad_requests
+                                item["matched_requests"] += matched_requests
 
-                            results.append({
-                                "date": row_date,
-                                "domain": domain,
-                                "country": country,
-                                "country_code": c_meta["code"],
-                                "ad_unit": ad_unit or "Standard Ad Unit",
-                                "revenue": round(revenue, 2),
-                                "impressions": impressions,
-                                "ecpm": round(ecpm, 2),
-                                "clicks": clicks,
-                                "ad_requests": ad_requests,
-                                "matched_requests": matched_requests,
-                                "match_rate": round(match_rate, 2)
-                            })
-                            seen_domain_countries.add(dc_key)
                             found_any_row = True
 
                         if found_any_row:
+                            results = []
+                            for item in aggregated_country_results.values():
+                                rev = item["revenue"]
+                                imps = item["impressions"]
+                                reqs = item["ad_requests"]
+                                matched = item["matched_requests"]
+                                if reqs < matched:
+                                    reqs = matched
+                                    item["ad_requests"] = reqs
+                                item["ecpm"] = round((rev / imps * 1000.0), 2) if imps > 0 else 0.0
+                                item["match_rate"] = round((matched / reqs * 100.0), 2) if reqs > 0 else 0.0
+                                item["revenue"] = round(rev, 2)
+                                results.append(item)
                             successful_dim = True
                             successful_config = True
                             break
