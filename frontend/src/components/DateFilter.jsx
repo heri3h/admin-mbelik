@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Filter } from 'lucide-react';
 
 export default function DateFilter({ startDate, endDate, onFilterChange }) {
-  const [preset, setPreset] = useState('7d'); // 'today', 'yesterday', '7d', '30d', 'month', 'custom'
+  const [preset, setPreset] = useState('yesterday'); // 'today', 'yesterday', '7d', '30d', 'month', 'custom'
   const [customStart, setCustomStart] = useState(startDate || '');
   const [customEnd, setCustomEnd] = useState(endDate || '');
 

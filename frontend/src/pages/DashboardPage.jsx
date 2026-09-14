@@ -17,11 +17,13 @@ const formatLocalDate = (d) => {
 };
 
 export default function DashboardPage() {
-  const todayStr = formatLocalDate(new Date());
-  const defaultStartStr = formatLocalDate(new Date(Date.now() - 6 * 86400000));
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayStr = formatLocalDate(yesterday);
 
-  const [startDate, setStartDate] = useState(defaultStartStr);
-  const [endDate, setEndDate] = useState(todayStr);
+  const [startDate, setStartDate] = useState(yesterdayStr);
+  const [endDate, setEndDate] = useState(yesterdayStr);
 
   const [summary, setSummary] = useState(null);
   const [trend, setTrend] = useState([]);
