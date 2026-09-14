@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 
@@ -848,6 +848,8 @@ def get_site_country_placements_breakdown(
 
     domain_name = domain.strip()
     country_name = country.strip()
+    c_meta = get_country_meta(country_name)
+    c_code = c_meta["code"]
 
     rows = db.query(
         GAMCountryMetric.ad_unit,
@@ -857,25 +859,64 @@ def get_site_country_placements_breakdown(
         func.sum(GAMCountryMetric.ad_requests).label("total_ad_requests"),
         func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
     ).filter(
-        GAMCountryMetric.domain == domain_name,
-        GAMCountryMetric.country == country_name,
+        func.lower(GAMCountryMetric.domain) == domain_name.lower(),
+        or_(
+            func.lower(GAMCountryMetric.country) == country_name.lower(),
+            GAMCountryMetric.country_code == c_code
+        ),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
     ).group_by(GAMCountryMetric.ad_unit).all()
 
     if not rows:
-        rows = db.query(
-            GAMMetric.ad_unit,
-            func.sum(GAMMetric.revenue).label("total_revenue"),
-            func.sum(GAMMetric.impressions).label("total_impressions"),
-            func.sum(GAMMetric.clicks).label("total_clicks"),
-            func.sum(GAMMetric.ad_requests).label("total_ad_requests"),
-            func.sum(GAMMetric.matched_requests).label("total_matched_requests")
-        ).filter(
-            GAMMetric.domain == domain_name,
-            GAMMetric.date >= d_start,
-            GAMMetric.date <= d_end
-        ).group_by(GAMMetric.ad_unit).all()
+        try:
+            live_country_data = gam_service.fetch_country_metrics(d_start, d_end)
+            for item in live_country_data:
+                raw_rev = item.get("revenue", 0.0)
+                adj_rev = round(raw_rev * 0.92, 2)
+                imps = item.get("impressions", 0)
+                clicks = item.get("clicks", 0)
+                adj_ecpm = round((adj_rev / imps) * 1000.0, 2) if imps > 0 else 0.0
+                ad_reqs = item.get("ad_requests", 0)
+                matched_reqs = item.get("matched_requests", 0)
+                c_mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
+
+                new_c = GAMCountryMetric(
+                    date=item["date"],
+                    domain=item["domain"],
+                    country=item["country"],
+                    country_code=item.get("country_code", "ID"),
+                    ad_unit=item.get("ad_unit", "Standard Ad Unit"),
+                    revenue=adj_rev,
+                    impressions=imps,
+                    ecpm=adj_ecpm,
+                    clicks=clicks,
+                    match_rate=round(c_mr, 2),
+                    ad_requests=ad_reqs,
+                    matched_requests=matched_reqs,
+                    synced_at=datetime.utcnow()
+                )
+                db.add(new_c)
+            db.commit()
+
+            rows = db.query(
+                GAMCountryMetric.ad_unit,
+                func.sum(GAMCountryMetric.revenue).label("total_revenue"),
+                func.sum(GAMCountryMetric.impressions).label("total_impressions"),
+                func.sum(GAMCountryMetric.clicks).label("total_clicks"),
+                func.sum(GAMCountryMetric.ad_requests).label("total_ad_requests"),
+                func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
+            ).filter(
+                func.lower(GAMCountryMetric.domain) == domain_name.lower(),
+                or_(
+                    func.lower(GAMCountryMetric.country) == country_name.lower(),
+                    GAMCountryMetric.country_code == c_code
+                ),
+                GAMCountryMetric.date >= d_start,
+                GAMCountryMetric.date <= d_end
+            ).group_by(GAMCountryMetric.ad_unit).all()
+        except Exception as e:
+            db.rollback()
 
     items = []
     for r in rows:
