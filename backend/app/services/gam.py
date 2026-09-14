@@ -76,9 +76,10 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     # Built-in tokenized prefix mappings
     DEFAULT_PREFIX_MAP = [
         ('gemol', 'play.gemol.me'),
+        ('gm', 'play.gemol.me'),
         ('spotgames', 'spotgames.top'),
         ('spot', 'spotgames.top'),
-        ('gm', 'spotgames.top'),
+        ('sg', 'spotgames.top'),
         ('2b', '2b.nubmaster.com'),
         ('nubmaster', '2b.nubmaster.com'),
         ('baleq', 'baleq.me'),
