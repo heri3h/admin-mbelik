@@ -22,7 +22,18 @@ class SyncService:
         gads_data = []
         gam_data = []
 
-        db_accounts = db.query(GoogleAdsAccount).all()
+        try:
+            from app.database import Base
+            Base.metadata.create_all(bind=db.get_bind())
+        except Exception as e:
+            logger.warning(f"Sync table creation notice: {e}")
+
+        try:
+            db_accounts = db.query(GoogleAdsAccount).all()
+        except Exception:
+            db.rollback()
+            db_accounts = []
+
         cids = [acc.customer_id for acc in db_accounts] if db_accounts else None
 
         try:
