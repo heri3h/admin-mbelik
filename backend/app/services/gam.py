@@ -420,7 +420,7 @@ class GAMService:
 
     def _generate_mock_data(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
         results = []
-        domains = ["spotgames.top", "2b.nubmaster.com", "baleq.me", "dpr.skuy.me", "polpasulsa.com"]
+        domains = ["spotgames.top", "dpr.skuy.me", "mbelik.com", "2b.nubmaster.com", "baleq.me", "polpasulsa.com"]
         try:
             from app.database import SessionLocal
             from app.models import GoogleAdsAccount
@@ -710,7 +710,7 @@ class GAMService:
 
     def _generate_mock_country_data(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
         results = []
-        domains = ["spotgames.top", "2b.nubmaster.com", "baleq.me", "dpr.skuy.me"]
+        domains = ["spotgames.top", "dpr.skuy.me", "mbelik.com", "2b.nubmaster.com", "baleq.me", "polpasulsa.com"]
         country_configs = [
             {"country": "Indonesia", "code": "ID", "weight": 0.65, "ecpm": 18000},
             {"country": "United States", "code": "US", "weight": 0.15, "ecpm": 48000},

@@ -429,12 +429,16 @@ def get_sites_breakdown(
             GAMMetric.date <= d_end
         ).group_by(GAMMetric.domain).all()
 
+    target_domains = ["spotgames.top", "dpr.skuy.me", "mbelik.com", "2b.nubmaster.com", "baleq.me", "polpasulsa.com"]
+    query_dom_map = {row.domain: row for row in query_results if row.domain}
+    all_domains_set = list(dict.fromkeys(target_domains + list(query_dom_map.keys()) + list(domain_cids_map.keys())))
+
     items = []
-    for row in query_results:
-        domain_name = row.domain or "All Domains"
-        tot_rev = row.total_revenue or 0.0
-        tot_imps = row.total_impressions or 0
-        tot_clicks = row.total_clicks or 0
+    for domain_name in all_domains_set:
+        row = query_dom_map.get(domain_name)
+        tot_rev = (row.total_revenue or 0.0) if row else 0.0
+        tot_imps = (row.total_impressions or 0) if row else 0
+        tot_clicks = (row.total_clicks or 0) if row else 0
         ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
 
         assigned_cids = domain_cids_map.get(domain_name, [])
@@ -468,15 +472,15 @@ def get_sites_breakdown(
         roi_change = round(((site_roi - prev_roi) / prev_roi * 100.0), 2) if prev_roi > 0 else (100.0 if site_roi > 0 else 0.0)
 
         # Match rate (MR AdX) calculation: (AD_EXCHANGE_MATCHED_REQUESTS / AD_EXCHANGE_AD_REQUESTS) * 100%
-        tot_ad_reqs = (getattr(row, 'total_ad_requests', None) or 0)
-        tot_matched_reqs = (getattr(row, 'total_matched_requests', None) or 0)
+        tot_ad_reqs = (getattr(row, 'total_ad_requests', None) or 0) if row else 0
+        tot_matched_reqs = (getattr(row, 'total_matched_requests', None) or 0) if row else 0
 
         if tot_matched_reqs == 0 and tot_imps > 0:
             tot_matched_reqs = tot_imps
 
         if tot_ad_reqs > 0 and tot_matched_reqs > 0:
             domain_mr = (tot_matched_reqs / tot_ad_reqs) * 100.0
-        elif (getattr(row, 'avg_match_rate', None) or 0.0) > 0:
+        elif row and (getattr(row, 'avg_match_rate', None) or 0.0) > 0:
             domain_mr = row.avg_match_rate
         else:
             domain_hash = abs(hash(domain_name)) % 60
@@ -500,7 +504,7 @@ def get_sites_breakdown(
             impressions=tot_imps,
             clicks=tot_clicks,
             ecpm=round(ecpm, 2),
-            ad_unit_count=row.ad_unit_count or 1,
+            ad_unit_count=(row.ad_unit_count or 1) if row else 1,
             assigned_customer_ids=assigned_cids,
             revenue_change_pct=rev_change,
             spend_change_pct=sp_change,
