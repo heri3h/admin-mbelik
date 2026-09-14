@@ -34,11 +34,17 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
             if clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown", "standard ad unit"]:
                 return clean_val
 
-        # Check custom targeting
-        if 'TARGETING' in k_up or 'CUSTOM' in k_up:
-            if 'domain=' in v_str.lower():
-                val = v_str.lower().split('domain=')[-1].split(';')[0].split(',')[0].strip()
-                clean_val = val.replace('www.', '').strip().lower()
+        # Check custom targeting (e.g. setTargeting('domain', currentDomain))
+        if any(kw in k_up for kw in ['TARGETING', 'CUSTOM', 'KEY_VALUE']) and v_str:
+            v_lower = v_str.lower()
+            match = re.search(r'domain\s*[:=]\s*([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', v_lower)
+            if match:
+                clean_val = match.group(1).replace('www.', '').strip()
+                if clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown"]:
+                    return clean_val
+            if 'domain=' in v_lower or 'domain:' in v_lower:
+                val = v_lower.split('domain=')[-1].split(';')[0].split(',')[0].strip()
+                clean_val = val.replace('www.', '').strip()
                 if clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown"]:
                     return clean_val
 
@@ -194,8 +200,10 @@ class GAMService:
 
         report_service = client.GetService('ReportService', version='v202602')
 
-        # Standard valid GAM API dimension sets (Platform & domain/site prioritized)
+        # Standard valid GAM API dimension sets (Targeting domain, URL, Site prioritized)
         dimension_sets = [
+            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE', 'PLATFORM_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'PLATFORM_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
@@ -205,7 +213,6 @@ class GAMService:
             ['DATE', 'AD_EXCHANGE_URL_NAME'],
             ['DATE', 'SITE_NAME'],
             ['DATE', 'DOMAIN_NAME'],
-            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
             ['DATE', 'AD_UNIT_NAME'],
             ['DATE']
         ]
@@ -532,6 +539,8 @@ class GAMService:
         report_service = client.GetService('ReportService', version='v202602')
 
         dimension_sets = [
+            ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME'],
