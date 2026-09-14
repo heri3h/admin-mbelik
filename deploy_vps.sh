@@ -10,9 +10,11 @@ git pull origin main
 
 echo "📦 2. Memperbarui dependensi Backend..."
 if [ -d "venv" ]; then
-    venv/bin/pip install -r backend/requirements.txt
+    chmod -R +x venv/bin/ 2>/dev/null || true
+    venv/bin/python -m pip install -r backend/requirements.txt || pip install -r backend/requirements.txt
 elif [ -d "backend/venv" ]; then
-    backend/venv/bin/pip install -r backend/requirements.txt
+    chmod -R +x backend/venv/bin/ 2>/dev/null || true
+    backend/venv/bin/python -m pip install -r backend/requirements.txt || pip install -r backend/requirements.txt
 fi
 
 echo "🏗️ 3. Mengompilasi Frontend (npm run build)..."
