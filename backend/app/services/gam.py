@@ -862,7 +862,8 @@ class GAMService:
 
     def fetch_registered_sites(self) -> List[str]:
         """
-        Query GAM SiteService with StatementBuilder pagination loop (LIMIT 500, OFFSET += 500)
+        Query GAM SiteService, InventoryService, and CustomTargetingService with
+        StatementBuilder pagination loop (page_size=500, start_index += 500)
         to retrieve 100% of all registered site domains in the GAM network across all pages.
         """
         if self.use_mock:
@@ -896,37 +897,98 @@ class GAMService:
                     settings.GAM_NETWORK_CODE
                 )
 
-            site_service = client.GetService('SiteService', version='v202602')
-            statement = ad_manager.StatementBuilder(version='v202602')
-            statement.limit = 500
-            statement.offset = 0
-
             found_domains = set()
+            page_size = 500
 
-            while True:
-                response = site_service.getSitesByStatement(statement.ToStatement())
-                if response and 'results' in response and len(response['results']) > 0:
-                    for site in response['results']:
-                        s_name = getattr(site, 'name', '') or ''
-                        s_url = getattr(site, 'url', '') or ''
-                        
+            # 1. Fetch via SiteService with StatementBuilder pagination loop
+            try:
+                site_service = client.GetService('SiteService', version='v202602')
+                statement_builder = ad_manager.StatementBuilder(version='v202602')
+                start_index = 0
+                while True:
+                    statement_builder.offset = start_index
+                    statement_builder.limit = page_size
+                    response = statement_builder.ToStatement()
+
+                    page = site_service.getSitesByStatement(response)
+                    results = getattr(page, 'results', None) or (page.get('results') if isinstance(page, dict) else None)
+                    if not results:
+                        break
+
+                    for site in results:
+                        s_name = getattr(site, 'name', '') or (site.get('name') if isinstance(site, dict) else '') or ''
+                        s_url = getattr(site, 'url', '') or (site.get('url') if isinstance(site, dict) else '') or ''
                         for raw in [s_url, s_name]:
                             if raw:
                                 dom = raw.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].strip().lower()
                                 if dom and '.' in dom and dom not in ["all domains", "-", "none", "null", "unknown"]:
                                     found_domains.add(dom)
 
-                    statement.offset += statement.limit
-                    total_size = getattr(response, 'totalResultSetSize', 0) or response.get('totalResultSetSize', 0)
-                    if statement.offset >= total_size:
+                    if len(results) < page_size:
                         break
-                else:
-                    break
+                    start_index += page_size
+            except Exception as e:
+                logger.warning(f"SiteService pagination loop notice: {e}")
 
-            logger.info(f"SiteService pagination loop fetched {len(found_domains)} registered sites: {sorted(list(found_domains))}")
+            # 2. Fetch via InventoryService (Ad Units) with StatementBuilder pagination loop
+            try:
+                inventory_service = client.GetService('InventoryService', version='v202602')
+                statement_builder = ad_manager.StatementBuilder(version='v202602')
+                start_index = 0
+                while True:
+                    statement_builder.offset = start_index
+                    statement_builder.limit = page_size
+                    response = statement_builder.ToStatement()
+
+                    page = inventory_service.getAdUnitsByStatement(response)
+                    results = getattr(page, 'results', None) or (page.get('results') if isinstance(page, dict) else None)
+                    if not results:
+                        break
+
+                    for unit in results:
+                        unit_name = getattr(unit, 'name', '') or (unit.get('name') if isinstance(unit, dict) else '') or ''
+                        dom = extract_domain_from_row({}, unit_name)
+                        if dom and '.' in dom and dom not in ["all domains", "-", "none", "null", "unknown", "mbelik.com"]:
+                            found_domains.add(dom)
+
+                    if len(results) < page_size:
+                        break
+                    start_index += page_size
+            except Exception as e:
+                logger.warning(f"InventoryService pagination loop notice: {e}")
+
+            # 3. Fetch via CustomTargetingService (Custom Targeting Values) with StatementBuilder pagination loop
+            try:
+                custom_service = client.GetService('CustomTargetingService', version='v202602')
+                statement_builder = ad_manager.StatementBuilder(version='v202602')
+                start_index = 0
+                while True:
+                    statement_builder.offset = start_index
+                    statement_builder.limit = page_size
+                    response = statement_builder.ToStatement()
+
+                    page = custom_service.getCustomTargetingValuesByStatement(response)
+                    results = getattr(page, 'results', None) or (page.get('results') if isinstance(page, dict) else None)
+                    if not results:
+                        break
+
+                    for val_item in results:
+                        val_name = getattr(val_item, 'name', '') or getattr(val_item, 'displayName', '') or (val_item.get('name') if isinstance(val_item, dict) else '') or ''
+                        if val_name:
+                            clean_val = val_name.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].strip().lower()
+                            if clean_val and '.' in clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown"]:
+                                found_domains.add(clean_val)
+
+                    if len(results) < page_size:
+                        break
+                    start_index += page_size
+            except Exception as e:
+                logger.warning(f"CustomTargetingService pagination loop notice: {e}")
+
+            logger.info(f"StatementBuilder pagination loop fetched {len(found_domains)} registered sites: {sorted(list(found_domains))}")
             return sorted(list(found_domains))
         except Exception as e:
-            logger.warning(f"SiteService pagination fetch notice: {e}")
+            logger.warning(f"StatementBuilder pagination fetch notice: {e}")
             return []
 
 gam_service = GAMService()
