@@ -483,6 +483,7 @@ class GAMService:
 
         for config in query_configs:
             successful_config = False
+            r_type = config.get('reportType', 'HISTORICAL')
             for dims in config['dimension_sets']:
                 successful_dim = False
                 for cols in config['column_sets']:
@@ -876,6 +877,7 @@ class GAMService:
 
         for config in query_configs:
             successful_config = False
+            r_type = config.get('reportType', 'HISTORICAL')
             for dims in config['dimension_sets']:
                 successful_dim = False
                 for cols in config['column_sets']:
