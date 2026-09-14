@@ -441,51 +441,82 @@ class GAMService:
         except Exception as e:
             logger.warning(f"Dual Query Pass 2 notice: {e}")
 
-        # Standard valid GAM API dimension sets (DATE and SITE_NAME prioritized based on empirical GAM API test)
-        dimension_sets = [
-            ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
-            ['DATE', 'SITE_NAME'],
-            ['DATE', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
-            ['DATE', 'DOMAIN_NAME'],
-            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
-            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
-            ['DATE', 'PLATFORM_NAME', 'SITE_NAME'],
-            ['DATE', 'AD_UNIT_NAME'],
-            ['DATE']
-        ]
-
-        # Standard valid GAM API column sets (AD_EXCHANGE columns prioritized for site/URL dimensions)
-        column_sets = [
-            [
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
-            ],
-            [
-                'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
-                'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
-                'TOTAL_LINE_ITEM_LEVEL_CLICKS',
-                'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
-            ],
-            [
-                'AD_EXCHANGE_REVENUE',
-                'AD_EXCHANGE_IMPRESSIONS',
-                'AD_EXCHANGE_CLICKS',
-                'AD_EXCHANGE_AVERAGE_ECPM'
-            ]
+        query_configs = [
+            {
+                'reportType': 'AD_EXCHANGE',
+                'dimension_sets': [
+                    ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_EXCHANGE_TAG_NAME'],
+                    ['DATE', 'AD_EXCHANGE_URL_NAME'],
+                    ['DATE', 'AD_EXCHANGE_DOMAIN_NAME', 'AD_EXCHANGE_TAG_NAME'],
+                    ['DATE', 'AD_EXCHANGE_DOMAIN_NAME']
+                ],
+                'column_sets': [
+                    [
+                        'AD_EXCHANGE_REVENUE',
+                        'AD_EXCHANGE_IMPRESSIONS',
+                        'AD_EXCHANGE_CLICKS',
+                        'AD_EXCHANGE_AVERAGE_ECPM',
+                        'AD_EXCHANGE_TOTAL_REQUESTS',
+                        'AD_EXCHANGE_RESPONSES_SERVED'
+                    ],
+                    [
+                        'AD_EXCHANGE_REVENUE',
+                        'AD_EXCHANGE_IMPRESSIONS',
+                        'AD_EXCHANGE_CLICKS',
+                        'AD_EXCHANGE_AVERAGE_ECPM',
+                        'AD_EXCHANGE_AD_REQUESTS',
+                        'AD_EXCHANGE_MATCHED_REQUESTS'
+                    ]
+                ]
+            },
+            {
+                'reportType': 'HISTORICAL',
+                'dimension_sets': [
+                    ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME'],
+                    ['DATE', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'DOMAIN_NAME'],
+                    ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+                    ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
+                    ['DATE', 'PLATFORM_NAME', 'SITE_NAME'],
+                    ['DATE', 'AD_UNIT_NAME'],
+                    ['DATE']
+                ],
+                'column_sets': [
+                    [
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
+                    ],
+                    [
+                        'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
+                        'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'TOTAL_LINE_ITEM_LEVEL_CLICKS',
+                        'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
+                    ],
+                    [
+                        'AD_EXCHANGE_REVENUE',
+                        'AD_EXCHANGE_IMPRESSIONS',
+                        'AD_EXCHANGE_CLICKS',
+                        'AD_EXCHANGE_AVERAGE_ECPM'
+                    ]
+                ]
+            }
         ]
 
         last_error = None
         aggregated_results = {}
         seen_domains_per_date = set()
 
-        for dims in dimension_sets:
-            successful_dim = False
-            for cols in column_sets:
-                try:
-                    report_job = {
-                        'reportQuery': {
+        for config in query_configs:
+            successful_config = False
+            r_type = config.get('reportType', 'HISTORICAL')
+            for dims in config['dimension_sets']:
+                successful_dim = False
+                for cols in config['column_sets']:
+                    try:
+                        report_job_query = {
                             'dimensions': dims,
                             'columns': cols,
                             'dateRangeType': 'CUSTOM_DATE',
@@ -493,129 +524,120 @@ class GAMService:
                             'endDate': {'year': end_date.year, 'month': end_date.month, 'day': end_date.day},
                             'timeZoneType': 'TIME_ZONE_OF_NETWORK'
                         }
-                    }
+                        if r_type != 'HISTORICAL':
+                            report_job_query['reportType'] = r_type
 
-                    report_job = report_service.runReportJob(report_job)
-                    report_job_id = report_job['id']
-                    
-                    attempts = 0
-                    while attempts < 30:
-                        job_status = report_service.getReportJobStatus(report_job_id)
-                        if job_status == 'COMPLETED':
-                            break
-                        elif job_status == 'FAILED':
-                            raise Exception("GAM Report Job Failed")
-                        time.sleep(1)
-                        attempts += 1
-
-                    if attempts >= 30:
-                        raise Exception("GAM Report Job Timed Out after 30s")
-
-                    export_format = 'CSV_DUMP'
-                    report_download_url = report_service.getReportDownloadUrlWithOptions(
-                        report_job_id, export_format
-                    )
-                    
-                    import requests
-                    import csv
-                    import gzip
-
-                    res = requests.get(report_download_url)
-                    content_bytes = res.content
-                    if content_bytes.startswith(b'\x1f\x8b'):
-                        content_bytes = gzip.decompress(content_bytes)
-
-                    csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
-                    lines = [line for line in csv_text.splitlines() if line.strip()]
-                    
-                    header_idx = 0
-                    for idx, line in enumerate(lines):
-                        line_up = line.upper()
-                        if ('DATE' in line_up or 'SITE' in line_up or 'DOMAIN' in line_up or 'COUNTRY' in line_up) and ('REVENUE' in line_up or 'IMPRESSION' in line_up or 'REQUEST' in line_up or 'COLUMN' in line_up or 'DIMENSION' in line_up):
-                            header_idx = idx
-                            break
-
-                    reader = csv.DictReader(lines[header_idx:])
-                    found_any_row = False
-                    
-                    for row in reader:
-                        # 1. Parse Date
-                        row_date = start_date
-                        for k, v in row.items():
-                            if k and 'DATE' in k.upper() and v:
-                                try:
-                                    row_date = datetime.strptime(v.strip(), "%Y-%m-%d").date()
-                                    break
-                                except ValueError:
-                                    pass
-
-                        # 2. Parse Ad Unit Name
-                        ad_unit = ""
-                        for k, v in row.items():
-                            if k and 'AD_UNIT' in k.upper() and v:
-                                ad_unit = v.strip()
-                                break
+                        report_job = {'reportQuery': report_job_query}
+                        report_job = report_service.runReportJob(report_job)
+                        report_job_id = report_job['id']
                         
-                        if not ad_unit:
-                            ad_unit = "Standard Ad Unit"
+                        attempts = 0
+                        while attempts < 30:
+                            job_status = report_service.getReportJobStatus(report_job_id)
+                            if job_status == 'COMPLETED':
+                                break
+                            elif job_status == 'FAILED':
+                                raise Exception("GAM Report Job Failed")
+                            time.sleep(1)
+                            attempts += 1
 
-                        # 3. Parse Site Domain (Using SITE_NAME / CUSTOM_TARGETING / AD_EXCHANGE_URL)
-                        domain = extract_domain_from_row(row, ad_unit)
+                        if attempts >= 30:
+                            raise Exception("GAM Report Job Timed Out after 30s")
 
-                        domain_date_key = (row_date, domain)
-                        is_new_domain = domain_date_key not in seen_domains_per_date
+                        export_format = 'CSV_DUMP'
+                        report_download_url = report_service.getReportDownloadUrlWithOptions(
+                            report_job_id, export_format
+                        )
+                        
+                        import requests
+                        import csv
+                        import gzip
 
-                        # 4. Parse Impressions (AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS)
-                        impressions = 0
-                        for k, v in row.items():
-                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS' in k.upper() and v:
-                                try:
-                                    impressions = int(float(v))
-                                    break
-                                except ValueError:
-                                    pass
-                        if impressions == 0:
+                        res = requests.get(report_download_url)
+                        content_bytes = res.content
+                        if content_bytes.startswith(b'\x1f\x8b'):
+                            content_bytes = gzip.decompress(content_bytes)
+
+                        csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
+                        lines = [line for line in csv_text.splitlines() if line.strip()]
+                        
+                        header_idx = 0
+                        for idx, line in enumerate(lines):
+                            line_up = line.upper()
+                            if ('DATE' in line_up or 'SITE' in line_up or 'DOMAIN' in line_up or 'COUNTRY' in line_up or 'URL' in line_up or 'TAG' in line_up) and ('REVENUE' in line_up or 'IMPRESSION' in line_up or 'REQUEST' in line_up or 'COLUMN' in line_up or 'DIMENSION' in line_up):
+                                header_idx = idx
+                                break
+
+                        reader = csv.DictReader(lines[header_idx:])
+                        found_any_row = False
+                        
+                        for row in reader:
+                            # 1. Parse Date
+                            row_date = start_date
                             for k, v in row.items():
-                                if k and 'IMPRESSIONS' in k.upper() and v:
+                                if k and 'DATE' in k.upper() and v:
+                                    try:
+                                        row_date = datetime.strptime(v.strip(), "%Y-%m-%d").date()
+                                        break
+                                    except ValueError:
+                                        pass
+
+                            # 2. Parse Ad Unit Name
+                            ad_unit = ""
+                            for k, v in row.items():
+                                if k and ('AD_UNIT' in k.upper() or 'TAG' in k.upper()) and v:
+                                    ad_unit = v.strip()
+                                    break
+                            
+                            if not ad_unit:
+                                ad_unit = "Standard Ad Unit"
+
+                            # 3. Parse Site Domain (Using SITE_NAME / CUSTOM_TARGETING / AD_EXCHANGE_URL)
+                            domain = extract_domain_from_row(row, ad_unit)
+
+                            domain_date_key = (row_date, domain)
+                            is_new_domain = domain_date_key not in seen_domains_per_date
+
+                            # 4. Parse Impressions (AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS)
+                            impressions = 0
+                            for k, v in row.items():
+                                if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS' in k.upper() and v:
                                     try:
                                         impressions = int(float(v))
                                         break
                                     except ValueError:
                                         pass
+                            if impressions == 0:
+                                for k, v in row.items():
+                                    if k and 'IMPRESSIONS' in k.upper() and v:
+                                        try:
+                                            impressions = int(float(v))
+                                            break
+                                        except ValueError:
+                                            pass
 
-                        # 5. Parse Clicks (AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS)
-                        clicks = 0
-                        for k, v in row.items():
-                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS' in k.upper() and v:
-                                try:
-                                    clicks = int(float(v))
-                                    break
-                                except ValueError:
-                                    pass
-                        if clicks == 0:
+                            # 5. Parse Clicks (AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS)
+                            clicks = 0
                             for k, v in row.items():
-                                if k and 'CLICKS' in k.upper() and v:
+                                if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS' in k.upper() and v:
                                     try:
                                         clicks = int(float(v))
                                         break
                                     except ValueError:
                                         pass
+                            if clicks == 0:
+                                for k, v in row.items():
+                                    if k and 'CLICKS' in k.upper() and v:
+                                        try:
+                                            clicks = int(float(v))
+                                            break
+                                        except ValueError:
+                                            pass
 
-                        # 6. Parse Revenue (AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE)
-                        raw_rev = 0.0
-                        for k, v in row.items():
-                            if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE' in k.upper() and v:
-                                try:
-                                    val = float(v)
-                                    if val > 0:
-                                        raw_rev = val
-                                        break
-                                except ValueError:
-                                    pass
-
-                        if raw_rev == 0.0:
+                            # 6. Parse Revenue (AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE)
+                            raw_rev = 0.0
                             for k, v in row.items():
-                                if k and ('REVENUE' in k.upper() or 'EARNINGS' in k.upper()) and v:
+                                if k and 'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE' in k.upper() and v:
                                     try:
                                         val = float(v)
                                         if val > 0:
@@ -624,93 +646,109 @@ class GAMService:
                                     except ValueError:
                                         pass
 
-                        # GAM API ALWAYS returns revenue in microamounts (1,000,000 micros = 1 currency unit)
-                        revenue = (raw_rev / 1000000.0) if raw_rev > 0 else 0.0
+                            if raw_rev == 0.0:
+                                for k, v in row.items():
+                                    if k and ('REVENUE' in k.upper() or 'EARNINGS' in k.upper()) and v:
+                                        try:
+                                            val = float(v)
+                                            if val > 0:
+                                                raw_rev = val
+                                                break
+                                        except ValueError:
+                                            pass
 
-                        # Calculate precise eCPM (eCPM = Revenue / Impressions * 1000)
-                        if impressions > 0 and revenue > 0:
-                            ecpm = (revenue / impressions) * 1000.0
-                        else:
-                            raw_ecpm = 0.0
-                            for k, v in row.items():
-                                if k and 'ECPM' in k.upper() and v:
-                                    try:
-                                        raw_ecpm = float(v)
-                                        if raw_ecpm > 0:
-                                            break
-                                    except ValueError:
-                                        pass
-                            ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 0 else 0.0
+                            # GAM API ALWAYS returns revenue in microamounts (1,000,000 micros = 1 currency unit)
+                            revenue = (raw_rev / 1000000.0) if raw_rev > 0 else 0.0
 
-                        # 7. Parse Total Requests & Unfilled Impressions / Matched Requests
-                        matched_requests = impressions
-                        ad_requests = 0
-                        unfilled_impressions = 0
-
-                        for k, v in row.items():
-                            if not k or not v:
-                                continue
-                            k_up = k.upper()
-                            try:
-                                val_num = int(float(v))
-                                if ('CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
-                                    if val_num > ad_requests:
-                                        ad_requests = val_num
-                                elif 'UNFILLED' in k_up:
-                                    if val_num > unfilled_impressions:
-                                        unfilled_impressions = val_num
-                                elif 'MATCHED' in k_up or 'RESPONSES_SERVED' in k_up:
-                                    if val_num > matched_requests:
-                                        matched_requests = val_num
-                            except ValueError:
-                                pass
-
-                        if ad_requests == 0 and unfilled_impressions > 0:
-                            ad_requests = matched_requests + unfilled_impressions
-
-                        if ad_requests == 0:
-                            unit_key = (row_date, ad_unit.lower().strip())
-                            dom_key = (row_date, domain.lower().strip())
-                            if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
-                                ad_requests = requests_map[unit_key]
-                            elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
-                                ad_requests = requests_map[dom_key]
+                            # Calculate precise eCPM (eCPM = Revenue / Impressions * 1000)
+                            if impressions > 0 and revenue > 0:
+                                ecpm = (revenue / impressions) * 1000.0
                             else:
+                                raw_ecpm = 0.0
+                                for k, v in row.items():
+                                    if k and 'ECPM' in k.upper() and v:
+                                        try:
+                                            raw_ecpm = float(v)
+                                            if raw_ecpm > 0:
+                                                break
+                                        except ValueError:
+                                            pass
+                                ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 0 else 0.0
+
+                            # 7. Parse Total Requests & Unfilled Impressions / Matched Requests
+                            matched_requests = impressions
+                            ad_requests = 0
+                            unfilled_impressions = 0
+
+                            for k, v in row.items():
+                                if not k or not v:
+                                    continue
+                                k_up = k.upper()
+                                try:
+                                    val_num = int(float(v))
+                                    if ('CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
+                                        if val_num > ad_requests:
+                                            ad_requests = val_num
+                                    elif 'UNFILLED' in k_up:
+                                        if val_num > unfilled_impressions:
+                                            unfilled_impressions = val_num
+                                    elif 'MATCHED' in k_up or 'RESPONSES_SERVED' in k_up:
+                                        if val_num > matched_requests:
+                                            matched_requests = val_num
+                                except ValueError:
+                                    pass
+
+                            if ad_requests == 0 and unfilled_impressions > 0:
+                                ad_requests = matched_requests + unfilled_impressions
+
+                            if ad_requests == 0:
+                                unit_key = (row_date, ad_unit.lower().strip())
+                                dom_key = (row_date, domain.lower().strip())
+                                if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
+                                    ad_requests = requests_map[unit_key]
+                                elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
+                                    ad_requests = requests_map[dom_key]
+                                else:
+                                    ad_requests = matched_requests
+
+                            if ad_requests < matched_requests:
                                 ad_requests = matched_requests
 
-                        if ad_requests < matched_requests:
-                            ad_requests = matched_requests
+                            match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
-                        match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
+                            key = (row_date, domain, ad_unit)
+                            if is_new_domain or key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
+                                aggregated_results[key] = {
+                                    "date": row_date,
+                                    "domain": domain,
+                                    "ad_unit": ad_unit,
+                                    "revenue": round(revenue, 2),
+                                    "impressions": impressions,
+                                    "ecpm": round(ecpm, 2),
+                                    "clicks": clicks,
+                                    "ad_requests": ad_requests,
+                                    "matched_requests": matched_requests,
+                                    "match_rate": round(match_rate, 2)
+                                }
+                                seen_domains_per_date.add(domain_date_key)
 
-                        key = (row_date, domain, ad_unit)
-                        if is_new_domain or key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
-                            aggregated_results[key] = {
-                                "date": row_date,
-                                "domain": domain,
-                                "ad_unit": ad_unit,
-                                "revenue": round(revenue, 2),
-                                "impressions": impressions,
-                                "ecpm": round(ecpm, 2),
-                                "clicks": clicks,
-                                "ad_requests": ad_requests,
-                                "matched_requests": matched_requests,
-                                "match_rate": round(match_rate, 2)
-                            }
-                            seen_domains_per_date.add(domain_date_key)
+                            found_any_row = True
 
-                        found_any_row = True
+                        if found_any_row:
+                            successful_dim = True
+                            successful_config = True
+                            break
 
-                    if found_any_row:
-                        successful_dim = True
-                        break
+                    except Exception as e:
+                        last_error = e
+                        logger.warning(f"GAM combination r_type={r_type} dims={dims} cols={cols} failed: {e}")
 
-                except Exception as e:
-                    last_error = e
-                    logger.warning(f"GAM combination dims={dims} cols={cols} failed: {e}")
+                if successful_dim:
+                    logger.info(f"Dim set {dims} completed. Current total domains parsed: {len(seen_domains_per_date)}")
+                    break
 
-            if successful_dim:
-                logger.info(f"Dim set {dims} completed. Current total domains parsed: {len(seen_domains_per_date)}")
+            if successful_config:
+                logger.info(f"Query config r_type={r_type} completed successfully.")
                 break
 
         if aggregated_results:
@@ -830,46 +868,79 @@ class GAMService:
         except Exception as e:
             logger.warning(f"Country Dual Query Pass 2 notice: {e}")
 
-        dimension_sets = [
-            ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
-            ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
-            ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
-            ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
-            ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
-            ['DATE', 'COUNTRY_NAME']
-        ]
-
-        column_sets = [
-            [
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
-            ],
-            [
-                'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
-                'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
-                'TOTAL_LINE_ITEM_LEVEL_CLICKS',
-                'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
-            ],
-            [
-                'AD_EXCHANGE_REVENUE',
-                'AD_EXCHANGE_IMPRESSIONS',
-                'AD_EXCHANGE_CLICKS',
-                'AD_EXCHANGE_AVERAGE_ECPM'
-            ]
+        query_configs = [
+            {
+                'reportType': 'AD_EXCHANGE',
+                'dimension_sets': [
+                    ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_EXCHANGE_TAG_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_DOMAIN_NAME', 'AD_EXCHANGE_TAG_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_DOMAIN_NAME']
+                ],
+                'column_sets': [
+                    [
+                        'AD_EXCHANGE_REVENUE',
+                        'AD_EXCHANGE_IMPRESSIONS',
+                        'AD_EXCHANGE_CLICKS',
+                        'AD_EXCHANGE_AVERAGE_ECPM',
+                        'AD_EXCHANGE_TOTAL_REQUESTS',
+                        'AD_EXCHANGE_RESPONSES_SERVED'
+                    ],
+                    [
+                        'AD_EXCHANGE_REVENUE',
+                        'AD_EXCHANGE_IMPRESSIONS',
+                        'AD_EXCHANGE_CLICKS',
+                        'AD_EXCHANGE_AVERAGE_ECPM',
+                        'AD_EXCHANGE_AD_REQUESTS',
+                        'AD_EXCHANGE_MATCHED_REQUESTS'
+                    ]
+                ]
+            },
+            {
+                'reportType': 'HISTORICAL',
+                'dimension_sets': [
+                    ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
+                    ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME']
+                ],
+                'column_sets': [
+                    [
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
+                    ],
+                    [
+                        'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
+                        'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'TOTAL_LINE_ITEM_LEVEL_CLICKS',
+                        'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
+                    ],
+                    [
+                        'AD_EXCHANGE_REVENUE',
+                        'AD_EXCHANGE_IMPRESSIONS',
+                        'AD_EXCHANGE_CLICKS',
+                        'AD_EXCHANGE_AVERAGE_ECPM'
+                    ]
+                ]
+            }
         ]
 
         last_error = None
         results = []
         seen_domain_countries = set()
 
-        for dims in dimension_sets:
-            successful_dim = False
-            for cols in column_sets:
-                try:
-                    report_job = {
-                        'reportQuery': {
+        for config in query_configs:
+            successful_config = False
+            r_type = config.get('reportType', 'HISTORICAL')
+            for dims in config['dimension_sets']:
+                successful_dim = False
+                for cols in config['column_sets']:
+                    try:
+                        report_job_query = {
                             'dimensions': dims,
                             'columns': cols,
                             'dateRangeType': 'CUSTOM_DATE',
@@ -877,168 +948,182 @@ class GAMService:
                             'endDate': {'year': end_date.year, 'month': end_date.month, 'day': end_date.day},
                             'timeZoneType': 'TIME_ZONE_OF_NETWORK'
                         }
-                    }
+                        if r_type != 'HISTORICAL':
+                            report_job_query['reportType'] = r_type
 
-                    report_job = report_service.runReportJob(report_job)
-                    report_job_id = report_job['id']
+                        report_job = {'reportQuery': report_job_query}
+                        report_job = report_service.runReportJob(report_job)
+                        report_job_id = report_job['id']
 
-                    attempts = 0
-                    while attempts < 30:
-                        job_status = report_service.getReportJobStatus(report_job_id)
-                        if job_status == 'COMPLETED':
-                            break
-                        elif job_status == 'FAILED':
-                            raise Exception("GAM Country Report Job Failed")
-                        time.sleep(1)
-                        attempts += 1
+                        attempts = 0
+                        while attempts < 30:
+                            job_status = report_service.getReportJobStatus(report_job_id)
+                            if job_status == 'COMPLETED':
+                                break
+                            elif job_status == 'FAILED':
+                                raise Exception("GAM Country Report Job Failed")
+                            time.sleep(1)
+                            attempts += 1
 
-                    if attempts >= 30:
-                        raise Exception("GAM Country Report Job Timed Out after 30s")
+                        if attempts >= 30:
+                            raise Exception("GAM Country Report Job Timed Out after 30s")
 
-                    report_download_url = report_service.getReportDownloadUrlWithOptions(
-                        report_job_id, 'CSV_DUMP'
-                    )
+                        report_download_url = report_service.getReportDownloadUrlWithOptions(
+                            report_job_id, 'CSV_DUMP'
+                        )
 
-                    import requests
-                    import csv
-                    import gzip
+                        import requests
+                        import csv
+                        import gzip
 
-                    res = requests.get(report_download_url)
-                    content_bytes = res.content
-                    if content_bytes.startswith(b'\x1f\x8b'):
-                        content_bytes = gzip.decompress(content_bytes)
+                        res = requests.get(report_download_url)
+                        content_bytes = res.content
+                        if content_bytes.startswith(b'\x1f\x8b'):
+                            content_bytes = gzip.decompress(content_bytes)
 
-                    csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
-                    lines = [line for line in csv_text.splitlines() if line.strip()]
+                        csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
+                        lines = [line for line in csv_text.splitlines() if line.strip()]
 
-                    header_idx = 0
-                    for idx, line in enumerate(lines):
-                        line_up = line.upper()
-                        if ('DATE' in line_up or 'SITE' in line_up or 'DOMAIN' in line_up or 'COUNTRY' in line_up) and ('REVENUE' in line_up or 'IMPRESSION' in line_up or 'REQUEST' in line_up or 'COLUMN' in line_up or 'DIMENSION' in line_up):
-                            header_idx = idx
-                            break
-
-                    reader = csv.DictReader(lines[header_idx:])
-                    found_any_row = False
-
-                    for row in reader:
-                        row_date = start_date
-                        for k, v in row.items():
-                            if k and 'DATE' in k.upper() and v:
-                                try:
-                                    row_date = datetime.strptime(v.strip(), "%Y-%m-%d").date()
-                                    break
-                                except ValueError:
-                                    pass
-
-                        country = "Indonesia"
-                        for k, v in row.items():
-                            if k and 'COUNTRY' in k.upper() and v:
-                                country = v.strip()
+                        header_idx = 0
+                        for idx, line in enumerate(lines):
+                            line_up = line.upper()
+                            if ('DATE' in line_up or 'SITE' in line_up or 'DOMAIN' in line_up or 'COUNTRY' in line_up or 'URL' in line_up or 'TAG' in line_up) and ('REVENUE' in line_up or 'IMPRESSION' in line_up or 'REQUEST' in line_up or 'COLUMN' in line_up or 'DIMENSION' in line_up):
+                                header_idx = idx
                                 break
 
-                        ad_unit = ""
-                        for k, v in row.items():
-                            if k and 'AD_UNIT' in k.upper() and v:
-                                ad_unit = v.strip()
-                                break
+                        reader = csv.DictReader(lines[header_idx:])
+                        found_any_row = False
 
-                        domain = extract_domain_from_row(row, ad_unit)
-                        c_meta = get_country_meta(country)
+                        for row in reader:
+                            row_date = start_date
+                            for k, v in row.items():
+                                if k and 'DATE' in k.upper() and v:
+                                    try:
+                                        row_date = datetime.strptime(v.strip(), "%Y-%m-%d").date()
+                                        break
+                                    except ValueError:
+                                        pass
 
-                        dc_key = (row_date, domain, country, ad_unit)
-                        if dc_key in seen_domain_countries:
-                            continue
-
-                        impressions = 0
-                        for k, v in row.items():
-                            if k and 'IMPRESSIONS' in k.upper() and v:
-                                try:
-                                    impressions = int(float(v))
+                            country = "Indonesia"
+                            for k, v in row.items():
+                                if k and 'COUNTRY' in k.upper() and v:
+                                    country = v.strip()
                                     break
-                                except ValueError:
-                                    pass
 
-                        clicks = 0
-                        for k, v in row.items():
-                            if k and 'CLICKS' in k.upper() and v:
-                                try:
-                                    clicks = int(float(v))
+                            ad_unit = ""
+                            for k, v in row.items():
+                                if k and ('AD_UNIT' in k.upper() or 'TAG' in k.upper()) and v:
+                                    ad_unit = v.strip()
                                     break
-                                except ValueError:
-                                    pass
 
-                        raw_rev = 0.0
-                        for k, v in row.items():
-                            if k and ('REVENUE' in k.upper() or 'EARNINGS' in k.upper()) and v:
-                                try:
-                                    raw_rev += float(v)
-                                except ValueError:
-                                    pass
+                            domain = extract_domain_from_row(row, ad_unit)
+                            c_meta = get_country_meta(country)
 
-                        revenue = (raw_rev / 1000000.0) if raw_rev > 0 else 0.0
-                        ecpm = (revenue / impressions * 1000.0) if impressions > 0 else 0.0
-
-                        matched_requests = impressions
-                        ad_requests = 0
-                        unfilled_impressions = 0
-
-                        for k, v in row.items():
-                            if not k or not v:
+                            dc_key = (row_date, domain, country, ad_unit)
+                            if dc_key in seen_domain_countries:
                                 continue
-                            k_up = k.upper()
-                            try:
-                                val_num = int(float(v))
-                                if ('CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
-                                    if val_num > ad_requests:
-                                        ad_requests = val_num
-                                elif 'UNFILLED' in k_up:
-                                    if val_num > unfilled_impressions:
-                                        unfilled_impressions = val_num
-                                elif 'MATCHED' in k_up or 'RESPONSES_SERVED' in k_up:
-                                    if val_num > matched_requests:
-                                        matched_requests = val_num
-                            except ValueError:
-                                pass
 
-                        if ad_requests == 0 and unfilled_impressions > 0:
-                            ad_requests = matched_requests + unfilled_impressions
+                            impressions = 0
+                            for k, v in row.items():
+                                if k and 'IMPRESSIONS' in k.upper() and v:
+                                    try:
+                                        impressions = int(float(v))
+                                        break
+                                    except ValueError:
+                                        pass
 
-                        if ad_requests == 0:
-                            unit_key = (row_date, ad_unit.lower().strip())
-                            dom_key = (row_date, domain.lower().strip())
-                            if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
-                                ad_requests = requests_map[unit_key]
-                            elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
-                                ad_requests = requests_map[dom_key]
-                            else:
+                            clicks = 0
+                            for k, v in row.items():
+                                if k and 'CLICKS' in k.upper() and v:
+                                    try:
+                                        clicks = int(float(v))
+                                        break
+                                    except ValueError:
+                                        pass
+
+                            raw_rev = 0.0
+                            for k, v in row.items():
+                                if k and ('REVENUE' in k.upper() or 'EARNINGS' in k.upper()) and v:
+                                    try:
+                                        raw_rev += float(v)
+                                    except ValueError:
+                                        pass
+
+                            revenue = (raw_rev / 1000000.0) if raw_rev > 0 else 0.0
+                            ecpm = (revenue / impressions * 1000.0) if impressions > 0 else 0.0
+
+                            matched_requests = impressions
+                            ad_requests = 0
+                            unfilled_impressions = 0
+
+                            for k, v in row.items():
+                                if not k or not v:
+                                    continue
+                                k_up = k.upper()
+                                try:
+                                    val_num = int(float(v))
+                                    if ('CODE_SERVED' in k_up or 'TOTAL_REQUESTS' in k_up or 'AD_REQUESTS' in k_up) and 'IMPRESSION' not in k_up:
+                                        if val_num > ad_requests:
+                                            ad_requests = val_num
+                                    elif 'UNFILLED' in k_up:
+                                        if val_num > unfilled_impressions:
+                                            unfilled_impressions = val_num
+                                    elif 'MATCHED' in k_up or 'RESPONSES_SERVED' in k_up:
+                                        if val_num > matched_requests:
+                                            matched_requests = val_num
+                                except ValueError:
+                                    pass
+
+                            if ad_requests == 0 and unfilled_impressions > 0:
+                                ad_requests = matched_requests + unfilled_impressions
+
+                            if ad_requests == 0:
+                                unit_key = (row_date, ad_unit.lower().strip())
+                                dom_key = (row_date, domain.lower().strip())
+                                if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
+                                    ad_requests = requests_map[unit_key]
+                                elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
+                                    ad_requests = requests_map[dom_key]
+                                else:
+                                    ad_requests = matched_requests
+
+                            if ad_requests < matched_requests:
                                 ad_requests = matched_requests
 
-                        if ad_requests < matched_requests:
-                            ad_requests = matched_requests
+                            match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
-                        match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
+                            results.append({
+                                "date": row_date,
+                                "domain": domain,
+                                "country": country,
+                                "country_code": c_meta["code"],
+                                "ad_unit": ad_unit or "Standard Ad Unit",
+                                "revenue": round(revenue, 2),
+                                "impressions": impressions,
+                                "ecpm": round(ecpm, 2),
+                                "clicks": clicks,
+                                "ad_requests": ad_requests,
+                                "matched_requests": matched_requests,
+                                "match_rate": round(match_rate, 2)
+                            })
+                            seen_domain_countries.add(dc_key)
+                            found_any_row = True
 
-                        results.append({
-                            "date": row_date,
-                            "domain": domain,
-                            "country": country,
-                            "country_code": c_meta["code"],
-                            "ad_unit": ad_unit or "Standard Ad Unit",
-                            "revenue": round(revenue, 2),
-                            "impressions": impressions,
-                            "ecpm": round(ecpm, 2),
-                            "clicks": clicks,
-                            "ad_requests": ad_requests,
-                            "matched_requests": matched_requests,
-                            "match_rate": round(match_rate, 2)
-                        })
-                        seen_domain_countries.add(dc_key)
-                        found_any_row = True
+                        if found_any_row:
+                            successful_dim = True
+                            successful_config = True
+                            break
 
-                    if found_any_row:
-                        successful_dim = True
-                        break
+                    except Exception as e:
+                        last_error = e
+
+                if successful_dim:
+                    logger.info(f"Country Dim set {dims} completed. Total country records: {len(results)}")
+                    break
+
+            if successful_config:
+                logger.info(f"Country Query config r_type={r_type} completed successfully.")
+                break
 
                 except Exception as e:
                     last_error = e
