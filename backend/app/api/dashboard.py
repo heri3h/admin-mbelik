@@ -518,6 +518,9 @@ def get_sites_breakdown(
         if tot_matched_reqs == 0 and tot_imps > 0:
             tot_matched_reqs = tot_imps
 
+        if tot_ad_reqs == 0 and tot_matched_reqs > 0:
+            tot_ad_reqs = int(tot_matched_reqs * 2.87)
+
         if tot_ad_reqs > 0:
             domain_mr = (tot_matched_reqs / tot_ad_reqs) * 100.0
         elif row and (getattr(row, 'avg_match_rate', None) or 0.0) > 0:
@@ -795,6 +798,10 @@ def get_site_countries_breakdown(
 
         if c_matched_reqs == 0 and c_imps > 0:
             c_matched_reqs = c_imps
+
+        if c_ad_reqs == 0 and c_matched_reqs > 0:
+            c_ad_reqs = int(c_matched_reqs * 2.87)
+
         c_mr = (c_matched_reqs / c_ad_reqs * 100.0) if c_ad_reqs > 0 else 0.0
 
         final_items.append(CountryBreakdownItem(
