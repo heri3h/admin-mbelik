@@ -65,12 +65,16 @@ def _run_bg_sync(start_date: date, end_date: date):
 
 def ensure_data_synced(db: Session, start_date: date, end_date: date):
     try:
-        has_gam = db.query(GAMMetric).filter(
+        distinct_domains_count = db.query(GAMMetric.domain).filter(
             GAMMetric.date >= start_date,
             GAMMetric.date <= end_date
-        ).first() is not None
+        ).distinct().count()
 
-        if has_gam:
+        if distinct_domains_count < 15:
+            sync_service.sync_range(db, start_date, end_date)
+            return
+
+        if distinct_domains_count > 0:
             today = get_wib_today()
             yesterday = today - timedelta(days=1)
             if end_date >= yesterday:
@@ -88,12 +92,7 @@ def ensure_data_synced(db: Session, start_date: date, end_date: date):
         return  # Another parallel request is already syncing, return immediately to prevent hanging
 
     try:
-        has_gam = db.query(GAMMetric).filter(
-            GAMMetric.date >= start_date,
-            GAMMetric.date <= end_date
-        ).first() is not None
-        if not has_gam:
-            sync_service.sync_range(db, start_date, end_date)
+        sync_service.sync_range(db, start_date, end_date)
     except Exception:
         db.rollback()
     finally:
