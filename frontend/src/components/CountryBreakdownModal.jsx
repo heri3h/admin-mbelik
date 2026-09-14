@@ -148,9 +148,9 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
         const pRoi = pSpend > 0 ? (pRev / pSpend * 100) : 0;
         const pEcpm = p.ecpm || (pImps > 0 ? pRev / pImps * 1000 : 0);
         const pCtr = pImps > 0 ? (pClicks / pImps * 100) : 0;
-        const pAdR = Math.round(cAdReqs * pShare);
-        const pMatchedR = Math.round(cMatchedReqs * pShare);
-        const pMr = pAdR > 0 ? ((pMatchedR / pAdR) * 100) : cMatchRate;
+        const pAdR = (p.ad_requests !== undefined && p.ad_requests !== null) ? p.ad_requests : Math.round(cAdReqs * pShare);
+        const pMatchedR = (p.matched_requests !== undefined && p.matched_requests !== null) ? p.matched_requests : Math.round(cMatchedReqs * pShare);
+        const pMr = (p.match_rate !== undefined && p.match_rate !== null) ? p.match_rate : (pAdR > 0 ? ((pMatchedR / pAdR) * 100) : cMatchRate);
 
         return {
           ad_unit: p.ad_unit || 'Standard Ad Unit',
