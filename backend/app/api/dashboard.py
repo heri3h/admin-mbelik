@@ -453,7 +453,7 @@ def get_sites_breakdown(
             GAMMetric.date <= d_end
         ).group_by(GAMMetric.domain).all()
 
-    # Collect ALL distinct domains dynamically across GAMMetric, GAMCountryMetric, GoogleAdsAccount, and SITE_MAPPING
+    # Collect ALL distinct domains dynamically across GAMMetric, GAMCountryMetric, GoogleAdsAccount, SiteService, and SITE_MAPPING
     dynamic_domains = set()
     query_dom_map = {row.domain: row for row in query_results if row.domain}
     dynamic_domains.update(query_dom_map.keys())
@@ -467,6 +467,13 @@ def get_sites_breakdown(
 
     site_mapping = getattr(settings, "SITE_MAPPING_DICT", {})
     dynamic_domains.update(site_mapping.values())
+
+    try:
+        registered_sites = gam_service.fetch_registered_sites()
+        if registered_sites:
+            dynamic_domains.update(registered_sites)
+    except Exception:
+        pass
 
     all_domains_set = sorted(list(dynamic_domains))
 

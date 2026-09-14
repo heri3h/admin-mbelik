@@ -860,5 +860,74 @@ class GAMService:
             curr += timedelta(days=1)
         return results
 
+    def fetch_registered_sites(self) -> List[str]:
+        """
+        Query GAM SiteService with StatementBuilder pagination loop (LIMIT 500, OFFSET += 500)
+        to retrieve 100% of all registered site domains in the GAM network across all pages.
+        """
+        if self.use_mock:
+            return []
+
+        try:
+            from googleads import ad_manager, oauth2
+            json_path = settings.GAM_JSON_KEY_FILE_PATH
+            if json_path and not os.path.isabs(json_path):
+                json_path = os.path.join(BASE_DIR, json_path)
+            
+            if json_path and os.path.exists(json_path):
+                oauth2_client = oauth2.GoogleServiceAccountClient(
+                    json_path,
+                    scope='https://www.googleapis.com/auth/admanager'
+                )
+                client = ad_manager.AdManagerClient(
+                    oauth2_client,
+                    settings.GAM_APPLICATION_NAME,
+                    settings.GAM_NETWORK_CODE
+                )
+            else:
+                oauth2_client = oauth2.GoogleRefreshTokenClient(
+                    settings.GAM_CLIENT_ID,
+                    settings.GAM_CLIENT_SECRET,
+                    settings.GAM_REFRESH_TOKEN
+                )
+                client = ad_manager.AdManagerClient(
+                    oauth2_client,
+                    settings.GAM_APPLICATION_NAME,
+                    settings.GAM_NETWORK_CODE
+                )
+
+            site_service = client.GetService('SiteService', version='v202602')
+            statement = ad_manager.StatementBuilder(version='v202602')
+            statement.limit = 500
+            statement.offset = 0
+
+            found_domains = set()
+
+            while True:
+                response = site_service.getSitesByStatement(statement.ToStatement())
+                if response and 'results' in response and len(response['results']) > 0:
+                    for site in response['results']:
+                        s_name = getattr(site, 'name', '') or ''
+                        s_url = getattr(site, 'url', '') or ''
+                        
+                        for raw in [s_url, s_name]:
+                            if raw:
+                                dom = raw.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].strip().lower()
+                                if dom and '.' in dom and dom not in ["all domains", "-", "none", "null", "unknown"]:
+                                    found_domains.add(dom)
+
+                    statement.offset += statement.limit
+                    total_size = getattr(response, 'totalResultSetSize', 0) or response.get('totalResultSetSize', 0)
+                    if statement.offset >= total_size:
+                        break
+                else:
+                    break
+
+            logger.info(f"SiteService pagination loop fetched {len(found_domains)} registered sites: {sorted(list(found_domains))}")
+            return sorted(list(found_domains))
+        except Exception as e:
+            logger.warning(f"SiteService pagination fetch notice: {e}")
+            return []
+
 gam_service = GAMService()
 
