@@ -174,6 +174,17 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
   const countryAdUnits = getCountryAdUnits();
 
+  // Dynamic totals for Level 2 Ad Unit drill-down footer
+  const level2TotalAdReqs = countryAdUnits.reduce((sum, p) => sum + (p.ad_requests || 0), 0);
+  const level2TotalMatchedReqs = countryAdUnits.reduce((sum, p) => sum + (p.matched_requests || 0), 0);
+  const level2AvgMatchRate = level2TotalAdReqs > 0
+    ? ((level2TotalMatchedReqs / level2TotalAdReqs) * 100)
+    : (selectedCountry ? (selectedCountry.match_rate || 0) : 0);
+
+  const level2TotalImps = countryPlacements.reduce((sum, p) => sum + (p.impressions || 0), 0);
+  const level2TotalClicks = countryPlacements.reduce((sum, p) => sum + (p.clicks || 0), 0);
+  const level2AvgCtr = level2TotalImps > 0 ? ((level2TotalClicks / level2TotalImps) * 100) : (selectedCountry ? (selectedCountry.ctr || 0) : 0);
+
   const filteredAdUnits = countryAdUnits.filter(p =>
     p.ad_unit.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -580,16 +591,16 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         <td className="px-4 py-3 text-right font-bold text-emerald-400">{formatCurrency(activeRev)}</td>
                         <td className="px-4 py-3 text-right font-mono text-sky-400">{formatCurrency(activeEcpm)}</td>
                         <td className="px-4 py-3 text-right font-mono">
-                          {(selectedCountry ? selectedCountry.ad_requests || 0 : totalAdReqs).toLocaleString()}
+                          {(selectedCountry ? level2TotalAdReqs : totalAdReqs).toLocaleString()}
                         </td>
                         <td className="px-4 py-3 text-right font-mono">
-                          {(selectedCountry ? selectedCountry.matched_requests || 0 : totalMatchedReqs).toLocaleString()}
+                          {(selectedCountry ? level2TotalMatchedReqs : totalMatchedReqs).toLocaleString()}
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-indigo-300">
-                          {(selectedCountry ? selectedCountry.match_rate || 0 : avgMatchRate).toFixed(1)}%
+                          {(selectedCountry ? level2AvgMatchRate : avgMatchRate).toFixed(1)}%
                         </td>
                         <td className="px-4 py-3 text-right font-mono">
-                          {(selectedCountry ? selectedCountry.ctr || 0 : avgCtr).toFixed(2)}%
+                          {(selectedCountry ? level2AvgCtr : avgCtr).toFixed(2)}%
                         </td>
                         <td className="px-4 py-3 text-right font-mono font-bold">
                           {activeSpend > 0 ? (

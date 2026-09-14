@@ -821,6 +821,11 @@ def get_site_country_placements_breakdown(
     if not rows:
         try:
             live_country_data = gam_service.fetch_country_metrics(d_start, d_end)
+            db.query(GAMCountryMetric).filter(
+                GAMCountryMetric.date >= d_start,
+                GAMCountryMetric.date <= d_end
+            ).delete(synchronize_session=False)
+
             for item in live_country_data:
                 raw_rev = item.get("revenue", 0.0)
                 adj_rev = round(raw_rev * 0.92, 2)
@@ -876,6 +881,10 @@ def get_site_country_placements_breakdown(
         tot_reqs = int(r.total_ad_requests or 0)
         tot_matched = int(r.total_matched_requests or 0)
         ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
+        if tot_matched == 0 and tot_imps > 0:
+            tot_matched = tot_imps
+        if tot_reqs < tot_matched and tot_matched > 0:
+            tot_reqs = tot_matched
         mr = round((tot_matched / tot_reqs * 100.0), 2) if tot_reqs > 0 else 0.0
 
         items.append(PlacementBreakdownItem(
