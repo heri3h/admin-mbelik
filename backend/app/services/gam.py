@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 # WIB Timezone (GMT+7)
 WIB = timezone(timedelta(hours=7))
 
+import re
+
 def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     """
     Extract site domain directly from GAM API response row:
@@ -18,13 +20,14 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     2. CUSTOM_TARGETING_VALUE_PAIR
     3. Known domain matching in ad_unit string
     4. Custom SITE_MAPPING in .env
-    5. Fallback domain
+    5. Built-in token prefix mapping
+    6. Fallback domain
     """
     for k, v in row.items():
         if not k or not v:
             continue
         k_up = k.upper()
-        v_str = v.strip()
+        v_str = str(v).strip()
 
         if ('SITE_NAME' in k_up or 'DOMAIN_NAME' in k_up or 'URL_NAME' in k_up or 'SITE' in k_up) and v_str:
             clean_val = v_str.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].strip().lower()
@@ -40,17 +43,43 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
                     return clean_val
 
     unit_str = ad_unit.strip() if ad_unit else ""
+    unit_lower = unit_str.lower()
 
     # Check known domain names directly in ad_unit string
     for known_dom in ["spotgames.top", "2b.nubmaster.com", "baleq.me", "dpr.skuy.me", "polpasulsa.com"]:
-        if known_dom in unit_str.lower():
+        if known_dom in unit_lower:
             return known_dom
 
     # Check custom SITE_MAPPING in .env
     site_mapping = getattr(settings, "SITE_MAPPING_DICT", {})
     for prefix, mapped_domain in site_mapping.items():
-        if prefix.lower() in unit_str.lower():
+        if prefix.lower() in unit_lower:
             return mapped_domain.lower().strip()
+
+    # Built-in tokenized prefix mappings
+    DEFAULT_PREFIX_MAP = [
+        ('spotgames', 'spotgames.top'),
+        ('spot', 'spotgames.top'),
+        ('gm', 'spotgames.top'),
+        ('2b', '2b.nubmaster.com'),
+        ('nubmaster', '2b.nubmaster.com'),
+        ('baleq', 'baleq.me'),
+        ('blq', 'baleq.me'),
+        ('dpr', 'dpr.skuy.me'),
+        ('skuy', 'dpr.skuy.me'),
+        ('polpasulsa', 'polpasulsa.com'),
+        ('pol', 'polpasulsa.com'),
+        ('pas', 'polpasulsa.com'),
+    ]
+
+    tokens = [t for t in re.split(r'[^a-z0-9.]+', unit_lower) if t]
+    for pref, dom in DEFAULT_PREFIX_MAP:
+        if pref in tokens:
+            return dom
+
+    for pref, dom in DEFAULT_PREFIX_MAP:
+        if len(pref) >= 3 and pref in unit_lower:
+            return dom
 
     if ' > ' in unit_str:
         first_part = unit_str.split(' > ')[0].strip().lower()
