@@ -303,20 +303,16 @@ class GAMService:
 
     def _fetch_ad_requests_pass(self, report_service, start_date: date, end_date: date) -> Dict[Any, int]:
         """
-        Pass 2 of Dual Query API: Fetch total inventory ad requests per (date, ad_unit) or (date, site)
-        from standard GAM Inventory / Line Item Report.
+        Pass 2 of Dual Query API: Fetch inventory metrics per (date, ad_unit) or (date, site)
+        from standard GAM Inventory Report.
         """
         requests_map = {}
         req_dim_sets = [
             ['DATE', 'AD_UNIT_NAME'],
-            ['DATE', 'SITE_NAME'],
-            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
-            ['DATE']
+            ['DATE', 'SITE_NAME']
         ]
         req_col_sets = [
-            ['TOTAL_LINE_ITEM_LEVEL_TOTAL_REQUESTS', 'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS'],
-            ['TOTAL_INVENTORY_LEVEL_AD_REQUESTS', 'TOTAL_INVENTORY_LEVEL_IMPRESSIONS'],
-            ['AD_EXCHANGE_TOTAL_REQUESTS', 'AD_EXCHANGE_IMPRESSIONS']
+            ['TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS', 'TOTAL_LINE_ITEM_LEVEL_CLICKS']
         ]
 
         for dims in req_dim_sets:
@@ -337,17 +333,17 @@ class GAMService:
                     report_job_id = report_job['id']
 
                     attempts = 0
-                    while attempts < 20:
+                    while attempts < 15:
                         job_status = report_service.getReportJobStatus(report_job_id)
                         if job_status == 'COMPLETED':
                             break
                         elif job_status == 'FAILED':
-                            raise Exception("Pass 2 Requests Job Failed")
+                            raise Exception("Pass 2 Job Failed")
                         time.sleep(1)
                         attempts += 1
 
-                    if attempts >= 20:
-                        raise Exception("Pass 2 Requests Job Timed Out")
+                    if attempts >= 15:
+                        raise Exception("Pass 2 Job Timed Out")
 
                     report_download_url = report_service.getReportDownloadUrlWithOptions(report_job_id, 'CSV_DUMP')
                     import requests
@@ -365,7 +361,7 @@ class GAMService:
                     header_idx = 0
                     for idx, line in enumerate(lines):
                         line_up = line.upper()
-                        if ('DATE' in line_up or 'UNIT' in line_up or 'SITE' in line_up) and ('REQUEST' in line_up or 'IMPRESSION' in line_up or 'COLUMN' in line_up):
+                        if ('DATE' in line_up or 'UNIT' in line_up or 'SITE' in line_up) and ('IMPRESSION' in line_up or 'COLUMN' in line_up):
                             header_idx = idx
                             break
 
@@ -385,24 +381,22 @@ class GAMService:
                                     r_date = datetime.strptime(v_str, "%Y-%m-%d").date()
                                 except ValueError:
                                     pass
-                            elif 'UNIT' in k_up or 'SITE' in k_up or 'TARGETING' in k_up:
+                            elif 'UNIT' in k_up or 'SITE' in k_up:
                                 unit_or_site = v_str.lower()
-                            elif ('REQUEST' in k_up or 'TOTAL' in k_up) and 'IMPRESSION' not in k_up and 'SERVED' not in k_up and 'RESPONSE' not in k_up:
+                            elif 'IMPRESSION' in k_up or 'REQUEST' in k_up:
                                 try:
                                     req_val = int(float(v_str))
                                 except ValueError:
                                     pass
 
-                        if req_val > 0:
-                            if unit_or_site:
-                                requests_map[(r_date, unit_or_site)] = req_val
-                            requests_map[(r_date, 'global')] = requests_map.get((r_date, 'global'), 0) + req_val
+                        if req_val > 0 and unit_or_site:
+                            requests_map[(r_date, unit_or_site)] = req_val
 
                     if requests_map:
                         successful = True
                         break
-                except Exception as e:
-                    logger.warning(f"Pass 2 requests query dims={dims} cols={cols} notice: {e}")
+                except Exception:
+                    pass
             if successful:
                 break
 
