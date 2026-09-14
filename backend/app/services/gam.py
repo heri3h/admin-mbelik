@@ -350,11 +350,8 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                        # If raw_rev > 100M, it's microamounts (divide by 1,000,000). Otherwise, it's standard currency units.
-                        if raw_rev > 100000000.0:
-                            revenue = raw_rev / 1000000.0
-                        else:
-                            revenue = raw_rev
+                        # GAM API ALWAYS returns revenue in microamounts (1,000,000 micros = 1 currency unit)
+                        revenue = (raw_rev / 1000000.0) if raw_rev > 0 else 0.0
 
                         # Calculate precise eCPM (eCPM = Revenue / Impressions * 1000)
                         if impressions > 0 and revenue > 0:
@@ -368,7 +365,7 @@ class GAMService:
                                         break
                                     except ValueError:
                                         pass
-                            ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 100000000.0 else raw_ecpm
+                            ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 0 else 0.0
 
                         # 7. Parse Total Requests & Responses Served
                         ad_requests = 0
