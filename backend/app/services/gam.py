@@ -244,6 +244,8 @@ class GAMService:
         ]
 
         last_error = None
+        aggregated_results = {}
+
         for dims in dimension_sets:
             for cols in column_sets:
                 try:
@@ -291,8 +293,8 @@ class GAMService:
                     csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
                     lines = [line for line in csv_text.splitlines() if line.strip()]
                     
-                    results = []
                     reader = csv.DictReader(lines)
+                    found_any_row = False
                     
                     for row in reader:
                         # 1. Parse Date
@@ -315,7 +317,7 @@ class GAMService:
                         if not ad_unit:
                             ad_unit = "Standard Ad Unit"
 
-                        # 3. Parse Site Domain (Using SITE_NAME)
+                        # 3. Parse Site Domain (Using SITE_NAME / CUSTOM_TARGETING / AD_EXCHANGE_URL)
                         domain = extract_domain_from_row(row, ad_unit)
 
                         # 4. Parse Impressions
@@ -338,7 +340,7 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                        # 6. Parse Revenue (GAM Microamounts: 1,000,000 micros = 1 IDR)
+                        # 6. Parse Revenue (GAM Microamounts vs Standard Currency)
                         raw_rev = 0.0
                         for k, v in row.items():
                             if k and ('REVENUE' in k.upper() or 'EARNINGS' in k.upper()) and v:
@@ -348,17 +350,16 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                        # GAM returns microamounts for revenue
-                        if raw_rev > 0:
+                        # If raw_rev > 100M, it's microamounts (divide by 1,000,000). Otherwise, it's standard currency units.
+                        if raw_rev > 100000000.0:
                             revenue = raw_rev / 1000000.0
                         else:
-                            revenue = 0.0
+                            revenue = raw_rev
 
                         # Calculate precise eCPM (eCPM = Revenue / Impressions * 1000)
                         if impressions > 0 and revenue > 0:
                             ecpm = (revenue / impressions) * 1000.0
                         else:
-                            # Fallback check raw eCPM column if present
                             raw_ecpm = 0.0
                             for k, v in row.items():
                                 if k and 'ECPM' in k.upper() and v:
@@ -367,9 +368,9 @@ class GAMService:
                                         break
                                     except ValueError:
                                         pass
-                            ecpm = raw_ecpm / 1000000.0 if raw_ecpm > 10000000 else raw_ecpm
+                            ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 100000000.0 else raw_ecpm
 
-                        # 7. Parse Total Requests (AD_EXCHANGE_TOTAL_REQUESTS) & Responses Served (AD_EXCHANGE_RESPONSES_SERVED)
+                        # 7. Parse Total Requests & Responses Served
                         ad_requests = 0
                         matched_requests = 0
 
@@ -411,26 +412,32 @@ class GAMService:
                         if ad_requests == 0 and matched_requests > 0:
                             ad_requests = int(matched_requests / (match_rate / 100.0)) if match_rate > 0 else int(matched_requests * 2.8)
 
-                        results.append({
-                            "date": row_date,
-                            "domain": domain,
-                            "ad_unit": ad_unit,
-                            "revenue": round(revenue, 2),
-                            "impressions": impressions,
-                            "ecpm": round(ecpm, 2),
-                            "clicks": clicks,
-                            "ad_requests": ad_requests,
-                            "matched_requests": matched_requests,
-                            "match_rate": round(match_rate, 2)
-                        })
+                        key = (row_date, domain, ad_unit)
+                        if key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
+                            aggregated_results[key] = {
+                                "date": row_date,
+                                "domain": domain,
+                                "ad_unit": ad_unit,
+                                "revenue": round(revenue, 2),
+                                "impressions": impressions,
+                                "ecpm": round(ecpm, 2),
+                                "clicks": clicks,
+                                "ad_requests": ad_requests,
+                                "matched_requests": matched_requests,
+                                "match_rate": round(match_rate, 2)
+                            }
+                        found_any_row = True
 
-                    if results:
-                        logger.info(f"Successfully fetched {len(results)} rows from GAM API using dims {dims} and cols {cols}")
-                        return results
+                    if found_any_row:
+                        break
 
                 except Exception as e:
                     last_error = e
                     logger.warning(f"GAM combination dims={dims} cols={cols} failed: {e}")
+
+        if aggregated_results:
+            logger.info(f"Successfully fetched {len(aggregated_results)} aggregated rows from GAM API")
+            return list(aggregated_results.values())
 
         if last_error:
             raise last_error
