@@ -340,13 +340,15 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                        # 6. Parse Revenue (GAM Microamounts vs Standard Currency)
+                        # 6. Parse Revenue (GAM Microamounts: 1,000,000 micros = 1 IDR/USD)
                         raw_rev = 0.0
                         for k, v in row.items():
                             if k and ('REVENUE' in k.upper() or 'EARNINGS' in k.upper()) and v:
                                 try:
                                     val = float(v)
-                                    raw_rev += val
+                                    if val > 0:
+                                        raw_rev = val
+                                        break
                                 except ValueError:
                                     pass
 
@@ -362,7 +364,8 @@ class GAMService:
                                 if k and 'ECPM' in k.upper() and v:
                                     try:
                                         raw_ecpm = float(v)
-                                        break
+                                        if raw_ecpm > 0:
+                                            break
                                     except ValueError:
                                         pass
                             ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 0 else 0.0
@@ -426,7 +429,8 @@ class GAMService:
                         found_any_row = True
 
                     if found_any_row:
-                        break
+                        logger.info(f"Successfully fetched {len(aggregated_results)} rows from GAM API using dims {dims}")
+                        return list(aggregated_results.values())
 
                 except Exception as e:
                     last_error = e
