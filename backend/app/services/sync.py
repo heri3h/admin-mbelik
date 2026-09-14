@@ -115,7 +115,13 @@ class SyncService:
                 db.add(new_metric)
             records_synced += 1
 
-        # 2. Deduplicate & Upsert GAM metrics (Apply -8% fee deduction)
+        # 2. Delete stale GAM metrics for target sync range and insert fresh live GAM API data
+        db.query(GAMMetric).filter(
+            GAMMetric.date >= gam_sync_start,
+            GAMMetric.date <= end_date
+        ).delete(synchronize_session=False)
+        db.commit()
+
         aggregated_gam = {}
         for item in gam_data:
             dom = (item.get("domain") or "").strip().lower()
@@ -141,12 +147,6 @@ class SyncService:
             agg["ad_requests"] += item.get("ad_requests", 0)
             agg["matched_requests"] += item.get("matched_requests", 0)
 
-        existing_gam = db.query(GAMMetric).filter(
-            GAMMetric.date >= gam_sync_start,
-            GAMMetric.date <= end_date
-        ).all()
-        existing_gam_map = {(m.date, m.domain.lower().strip(), m.ad_unit.lower().strip()): m for m in existing_gam if m.domain and m.ad_unit}
-
         for item in aggregated_gam.values():
             raw_rev = item.get("revenue", 0.0)
             adj_rev = round(raw_rev * 0.92, 2)  # Deducts 8% fee
@@ -158,41 +158,34 @@ class SyncService:
             matched_reqs = item.get("matched_requests", 0)
             mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
 
-            norm_key = (item["date"], item["domain"].lower().strip(), item["ad_unit"].lower().strip())
-            existing = existing_gam_map.get(norm_key)
-
-            if existing:
-                existing.revenue = adj_rev
-                existing.impressions = imps
-                existing.ecpm = adj_ecpm
-                existing.clicks = clicks
-                existing.match_rate = round(mr, 2)
-                existing.ad_requests = ad_reqs
-                existing.matched_requests = matched_reqs
-                existing.synced_at = datetime.utcnow()
-            else:
-                new_metric = GAMMetric(
-                    date=item["date"],
-                    domain=item["domain"],
-                    ad_unit=item["ad_unit"],
-                    revenue=adj_rev,
-                    impressions=imps,
-                    ecpm=adj_ecpm,
-                    clicks=clicks,
-                    match_rate=round(mr, 2),
-                    ad_requests=ad_reqs,
-                    matched_requests=matched_reqs,
-                    synced_at=datetime.utcnow()
-                )
-                db.add(new_metric)
-                existing_gam_map[norm_key] = new_metric
+            new_metric = GAMMetric(
+                date=item["date"],
+                domain=item["domain"],
+                ad_unit=item["ad_unit"],
+                revenue=adj_rev,
+                impressions=imps,
+                ecpm=adj_ecpm,
+                clicks=clicks,
+                match_rate=round(mr, 2),
+                ad_requests=ad_reqs,
+                matched_requests=matched_reqs,
+                synced_at=datetime.utcnow()
+            )
+            db.add(new_metric)
             records_synced += 1
 
         db.commit()
 
-        # 3. Deduplicate & Upsert GAM Country metrics (Apply -8% fee deduction)
+        # 3. Delete stale GAM country metrics for target sync range and insert fresh live GAM country data
         try:
             gam_country_data = gam_service.fetch_country_metrics(start_date, end_date)
+            
+            db.query(GAMCountryMetric).filter(
+                GAMCountryMetric.date >= start_date,
+                GAMCountryMetric.date <= end_date
+            ).delete(synchronize_session=False)
+            db.commit()
+
             aggregated_country = {}
             for item in gam_country_data:
                 dom = (item.get("domain") or "").strip().lower()
@@ -221,12 +214,6 @@ class SyncService:
                 agg["ad_requests"] += item.get("ad_requests", 0)
                 agg["matched_requests"] += item.get("matched_requests", 0)
 
-            existing_c_metrics = db.query(GAMCountryMetric).filter(
-                GAMCountryMetric.date >= start_date,
-                GAMCountryMetric.date <= end_date
-            ).all()
-            existing_c_map = {(m.date, m.domain.lower().strip(), m.country.lower().strip(), m.ad_unit.lower().strip()): m for m in existing_c_metrics if m.domain and m.country and m.ad_unit}
-
             for item in aggregated_country.values():
                 raw_rev = item.get("revenue", 0.0)
                 adj_rev = round(raw_rev * 0.92, 2)  # Deducts 8% fee
@@ -239,25 +226,11 @@ class SyncService:
                 country_code = item.get("country_code", "ID")
                 c_mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
 
-                norm_c_key = (item["date"], item["domain"].lower().strip(), item["country"].lower().strip(), item["ad_unit"].lower().strip())
-                existing_c = existing_c_map.get(norm_c_key)
-
-                if existing_c:
-                    existing_c.revenue = adj_rev
-                    existing_c.impressions = imps
-                    existing_c.ecpm = adj_ecpm
-                    existing_c.clicks = clicks
-                    existing_c.match_rate = round(c_mr, 2)
-                    existing_c.ad_requests = ad_reqs
-                    existing_c.matched_requests = matched_reqs
-                    existing_c.country_code = country_code
-                    existing_c.synced_at = datetime.utcnow()
-                else:
-                    new_c_metric = GAMCountryMetric(
-                        date=item["date"],
-                        domain=item["domain"],
-                        country=item["country"],
-                        country_code=country_code,
+                new_c_metric = GAMCountryMetric(
+                    date=item["date"],
+                    domain=item["domain"],
+                    country=item["country"],
+                    country_code=country_code,
                         ad_unit=item["ad_unit"],
                         revenue=adj_rev,
                         impressions=imps,
