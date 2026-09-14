@@ -65,16 +65,13 @@ def _run_bg_sync(start_date: date, end_date: date):
 
 def ensure_data_synced(db: Session, start_date: date, end_date: date):
     try:
-        distinct_domains_count = db.query(GAMMetric.domain).filter(
-            GAMMetric.date >= start_date,
-            GAMMetric.date <= end_date
-        ).distinct().count()
+        total_db_domains = db.query(GAMMetric.domain).distinct().count()
 
-        if distinct_domains_count < 15:
+        if total_db_domains < 40:
             sync_service.sync_range(db, start_date, end_date)
             return
 
-        if distinct_domains_count > 0:
+        if total_db_domains > 0:
             today = get_wib_today()
             yesterday = today - timedelta(days=1)
             if end_date >= yesterday:

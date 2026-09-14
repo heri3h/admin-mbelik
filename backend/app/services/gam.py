@@ -490,6 +490,7 @@ class GAMService:
 
             if successful_dim:
                 logger.info(f"Dim set {dims} completed. Current total domains parsed: {len(seen_domains_per_date)}")
+                break
 
         if aggregated_results:
             logger.info(f"Successfully fetched {len(aggregated_results)} aggregated rows covering {len(seen_domains_per_date)} date-domain pairs from GAM API")
@@ -797,6 +798,7 @@ class GAMService:
 
             if successful_dim:
                 logger.info(f"Country Dim set {dims} completed. Total country records: {len(results)}")
+                break
 
         if results:
             return results
