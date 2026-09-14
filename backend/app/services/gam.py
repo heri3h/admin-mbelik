@@ -541,7 +541,7 @@ class GAMService:
                         ad_requests = 0
                         matched_requests = 0
 
-                        # Parse exact Ad Requests column
+                        # Parse AD_EXCHANGE_TOTAL_AD_REQUESTS / AD_EXCHANGE_TOTAL_REQUESTS
                         for k, v in row.items():
                             if not k or not v:
                                 continue
@@ -549,10 +549,13 @@ class GAMService:
                             if 'REVENUE' in k_up or 'IMPRESSION' in k_up or 'CLICK' in k_up or 'ECPM' in k_up:
                                 continue
                             if any(target in k_up for target in [
-                                'TOTAL_REQUESTS',
-                                'AD_REQUESTS',
+                                'TOTAL_AD_REQUESTS',
+                                'AD_EXCHANGE_TOTAL_AD_REQUESTS',
+                                'AD_EXCHANGE_TOTAL_REQUESTS',
+                                'AD_EXCHANGE_AD_REQUESTS',
                                 'LINE_ITEM_LEVEL_TOTAL_REQUESTS',
-                                'AD_EXCHANGE_TOTAL_REQUESTS'
+                                'TOTAL_REQUESTS',
+                                'AD_REQUESTS'
                             ]):
                                 try:
                                     val_num = int(float(v))
@@ -562,7 +565,7 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                        # Parse exact Responses Served (Matched Requests) column
+                        # Parse AD_EXCHANGE_RESPONSES_SERVED / AD_EXCHANGE_IMPRESSIONS for matched requests
                         for k, v in row.items():
                             if not k or not v:
                                 continue
@@ -571,9 +574,11 @@ class GAMService:
                                 continue
                             if any(target in k_up for target in [
                                 'RESPONSES_SERVED',
+                                'AD_EXCHANGE_RESPONSES_SERVED',
                                 'MATCHED_REQUESTS',
                                 'LINE_ITEM_LEVEL_RESPONSES_SERVED',
-                                'AD_EXCHANGE_RESPONSES_SERVED',
+                                'AD_EXCHANGE_IMPRESSIONS',
+                                'LINE_ITEM_LEVEL_IMPRESSIONS',
                                 'MATCHED_QUERIES'
                             ]):
                                 try:
@@ -587,13 +592,12 @@ class GAMService:
                         if matched_requests == 0 and impressions > 0:
                             matched_requests = impressions
 
-                        if ad_requests == 0 and matched_requests > 0:
-                            ad_requests = matched_requests
-
-                        if ad_requests < matched_requests:
-                            ad_requests = matched_requests
-
-                        match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
+                        if ad_requests > 0:
+                            if matched_requests > ad_requests:
+                                matched_requests = ad_requests
+                            match_rate = (matched_requests / ad_requests * 100.0)
+                        else:
+                            match_rate = 0.0
 
                         key = (row_date, domain, ad_unit)
                         if is_new_domain or key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
@@ -899,10 +903,13 @@ class GAMService:
                             if 'REVENUE' in k_up or 'IMPRESSION' in k_up or 'CLICK' in k_up or 'ECPM' in k_up:
                                 continue
                             if any(target in k_up for target in [
-                                'TOTAL_REQUESTS',
-                                'AD_REQUESTS',
+                                'TOTAL_AD_REQUESTS',
+                                'AD_EXCHANGE_TOTAL_AD_REQUESTS',
+                                'AD_EXCHANGE_TOTAL_REQUESTS',
+                                'AD_EXCHANGE_AD_REQUESTS',
                                 'LINE_ITEM_LEVEL_TOTAL_REQUESTS',
-                                'AD_EXCHANGE_TOTAL_REQUESTS'
+                                'TOTAL_REQUESTS',
+                                'AD_REQUESTS'
                             ]):
                                 try:
                                     val_num = int(float(v))
@@ -921,9 +928,11 @@ class GAMService:
                                 continue
                             if any(target in k_up for target in [
                                 'RESPONSES_SERVED',
+                                'AD_EXCHANGE_RESPONSES_SERVED',
                                 'MATCHED_REQUESTS',
                                 'LINE_ITEM_LEVEL_RESPONSES_SERVED',
-                                'AD_EXCHANGE_RESPONSES_SERVED',
+                                'AD_EXCHANGE_IMPRESSIONS',
+                                'LINE_ITEM_LEVEL_IMPRESSIONS',
                                 'MATCHED_QUERIES'
                             ]):
                                 try:
@@ -937,13 +946,12 @@ class GAMService:
                         if matched_requests == 0 and impressions > 0:
                             matched_requests = impressions
 
-                        if ad_requests == 0 and matched_requests > 0:
-                            ad_requests = matched_requests
-
-                        if ad_requests < matched_requests:
-                            ad_requests = matched_requests
-
-                        match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
+                        if ad_requests > 0:
+                            if matched_requests > ad_requests:
+                                matched_requests = ad_requests
+                            match_rate = (matched_requests / ad_requests * 100.0)
+                        else:
+                            match_rate = 0.0
 
                         results.append({
                             "date": row_date,
