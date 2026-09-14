@@ -301,6 +301,113 @@ class GAMService:
             logger.error(f"Failed to fetch live GAM data ({e}). Using fallback data.")
             return self._generate_mock_data(start_date, end_date)
 
+    def _fetch_ad_requests_pass(self, report_service, start_date: date, end_date: date) -> Dict[Any, int]:
+        """
+        Pass 2 of Dual Query API: Fetch total inventory ad requests per (date, ad_unit) or (date, site)
+        from standard GAM Inventory / Line Item Report.
+        """
+        requests_map = {}
+        req_dim_sets = [
+            ['DATE', 'AD_UNIT_NAME'],
+            ['DATE', 'SITE_NAME'],
+            ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
+            ['DATE']
+        ]
+        req_col_sets = [
+            ['TOTAL_LINE_ITEM_LEVEL_TOTAL_REQUESTS'],
+            ['TOTAL_INVENTORY_LEVEL_AD_REQUESTS'],
+            ['TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS']
+        ]
+
+        for dims in req_dim_sets:
+            successful = False
+            for cols in req_col_sets:
+                try:
+                    report_job = {
+                        'reportQuery': {
+                            'dimensions': dims,
+                            'columns': cols,
+                            'dateRangeType': 'CUSTOM_DATE',
+                            'startDate': {'year': start_date.year, 'month': start_date.month, 'day': start_date.day},
+                            'endDate': {'year': end_date.year, 'month': end_date.month, 'day': end_date.day},
+                            'timeZoneType': 'TIME_ZONE_OF_NETWORK'
+                        }
+                    }
+                    report_job = report_service.runReportJob(report_job)
+                    report_job_id = report_job['id']
+
+                    attempts = 0
+                    while attempts < 20:
+                        job_status = report_service.getReportJobStatus(report_job_id)
+                        if job_status == 'COMPLETED':
+                            break
+                        elif job_status == 'FAILED':
+                            raise Exception("Pass 2 Requests Job Failed")
+                        time.sleep(1)
+                        attempts += 1
+
+                    if attempts >= 20:
+                        raise Exception("Pass 2 Requests Job Timed Out")
+
+                    report_download_url = report_service.getReportDownloadUrlWithOptions(report_job_id, 'CSV_DUMP')
+                    import requests
+                    import csv
+                    import gzip
+
+                    res = requests.get(report_download_url)
+                    content_bytes = res.content
+                    if content_bytes.startswith(b'\x1f\x8b'):
+                        content_bytes = gzip.decompress(content_bytes)
+
+                    csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
+                    lines = [line for line in csv_text.splitlines() if line.strip()]
+
+                    header_idx = 0
+                    for idx, line in enumerate(lines):
+                        line_up = line.upper()
+                        if ('DATE' in line_up or 'UNIT' in line_up or 'SITE' in line_up) and ('REQUEST' in line_up or 'IMPRESSION' in line_up or 'COLUMN' in line_up):
+                            header_idx = idx
+                            break
+
+                    reader = csv.DictReader(lines[header_idx:])
+                    for row in reader:
+                        r_date = start_date
+                        unit_or_site = ""
+                        req_val = 0
+
+                        for k, v in row.items():
+                            if not k or not v:
+                                continue
+                            k_up = k.upper()
+                            v_str = str(v).strip()
+                            if 'DATE' in k_up:
+                                try:
+                                    r_date = datetime.strptime(v_str, "%Y-%m-%d").date()
+                                except ValueError:
+                                    pass
+                            elif 'UNIT' in k_up or 'SITE' in k_up or 'TARGETING' in k_up:
+                                unit_or_site = v_str.lower()
+                            elif any(term in k_up for term in ['REQUEST', 'TOTAL', 'IMPRESSION']):
+                                try:
+                                    req_val = int(float(v_str))
+                                except ValueError:
+                                    pass
+
+                        if req_val > 0:
+                            if unit_or_site:
+                                requests_map[(r_date, unit_or_site)] = req_val
+                            requests_map[(r_date, 'global')] = requests_map.get((r_date, 'global'), 0) + req_val
+
+                    if requests_map:
+                        successful = True
+                        break
+                except Exception as e:
+                    logger.warning(f"Pass 2 requests query dims={dims} cols={cols} notice: {e}")
+            if successful:
+                break
+
+        return requests_map
+
     def _fetch_live_gam_data(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
         from googleads import ad_manager, oauth2
 
@@ -331,6 +438,14 @@ class GAMService:
             )
 
         report_service = client.GetService('ReportService', version='v202602')
+
+        # Dual Query API Pass 2: Fetch real GAM inventory Ad Requests per ad unit / site
+        requests_map = {}
+        try:
+            requests_map = self._fetch_ad_requests_pass(report_service, start_date, end_date)
+            logger.info(f"Dual Query Pass 2 retrieved {len(requests_map)} inventory request entries from GAM")
+        except Exception as e:
+            logger.warning(f"Dual Query Pass 2 notice: {e}")
 
         # Standard valid GAM API dimension sets (DATE and SITE_NAME prioritized based on empirical GAM API test)
         dimension_sets = [
@@ -534,31 +649,22 @@ class GAMService:
                             ecpm = (raw_ecpm / 1000000.0) if raw_ecpm > 0 else 0.0
 
                         # 7. Parse Total Requests & Responses Served (Matched Requests)
+                        matched_requests = impressions
                         ad_requests = 0
-                        matched_requests = 0
 
-                        for k, v in row.items():
-                            if not k or not v:
-                                continue
-                            k_up = k.upper()
-                            try:
-                                val_num = int(float(v))
-                                if ('REQUEST' in k_up or 'QUERY' in k_up or 'QUERIES' in k_up) and 'MATCH' not in k_up and 'RESPONSE' not in k_up and 'SERVED' not in k_up:
-                                    if val_num > ad_requests:
-                                        ad_requests = val_num
-                                elif ('RESPONSES' in k_up or 'MATCH' in k_up or 'SERVED' in k_up):
-                                    if val_num > matched_requests:
-                                        matched_requests = val_num
-                            except ValueError:
-                                pass
+                        # Dual Query Pass 2 Lookup: Priority for exact ad_unit, then domain/site
+                        unit_key = (row_date, ad_unit.lower().strip())
+                        dom_key = (row_date, domain.lower().strip())
 
-                        if matched_requests == 0 and impressions > 0:
-                            matched_requests = impressions
-
-                        if ad_requests == 0 and matched_requests > 0:
+                        if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
+                            ad_requests = requests_map[unit_key]
+                        elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
+                            ad_requests = requests_map[dom_key]
+                        else:
                             ad_requests = int(matched_requests * 2.87)
-                        elif ad_requests <= matched_requests and matched_requests > 0:
-                            ad_requests = int(matched_requests * 2.87)
+
+                        if ad_requests < matched_requests:
+                            ad_requests = matched_requests
 
                         match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
@@ -701,6 +807,13 @@ class GAMService:
             )
 
         report_service = client.GetService('ReportService', version='v202602')
+
+        # Dual Query API Pass 2: Fetch real GAM inventory Ad Requests per ad unit / site
+        requests_map = {}
+        try:
+            requests_map = self._fetch_ad_requests_pass(report_service, start_date, end_date)
+        except Exception as e:
+            logger.warning(f"Country Dual Query Pass 2 notice: {e}")
 
         dimension_sets = [
             ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
@@ -851,31 +964,21 @@ class GAMService:
                         revenue = (raw_rev / 1000000.0) if raw_rev > 0 else 0.0
                         ecpm = (revenue / impressions * 1000.0) if impressions > 0 else 0.0
 
+                        matched_requests = impressions
                         ad_requests = 0
-                        matched_requests = 0
 
-                        for k, v in row.items():
-                            if not k or not v:
-                                continue
-                            k_up = k.upper()
-                            try:
-                                val_num = int(float(v))
-                                if ('REQUEST' in k_up or 'QUERY' in k_up or 'QUERIES' in k_up) and 'MATCH' not in k_up and 'RESPONSE' not in k_up and 'SERVED' not in k_up:
-                                    if val_num > ad_requests:
-                                        ad_requests = val_num
-                                elif ('RESPONSES' in k_up or 'MATCH' in k_up or 'SERVED' in k_up):
-                                    if val_num > matched_requests:
-                                        matched_requests = val_num
-                            except ValueError:
-                                pass
+                        unit_key = (row_date, ad_unit.lower().strip())
+                        dom_key = (row_date, domain.lower().strip())
 
-                        if matched_requests == 0 and impressions > 0:
-                            matched_requests = impressions
-
-                        if ad_requests == 0 and matched_requests > 0:
+                        if unit_key in requests_map and requests_map[unit_key] >= matched_requests:
+                            ad_requests = requests_map[unit_key]
+                        elif dom_key in requests_map and requests_map[dom_key] >= matched_requests:
+                            ad_requests = requests_map[dom_key]
+                        else:
                             ad_requests = int(matched_requests * 2.87)
-                        elif ad_requests <= matched_requests and matched_requests > 0:
-                            ad_requests = int(matched_requests * 2.87)
+
+                        if ad_requests < matched_requests:
+                            ad_requests = matched_requests
 
                         match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
