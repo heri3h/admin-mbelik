@@ -380,6 +380,30 @@ def get_sites_breakdown(
 
     # Fetch Google Ads Account domain mappings
     db_accounts = db.query(GoogleAdsAccount).all()
+    if not db_accounts:
+        cids_in_metrics = db.query(GoogleAdsMetric.customer_id, GoogleAdsMetric.account_name).distinct().all()
+        default_domain_assignments = {
+            '782-119-4450': 'spotgames.top',
+            '102-394-8812': 'baleq.me',
+            '551-902-1143': '2b.nubmaster.com',
+            '241-049-6062': 'dpr.skuy.me',
+            '808-296-3952': 'polpasulsa.com',
+            '858-142-9480': 'mbelik.com'
+        }
+        for cid, name in cids_in_metrics:
+            assigned = default_domain_assignments.get(cid, 'spotgames.top')
+            acc = GoogleAdsAccount(
+                customer_id=cid,
+                account_name=name or f'Google Ads ({cid})',
+                assigned_domain=assigned
+            )
+            db.add(acc)
+        try:
+            db.commit()
+            db_accounts = db.query(GoogleAdsAccount).all()
+        except Exception:
+            db.rollback()
+
     domain_cids_map = {}
     for acc in db_accounts:
         if acc.assigned_domain and acc.assigned_domain != "All / Unassigned":
