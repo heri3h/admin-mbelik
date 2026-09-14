@@ -305,14 +305,10 @@ class GAMService:
             return self._generate_mock_data(start_date, end_date)
 
         try:
-            res = self._fetch_live_gam_data(start_date, end_date)
-            if res:
-                return res
-            logger.warning("Live GAM API returned 0 rows. Using fallback data.")
-            return self._generate_mock_data(start_date, end_date)
+            return self._fetch_live_gam_data(start_date, end_date)
         except Exception as e:
-            logger.error(f"Failed to fetch live GAM data ({e}). Using fallback data.")
-            return self._generate_mock_data(start_date, end_date)
+            logger.error(f"Failed to fetch live GAM data: {e}")
+            return []
 
     def _fetch_ad_requests_pass(self, report_service, start_date: date, end_date: date) -> Dict[Any, int]:
         """
@@ -845,13 +841,10 @@ class GAMService:
             return self._generate_mock_country_data(start_date, end_date)
 
         try:
-            res = self._fetch_live_gam_country_data(start_date, end_date)
-            if res:
-                return res
-            return self._generate_mock_country_data(start_date, end_date)
+            return self._fetch_live_gam_country_data(start_date, end_date)
         except Exception as e:
             logger.error(f"Failed to fetch live GAM country data: {e}")
-            return self._generate_mock_country_data(start_date, end_date)
+            return []
 
     def _fetch_live_gam_country_data(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
         from googleads import ad_manager, oauth2
