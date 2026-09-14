@@ -1064,21 +1064,8 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                            if ad_requests == 0 and unfilled_impressions > 0:
-                                ad_requests = matched_requests + unfilled_impressions
-                            elif unfilled_impressions > 0 and ad_requests < (matched_requests + unfilled_impressions):
-                                ad_requests = matched_requests + unfilled_impressions
-
                             if ad_requests == 0:
-                                unit_raw_key = (row_date, clean_ad_unit.lower().strip())
-                                unit_clean_key = (row_date, clean_ad_unit.lower().strip().split('(')[0].strip())
-
-                                if unit_raw_key in requests_map and requests_map[unit_raw_key] > 0:
-                                    ad_requests = requests_map[unit_raw_key]
-                                elif unit_clean_key in requests_map and requests_map[unit_clean_key] > 0:
-                                    ad_requests = requests_map[unit_clean_key]
-                                else:
-                                    ad_requests = matched_requests
+                                ad_requests = matched_requests
 
                             if ad_requests < matched_requests:
                                 ad_requests = matched_requests
