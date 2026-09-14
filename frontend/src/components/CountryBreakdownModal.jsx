@@ -169,53 +169,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
       });
     }
 
-    let basePlacements = placements;
-    if (!basePlacements || basePlacements.length === 0) {
-      basePlacements = [
-        { ad_unit: 'Banner_Top_Header (728x90)', share: 0.385 },
-        { ad_unit: 'InArticle_Fluid_Native', share: 0.320 },
-        { ad_unit: 'Mobile_Sticky_Bottom_Anchor', share: 0.195 },
-        { ad_unit: 'Sidebar_Large_Rectangle (300x600)', share: 0.100 }
-      ];
-    }
-
-    const totalPlacRev = basePlacements.reduce((sum, p) => sum + (p.total_revenue || 0), 0);
-
-    return basePlacements.map((p, idx) => {
-      let pShare = 1 / basePlacements.length;
-      if (p.share) {
-        pShare = p.share;
-      } else if (totalPlacRev > 0) {
-        pShare = (p.total_revenue || 0) / totalPlacRev;
-      }
-
-      const pRev = cRev * pShare;
-      const pSpend = cSpend * pShare;
-      const pProfit = pRev - pSpend;
-      const pRoi = pSpend > 0 ? (pRev / pSpend * 100) : 0;
-      const pImps = Math.round(cImps * pShare);
-      const pClicks = Math.round(cClicks * pShare);
-      const pAdR = Math.round(cAdReqs * pShare);
-      const pMatchedR = Math.round(cMatchedReqs * pShare);
-      const pMr = pAdR > 0 ? ((pMatchedR / pAdR) * 100) : cMatchRate;
-      const pEcpm = pImps > 0 ? (pRev / pImps * 1000) : 0;
-      const pCtr = pImps > 0 ? (pClicks / pImps * 100) : 0;
-
-      return {
-        ad_unit: p.ad_unit || `Ad Unit ${idx + 1}`,
-        spend: pSpend,
-        revenue: pRev,
-        ecpm: pEcpm,
-        ad_requests: pAdR,
-        matched_requests: pMatchedR,
-        match_rate: pMr,
-        ctr: pCtr,
-        roi: pRoi,
-        net_profit: pProfit,
-        upr: cUpr,
-        rpm: pEcpm
-      };
-    });
+    return [];
   };
 
   const countryAdUnits = getCountryAdUnits();
