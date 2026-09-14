@@ -815,10 +815,7 @@ def get_site_country_placements_breakdown(
         func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
     ).filter(
         func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-        or_(
-            func.lower(GAMCountryMetric.country) == country_name.lower(),
-            GAMCountryMetric.country_code == c_code
-        ),
+        func.lower(GAMCountryMetric.country) == country_name.lower(),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
     ).group_by(GAMCountryMetric.ad_unit).all()
@@ -868,10 +865,7 @@ def get_site_country_placements_breakdown(
                 func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
             ).filter(
                 func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-                or_(
-                    func.lower(GAMCountryMetric.country) == country_name.lower(),
-                    GAMCountryMetric.country_code == c_code
-                ),
+                func.lower(GAMCountryMetric.country) == country_name.lower(),
                 GAMCountryMetric.date >= d_start,
                 GAMCountryMetric.date <= d_end
             ).group_by(GAMCountryMetric.ad_unit).all()
