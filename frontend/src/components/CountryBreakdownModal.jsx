@@ -50,6 +50,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
   const handleCountryClick = async (countryObj) => {
     setSelectedCountry(countryObj);
+    setCountryPlacements([]);
     setSearchTerm('');
     setSortColumn('revenue');
     setLoadingCountryPlacements(true);
@@ -63,6 +64,13 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     } finally {
       setLoadingCountryPlacements(false);
     }
+  };
+
+  const handleBackToCountries = () => {
+    setSelectedCountry(null);
+    setCountryPlacements([]);
+    setSearchTerm('');
+    setSortColumn('revenue');
   };
 
   const formatCurrency = (val) => {
@@ -215,7 +223,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
           <div className="flex items-center space-x-3">
             {selectedCountry ? (
               <button
-                onClick={() => { setSelectedCountry(null); setSearchTerm(''); setSortColumn('revenue'); }}
+                onClick={handleBackToCountries}
                 className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700 flex items-center space-x-1 shrink-0 cursor-pointer"
                 title="Kembali ke Daftar Negara"
               >
@@ -259,7 +267,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
           <div className="flex items-center space-x-3">
             {selectedCountry && (
               <button
-                onClick={() => { setSelectedCountry(null); setSearchTerm(''); setSortColumn('revenue'); }}
+                onClick={handleBackToCountries}
                 className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white transition-all border border-emerald-500/30 flex items-center space-x-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -631,7 +639,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
           <div>
             {selectedCountry ? (
               <button
-                onClick={() => { setSelectedCountry(null); setSearchTerm(''); setSortColumn('revenue'); }}
+                onClick={handleBackToCountries}
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-white transition-all border border-slate-700 flex items-center space-x-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
