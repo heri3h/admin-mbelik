@@ -6,6 +6,8 @@ gam_service_account.json
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
 
 # Python VirtualEnv & Cache
 venv/
