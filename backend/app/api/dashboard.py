@@ -453,9 +453,22 @@ def get_sites_breakdown(
             GAMMetric.date <= d_end
         ).group_by(GAMMetric.domain).all()
 
-    target_domains = ["spotgames.top", "dpr.skuy.me", "mbelik.com", "2b.nubmaster.com", "baleq.me", "polpasulsa.com"]
+    # Collect ALL distinct domains dynamically across GAMMetric, GAMCountryMetric, GoogleAdsAccount, and SITE_MAPPING
+    dynamic_domains = set()
     query_dom_map = {row.domain: row for row in query_results if row.domain}
-    all_domains_set = list(dict.fromkeys(target_domains + list(query_dom_map.keys()) + list(domain_cids_map.keys())))
+    dynamic_domains.update(query_dom_map.keys())
+    dynamic_domains.update(domain_cids_map.keys())
+
+    for d in db.query(GAMMetric.domain).distinct().all():
+        if d[0]: dynamic_domains.add(d[0])
+
+    for d in db.query(GAMCountryMetric.domain).distinct().all():
+        if d[0]: dynamic_domains.add(d[0])
+
+    site_mapping = getattr(settings, "SITE_MAPPING_DICT", {})
+    dynamic_domains.update(site_mapping.values())
+
+    all_domains_set = sorted(list(dynamic_domains))
 
     items = []
     for domain_name in all_domains_set:
