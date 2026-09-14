@@ -568,9 +568,8 @@ class GAMService:
                         if matched_requests == 0 and impressions > 0:
                             matched_requests = impressions
 
-                        # Compute exact match_rate = (matched_requests / ad_requests) * 100%
                         match_rate = 0.0
-                        if ad_requests > 0 and matched_requests > 0:
+                        if ad_requests > 0:
                             match_rate = (matched_requests / ad_requests) * 100.0
                         else:
                             for k, v in row.items():
@@ -581,12 +580,6 @@ class GAMService:
                                         break
                                     except ValueError:
                                         pass
-                            if match_rate == 0.0:
-                                domain_hash = abs(hash(domain)) % 60
-                                match_rate = 31.5 + (domain_hash * 0.11)
-
-                        if ad_requests == 0 and matched_requests > 0:
-                            ad_requests = int(matched_requests / (match_rate / 100.0)) if match_rate > 0 else int(matched_requests * 2.8)
 
                         key = (row_date, domain, ad_unit)
                         if is_new_domain or key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
@@ -911,9 +904,7 @@ class GAMService:
                         if matched_requests == 0 and impressions > 0:
                             matched_requests = impressions
 
-                        match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 34.5
-                        if ad_requests == 0 and matched_requests > 0:
-                            ad_requests = int(matched_requests / (match_rate / 100.0))
+                        match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
                         results.append({
                             "date": row_date,

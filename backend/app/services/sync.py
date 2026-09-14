@@ -146,7 +146,7 @@ class SyncService:
 
             ad_reqs = item.get("ad_requests", 0)
             matched_reqs = item.get("matched_requests", 0)
-            mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 34.8
+            mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
 
             existing = db.query(GAMMetric).filter(
                 GAMMetric.date == item["date"],
@@ -218,7 +218,7 @@ class SyncService:
                 ad_reqs = item.get("ad_requests", 0)
                 matched_reqs = item.get("matched_requests", 0)
                 country_code = item.get("country_code", "ID")
-                c_mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 34.8
+                c_mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
 
                 existing_c = db.query(GAMCountryMetric).filter(
                     GAMCountryMetric.date == item["date"],

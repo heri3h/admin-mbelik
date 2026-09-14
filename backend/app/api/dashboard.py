@@ -518,18 +518,12 @@ def get_sites_breakdown(
         if tot_matched_reqs == 0 and tot_imps > 0:
             tot_matched_reqs = tot_imps
 
-        if tot_ad_reqs > 0 and tot_matched_reqs > 0:
+        if tot_ad_reqs > 0:
             domain_mr = (tot_matched_reqs / tot_ad_reqs) * 100.0
         elif row and (getattr(row, 'avg_match_rate', None) or 0.0) > 0:
             domain_mr = row.avg_match_rate
         else:
-            domain_hash = abs(hash(domain_name)) % 60
-            domain_mr = 31.5 + (domain_hash * 0.11)
-            if domain_mr > 38.0:
-                domain_mr = 34.8
-
-        if tot_ad_reqs == 0 and tot_matched_reqs > 0:
-            tot_ad_reqs = int(tot_matched_reqs / (domain_mr / 100.0)) if domain_mr > 0 else int(tot_matched_reqs * 2.8)
+            domain_mr = 0.0
 
         items.append(SiteBreakdownItem(
             domain=domain_name,
@@ -801,9 +795,7 @@ def get_site_countries_breakdown(
 
         if c_matched_reqs == 0 and c_imps > 0:
             c_matched_reqs = c_imps
-        c_mr = (c_matched_reqs / c_ad_reqs * 100.0) if c_ad_reqs > 0 else 34.8
-        if c_ad_reqs == 0 and c_matched_reqs > 0:
-            c_ad_reqs = int(c_matched_reqs / (c_mr / 100.0)) if c_mr > 0 else int(c_matched_reqs * 2.8)
+        c_mr = (c_matched_reqs / c_ad_reqs * 100.0) if c_ad_reqs > 0 else 0.0
 
         final_items.append(CountryBreakdownItem(
             country=country_name,
