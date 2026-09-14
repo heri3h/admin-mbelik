@@ -673,7 +673,7 @@ def get_site_countries_breakdown(
         func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
         func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
     ).filter(
-        GAMCountryMetric.domain == domain_name,
+        func.lower(GAMCountryMetric.domain) == domain_name.lower(),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
     ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code).all()
@@ -715,66 +715,16 @@ def get_site_countries_breakdown(
                 func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
                 func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
             ).filter(
-                GAMCountryMetric.domain == domain_name,
+                func.lower(GAMCountryMetric.domain) == domain_name.lower(),
                 GAMCountryMetric.date >= d_start,
                 GAMCountryMetric.date <= d_end
             ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code).all()
         except Exception as e:
             db.rollback()
 
-    # Ultimate Fallback: if GAMCountryMetric is empty for this domain, derive country rows from GAMMetric totals!
-    if not country_rows:
-        site_gam = db.query(
-            func.sum(GAMMetric.revenue).label("total_revenue"),
-            func.sum(GAMMetric.impressions).label("total_impressions"),
-            func.sum(GAMMetric.clicks).label("total_clicks"),
-            func.sum(GAMMetric.ad_requests).label("total_ad_requests"),
-            func.sum(GAMMetric.matched_requests).label("total_matched_requests")
-        ).filter(
-            GAMMetric.domain == domain_name,
-            GAMMetric.date >= d_start,
-            GAMMetric.date <= d_end
-        ).first()
-
-        site_rev = (site_gam.total_revenue if site_gam else 0.0) or 0.0
-        site_imps = (site_gam.total_impressions if site_gam else 0) or 0
-        site_clicks = (site_gam.total_clicks if site_gam else 0) or 0
-        site_ad_reqs = (site_gam.total_ad_requests if site_gam else 0) or 0
-        site_matched_reqs = (site_gam.total_matched_requests if site_gam else 0) or 0
-
-        default_countries = [
-            ("Indonesia", "ID", 0.82),
-            ("United States", "US", 0.08),
-            ("Malaysia", "MY", 0.05),
-            ("Singapore", "SG", 0.03),
-            ("Others", "XX", 0.02)
-        ]
-
-        class SyntheticCountryRow:
-            def __init__(self, country, country_code, revenue, impressions, clicks, ad_requests, matched_requests):
-                self.country = country
-                self.country_code = country_code
-                self.revenue = revenue
-                self.impressions = impressions
-                self.clicks = clicks
-                self.ad_requests = ad_requests
-                self.matched_requests = matched_requests
-
-        country_rows = []
-        for c_name, c_code, share in default_countries:
-            country_rows.append(SyntheticCountryRow(
-                country=c_name,
-                country_code=c_code,
-                revenue=site_rev * share,
-                impressions=int(site_imps * share),
-                clicks=int(site_clicks * share),
-                ad_requests=int(site_ad_reqs * share),
-                matched_requests=int(site_matched_reqs * share)
-            ))
-
     tot_domain_rev = sum(r.revenue or 0.0 for r in country_rows)
 
-    db_accounts = db.query(GoogleAdsAccount).filter(GoogleAdsAccount.assigned_domain == domain_name).all()
+    db_accounts = db.query(GoogleAdsAccount).filter(func.lower(GoogleAdsAccount.assigned_domain) == domain_name.lower()).all()
     cids = [a.customer_id for a in db_accounts]
     tot_spend = 0.0
     if cids:
