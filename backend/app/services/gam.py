@@ -899,6 +899,8 @@ class GAMService:
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
+                        'TOTAL_CODE_SERVED_COUNT',
+                        'TOTAL_INVENTORY_LEVEL_UNFILLED_IMPRESSIONS',
                         'AD_EXCHANGE_TOTAL_REQUESTS',
                         'AD_EXCHANGE_RESPONSES_SERVED'
                     ],
@@ -1063,6 +1065,8 @@ class GAMService:
                                     pass
 
                             if ad_requests == 0 and unfilled_impressions > 0:
+                                ad_requests = matched_requests + unfilled_impressions
+                            elif unfilled_impressions > 0 and ad_requests < (matched_requests + unfilled_impressions):
                                 ad_requests = matched_requests + unfilled_impressions
 
                             if ad_requests == 0:
