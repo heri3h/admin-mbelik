@@ -63,7 +63,7 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     unit_lower = unit_str.lower()
 
     # Check known domain names directly in ad_unit string
-    for known_dom in ["spotgames.top", "2b.nubmaster.com", "baleq.me", "dpr.skuy.me", "polpasulsa.com"]:
+    for known_dom in ["spotgames.top", "2b.nubmaster.com", "baleq.me", "dpr.skuy.me", "polpasulsa.com", "play.gemol.me", "gemol.me"]:
         if known_dom in unit_lower:
             return known_dom
 
@@ -75,6 +75,7 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
 
     # Built-in tokenized prefix mappings
     DEFAULT_PREFIX_MAP = [
+        ('gemol', 'play.gemol.me'),
         ('spotgames', 'spotgames.top'),
         ('spot', 'spotgames.top'),
         ('gm', 'spotgames.top'),
