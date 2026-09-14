@@ -789,7 +789,7 @@ def get_site_countries_breakdown(
         c_matched_reqs = row.matched_requests or 0
 
         c_meta = get_country_meta(country_name)
-        c_code = row.country_code or c_meta["code"]
+        c_code = c_meta["code"] if (not row.country_code or row.country_code == "ID" and country_name.lower() not in ["indonesia", "id"]) else row.country_code
         c_flag = c_meta["flag"]
 
         c_share = (c_rev / tot_domain_rev) if tot_domain_rev > 0 else (1.0 / len(country_rows) if country_rows else 0)

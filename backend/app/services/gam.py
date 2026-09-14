@@ -115,42 +115,169 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
 
     return "mbelik.com"
 
-COUNTRY_META_MAP = {
-    "indonesia": {"code": "ID", "flag": "🇮🇩"},
-    "united states": {"code": "US", "flag": "🇺🇸"},
-    "us": {"code": "US", "flag": "🇺🇸"},
-    "malaysia": {"code": "MY", "flag": "🇲🇾"},
-    "singapore": {"code": "SG", "flag": "🇸🇬"},
-    "japan": {"code": "JP", "flag": "🇯🇵"},
-    "australia": {"code": "AU", "flag": "🇦🇺"},
-    "united kingdom": {"code": "GB", "flag": "🇬🇧"},
-    "uk": {"code": "GB", "flag": "🇬🇧"},
-    "germany": {"code": "DE", "flag": "🇩🇪"},
-    "france": {"code": "FR", "flag": "🇫🇷"},
-    "india": {"code": "IN", "flag": "🇮🇳"},
-    "canada": {"code": "CA", "flag": "🇨🇦"},
-    "brazil": {"code": "BR", "flag": "🇧🇷"},
-    "philippines": {"code": "PH", "flag": "🇵🇭"},
-    "vietnam": {"code": "VN", "flag": "🇻🇳"},
-    "thailand": {"code": "TH", "flag": "🇹🇭"},
-    "taiwan": {"code": "TW", "flag": "🇹🇼"},
-    "south korea": {"code": "KR", "flag": "🇰🇷"},
-    "korea": {"code": "KR", "flag": "🇰🇷"},
-    "netherlands": {"code": "NL", "flag": "🇳🇱"},
-    "others": {"code": "XX", "flag": "🌐"},
-    "unknown region": {"code": "XX", "flag": "🌐"},
+COUNTRY_NAME_TO_CODE = {
+    "indonesia": "ID",
+    "united states": "US",
+    "united states of america": "US",
+    "usa": "US",
+    "us": "US",
+    "malaysia": "MY",
+    "singapore": "SG",
+    "japan": "JP",
+    "australia": "AU",
+    "united kingdom": "GB",
+    "great britain": "GB",
+    "uk": "GB",
+    "germany": "DE",
+    "france": "FR",
+    "india": "IN",
+    "canada": "CA",
+    "brazil": "BR",
+    "philippines": "PH",
+    "vietnam": "VN",
+    "thailand": "TH",
+    "taiwan": "TW",
+    "south korea": "KR",
+    "korea, republic of": "KR",
+    "korea": "KR",
+    "netherlands": "NL",
+    "spain": "ES",
+    "mexico": "MX",
+    "turkey": "TR",
+    "türkiye": "TR",
+    "italy": "IT",
+    "saudi arabia": "SA",
+    "united arab emirates": "AE",
+    "uae": "AE",
+    "egypt": "EG",
+    "hong kong": "HK",
+    "poland": "PL",
+    "nigeria": "NG",
+    "colombia": "CO",
+    "pakistan": "PK",
+    "argentina": "AR",
+    "algeria": "DZ",
+    "iraq": "IQ",
+    "morocco": "MA",
+    "chile": "CL",
+    "peru": "PE",
+    "romania": "RO",
+    "czechia": "CZ",
+    "czech republic": "CZ",
+    "ukraine": "UA",
+    "south africa": "ZA",
+    "switzerland": "CH",
+    "sweden": "SE",
+    "norway": "NO",
+    "belgium": "BE",
+    "austria": "AT",
+    "greece": "GR",
+    "portugal": "PT",
+    "new zealand": "NZ",
+    "israel": "IL",
+    "ireland": "IE",
+    "finland": "FI",
+    "denmark": "DK",
+    "hungary": "HU",
+    "bangladesh": "BD",
+    "sri lanka": "LK",
+    "nepal": "NP",
+    "cambodia": "KH",
+    "laos": "LA",
+    "myanmar": "MM",
+    "mongolia": "MN",
+    "macao": "MO",
+    "macau": "MO",
+    "kuwait": "KW",
+    "qatar": "QA",
+    "oman": "OM",
+    "bahrain": "BH",
+    "jordan": "JO",
+    "lebanon": "LB",
+    "croatia": "HR",
+    "serbia": "RS",
+    "slovakia": "SK",
+    "slovenia": "SI",
+    "bulgaria": "BG",
+    "lithuania": "LT",
+    "latvia": "LV",
+    "estonia": "EE",
+    "cyprus": "CY",
+    "malta": "MT",
+    "luxembourg": "LU",
+    "iceland": "IS",
+    "ecuador": "EC",
+    "bolivia": "BO",
+    "paraguay": "PY",
+    "uruguay": "UY",
+    "venezuela": "VE",
+    "costa rica": "CR",
+    "panama": "PA",
+    "dominican republic": "DO",
+    "guatemala": "GT",
+    "honduras": "HN",
+    "el salvador": "SV",
+    "nicaragua": "NI",
+    "puerto rico": "PR",
+    "jamaica": "JM",
+    "trinidad and tobago": "TT",
+    "kenya": "KE",
+    "ghana": "GH",
+    "ethiopia": "ET",
+    "tanzania": "TZ",
+    "uganda": "UG",
+    "senegal": "SN",
+    "ivory coast": "CI",
+    "côte d'ivoire": "CI",
+    "cameroon": "CM",
+    "angola": "AO",
+    "tunisia": "TN",
+    "libya": "LY",
+    "sudan": "SD",
+    "zambia": "ZM",
+    "zimbabwe": "ZW",
+    "kazakhstan": "KZ",
+    "uzbekistan": "UZ",
+    "azerbaijan": "AZ",
+    "georgia": "GE",
+    "armenia": "AM",
+    "belarus": "BY",
+    "moldova": "MD",
+    "albania": "AL",
+    "north macedonia": "MK",
+    "bosnia and herzegovina": "BA",
+    "montenegro": "ME",
+    "others": "XX",
+    "unknown region": "XX",
 }
 
 def get_country_meta(country_name: str) -> dict:
     if not country_name:
         return {"code": "ID", "flag": "🇮🇩"}
-    key = country_name.strip().lower()
-    if key in COUNTRY_META_MAP:
-        return COUNTRY_META_MAP[key]
-    for k, v in COUNTRY_META_MAP.items():
-        if k in key or key in k:
-            return v
-    return {"code": "ID", "flag": "🇮🇩"}
+    
+    raw = country_name.strip()
+    key = raw.lower()
+
+    if len(raw) == 2 and raw.isalpha():
+        code = raw.upper()
+        flag = chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
+        return {"code": code, "flag": flag}
+
+    if key in COUNTRY_NAME_TO_CODE:
+        code = COUNTRY_NAME_TO_CODE[key]
+        if code == "XX":
+            return {"code": "XX", "flag": "🌐"}
+        flag = chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
+        return {"code": code, "flag": flag}
+
+    for c_name, code in COUNTRY_NAME_TO_CODE.items():
+        if len(c_name) >= 4 and (c_name in key or key in c_name):
+            if code == "XX":
+                return {"code": "XX", "flag": "🌐"}
+            flag = chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
+            return {"code": code, "flag": flag}
+
+    return {"code": "XX", "flag": "🌐"}
 
 class GAMService:
     @property
