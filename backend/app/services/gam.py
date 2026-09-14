@@ -199,16 +199,8 @@ class GAMService:
             ['DATE']
         ]
 
-        # Standard valid GAM API column sets
+        # Standard valid GAM API column sets (AD_EXCHANGE columns prioritized for site/URL dimensions)
         column_sets = [
-            [
-                'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
-                'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
-                'TOTAL_LINE_ITEM_LEVEL_CLICKS',
-                'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM',
-                'AD_EXCHANGE_TOTAL_REQUESTS',
-                'AD_EXCHANGE_RESPONSES_SERVED'
-            ],
             [
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
@@ -216,6 +208,14 @@ class GAMService:
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED'
+            ],
+            [
+                'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
+                'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
+                'TOTAL_LINE_ITEM_LEVEL_CLICKS',
+                'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM',
+                'AD_EXCHANGE_TOTAL_REQUESTS',
+                'AD_EXCHANGE_RESPONSES_SERVED'
             ],
             [
                 'AD_EXCHANGE_REVENUE',
@@ -531,20 +531,20 @@ class GAMService:
 
         column_sets = [
             [
-                'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
-                'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
-                'TOTAL_LINE_ITEM_LEVEL_CLICKS',
-                'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM',
-                'AD_EXCHANGE_TOTAL_REQUESTS',
-                'AD_EXCHANGE_RESPONSES_SERVED'
-            ],
-            [
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED'
+            ],
+            [
+                'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
+                'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
+                'TOTAL_LINE_ITEM_LEVEL_CLICKS',
+                'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM',
+                'AD_EXCHANGE_TOTAL_REQUESTS',
+                'AD_EXCHANGE_RESPONSES_SERVED'
             ],
             [
                 'AD_EXCHANGE_REVENUE',
