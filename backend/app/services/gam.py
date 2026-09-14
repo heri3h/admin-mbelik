@@ -534,28 +534,57 @@ class GAMService:
                         ad_requests = 0
                         matched_requests = 0
 
+                        # Parse exact Ad Requests column
                         for k, v in row.items():
                             if not k or not v:
                                 continue
                             k_up = k.upper()
-                            try:
-                                val_num = int(float(v))
-                                if ('REQUEST' in k_up or 'QUERY' in k_up or 'QUERIES' in k_up) and 'MATCH' not in k_up and 'RESPONSE' not in k_up and 'SERVED' not in k_up:
-                                    if val_num > ad_requests:
+                            if 'REVENUE' in k_up or 'IMPRESSION' in k_up or 'CLICK' in k_up or 'ECPM' in k_up:
+                                continue
+                            if any(target in k_up for target in [
+                                'TOTAL_REQUESTS',
+                                'AD_REQUESTS',
+                                'LINE_ITEM_LEVEL_TOTAL_REQUESTS',
+                                'AD_EXCHANGE_TOTAL_REQUESTS'
+                            ]):
+                                try:
+                                    val_num = int(float(v))
+                                    if val_num > 0:
                                         ad_requests = val_num
-                                elif ('RESPONSES' in k_up or 'MATCH' in k_up or 'SERVED' in k_up):
-                                    if val_num > matched_requests:
+                                        break
+                                except ValueError:
+                                    pass
+
+                        # Parse exact Responses Served (Matched Requests) column
+                        for k, v in row.items():
+                            if not k or not v:
+                                continue
+                            k_up = k.upper()
+                            if 'REVENUE' in k_up or 'CLICK' in k_up or 'ECPM' in k_up:
+                                continue
+                            if any(target in k_up for target in [
+                                'RESPONSES_SERVED',
+                                'MATCHED_REQUESTS',
+                                'LINE_ITEM_LEVEL_RESPONSES_SERVED',
+                                'AD_EXCHANGE_RESPONSES_SERVED',
+                                'MATCHED_QUERIES'
+                            ]):
+                                try:
+                                    val_num = int(float(v))
+                                    if val_num > 0:
                                         matched_requests = val_num
-                            except ValueError:
-                                pass
+                                        break
+                                except ValueError:
+                                    pass
 
                         if matched_requests == 0 and impressions > 0:
                             matched_requests = impressions
 
                         if ad_requests == 0 and matched_requests > 0:
-                            ad_requests = int(matched_requests * 2.87)
-                        elif ad_requests < matched_requests and matched_requests > 0:
-                            ad_requests = int(matched_requests * 2.87)
+                            ad_requests = matched_requests
+
+                        if ad_requests < matched_requests:
+                            ad_requests = matched_requests
 
                         match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
@@ -848,28 +877,57 @@ class GAMService:
                         ad_requests = 0
                         matched_requests = 0
 
+                        # Parse exact Ad Requests column
                         for k, v in row.items():
                             if not k or not v:
                                 continue
                             k_up = k.upper()
-                            try:
-                                val_num = int(float(v))
-                                if ('REQUEST' in k_up or 'QUERY' in k_up or 'QUERIES' in k_up) and 'MATCH' not in k_up and 'RESPONSE' not in k_up and 'SERVED' not in k_up:
-                                    if val_num > ad_requests:
+                            if 'REVENUE' in k_up or 'IMPRESSION' in k_up or 'CLICK' in k_up or 'ECPM' in k_up:
+                                continue
+                            if any(target in k_up for target in [
+                                'TOTAL_REQUESTS',
+                                'AD_REQUESTS',
+                                'LINE_ITEM_LEVEL_TOTAL_REQUESTS',
+                                'AD_EXCHANGE_TOTAL_REQUESTS'
+                            ]):
+                                try:
+                                    val_num = int(float(v))
+                                    if val_num > 0:
                                         ad_requests = val_num
-                                elif ('RESPONSES' in k_up or 'MATCH' in k_up or 'SERVED' in k_up):
-                                    if val_num > matched_requests:
+                                        break
+                                except ValueError:
+                                    pass
+
+                        # Parse exact Responses Served (Matched Requests) column
+                        for k, v in row.items():
+                            if not k or not v:
+                                continue
+                            k_up = k.upper()
+                            if 'REVENUE' in k_up or 'CLICK' in k_up or 'ECPM' in k_up:
+                                continue
+                            if any(target in k_up for target in [
+                                'RESPONSES_SERVED',
+                                'MATCHED_REQUESTS',
+                                'LINE_ITEM_LEVEL_RESPONSES_SERVED',
+                                'AD_EXCHANGE_RESPONSES_SERVED',
+                                'MATCHED_QUERIES'
+                            ]):
+                                try:
+                                    val_num = int(float(v))
+                                    if val_num > 0:
                                         matched_requests = val_num
-                            except ValueError:
-                                pass
+                                        break
+                                except ValueError:
+                                    pass
 
                         if matched_requests == 0 and impressions > 0:
                             matched_requests = impressions
 
                         if ad_requests == 0 and matched_requests > 0:
-                            ad_requests = int(matched_requests * 2.87)
-                        elif ad_requests < matched_requests and matched_requests > 0:
-                            ad_requests = int(matched_requests * 2.87)
+                            ad_requests = matched_requests
+
+                        if ad_requests < matched_requests:
+                            ad_requests = matched_requests
 
                         match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
