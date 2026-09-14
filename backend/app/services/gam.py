@@ -205,19 +205,22 @@ class GAMService:
 
         report_service = client.GetService('ReportService', version='v202602')
 
-        # Standard valid GAM API dimension sets (URL, Site, Custom Targeting, and Ad Unit prioritized)
+        # Standard valid GAM API dimension sets (Dimensi Situs / SITE_NAME prioritized)
         dimension_sets = [
-            ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'SITE_NAME'],
+            ['DATE', 'AD_EXCHANGE_SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'AD_EXCHANGE_SITE_NAME'],
+            ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'AD_EXCHANGE_URL_NAME'],
+            ['DATE', 'AD_EXCHANGE_DOMAIN_NAME'],
             ['DATE', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'DOMAIN_NAME'],
             ['DATE', 'URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
-            ['DATE', 'PLATFORM_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'PLATFORM_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'PLATFORM_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'AD_UNIT_NAME'],
-            ['DATE', 'AD_EXCHANGE_URL_NAME'],
-            ['DATE', 'SITE_NAME'],
-            ['DATE', 'DOMAIN_NAME'],
             ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE']
         ]
@@ -606,10 +609,12 @@ class GAMService:
         report_service = client.GetService('ReportService', version='v202602')
 
         dimension_sets = [
-            ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
-            ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME'],
             ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_SITE_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME'],
             ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
             ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
             ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
