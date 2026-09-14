@@ -348,12 +348,20 @@ class GAMService:
         # Standard valid GAM API column sets (AD_EXCHANGE columns prioritized for site/URL dimensions)
         column_sets = [
             [
+                'AD_EXCHANGE_REVENUE',
+                'AD_EXCHANGE_IMPRESSIONS',
+                'AD_EXCHANGE_CLICKS',
+                'AD_EXCHANGE_AVERAGE_ECPM',
+                'AD_EXCHANGE_TOTAL_REQUESTS',
+                'AD_EXCHANGE_RESPONSES_SERVED'
+            ],
+            [
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED'
+                'AD_EXCHANGE_TOTAL_REQUESTS',
+                'AD_EXCHANGE_RESPONSES_SERVED'
             ],
             [
                 'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
@@ -565,7 +573,7 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                        # Parse AD_EXCHANGE_RESPONSES_SERVED / AD_EXCHANGE_IMPRESSIONS for matched requests
+                        # Parse AD_EXCHANGE_RESPONSES_SERVED for matched requests
                         for k, v in row.items():
                             if not k or not v:
                                 continue
@@ -577,8 +585,6 @@ class GAMService:
                                 'AD_EXCHANGE_RESPONSES_SERVED',
                                 'MATCHED_REQUESTS',
                                 'LINE_ITEM_LEVEL_RESPONSES_SERVED',
-                                'AD_EXCHANGE_IMPRESSIONS',
-                                'LINE_ITEM_LEVEL_IMPRESSIONS',
                                 'MATCHED_QUERIES'
                             ]):
                                 try:
@@ -750,12 +756,20 @@ class GAMService:
 
         column_sets = [
             [
+                'AD_EXCHANGE_REVENUE',
+                'AD_EXCHANGE_IMPRESSIONS',
+                'AD_EXCHANGE_CLICKS',
+                'AD_EXCHANGE_AVERAGE_ECPM',
+                'AD_EXCHANGE_TOTAL_REQUESTS',
+                'AD_EXCHANGE_RESPONSES_SERVED'
+            ],
+            [
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
                 'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_TOTAL_REQUESTS',
-                'AD_EXCHANGE_LINE_ITEM_LEVEL_RESPONSES_SERVED'
+                'AD_EXCHANGE_TOTAL_REQUESTS',
+                'AD_EXCHANGE_RESPONSES_SERVED'
             ],
             [
                 'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
@@ -931,8 +945,6 @@ class GAMService:
                                 'AD_EXCHANGE_RESPONSES_SERVED',
                                 'MATCHED_REQUESTS',
                                 'LINE_ITEM_LEVEL_RESPONSES_SERVED',
-                                'AD_EXCHANGE_IMPRESSIONS',
-                                'LINE_ITEM_LEVEL_IMPRESSIONS',
                                 'MATCHED_QUERIES'
                             ]):
                                 try:
