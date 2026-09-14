@@ -423,7 +423,14 @@ class GAMService:
                     csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
                     lines = [line for line in csv_text.splitlines() if line.strip()]
                     
-                    reader = csv.DictReader(lines)
+                    header_idx = 0
+                    for idx, line in enumerate(lines):
+                        line_up = line.upper()
+                        if ('DATE' in line_up or 'SITE' in line_up or 'DOMAIN' in line_up or 'COUNTRY' in line_up) and ('REVENUE' in line_up or 'IMPRESSION' in line_up or 'REQUEST' in line_up or 'COLUMN' in line_up or 'DIMENSION' in line_up):
+                            header_idx = idx
+                            break
+
+                    reader = csv.DictReader(lines[header_idx:])
                     found_any_row = False
                     
                     for row in reader:
@@ -813,7 +820,14 @@ class GAMService:
                     csv_text = content_bytes.decode('utf-8-sig', errors='ignore')
                     lines = [line for line in csv_text.splitlines() if line.strip()]
 
-                    reader = csv.DictReader(lines)
+                    header_idx = 0
+                    for idx, line in enumerate(lines):
+                        line_up = line.upper()
+                        if ('DATE' in line_up or 'SITE' in line_up or 'DOMAIN' in line_up or 'COUNTRY' in line_up) and ('REVENUE' in line_up or 'IMPRESSION' in line_up or 'REQUEST' in line_up or 'COLUMN' in line_up or 'DIMENSION' in line_up):
+                            header_idx = idx
+                            break
+
+                    reader = csv.DictReader(lines[header_idx:])
                     found_any_row = False
 
                     for row in reader:
