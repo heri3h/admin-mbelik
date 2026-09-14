@@ -443,34 +443,6 @@ class GAMService:
 
         query_configs = [
             {
-                'reportType': 'AD_EXCHANGE',
-                'dimension_sets': [
-                    ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_EXCHANGE_TAG_NAME'],
-                    ['DATE', 'AD_EXCHANGE_URL_NAME'],
-                    ['DATE', 'AD_EXCHANGE_DOMAIN_NAME', 'AD_EXCHANGE_TAG_NAME'],
-                    ['DATE', 'AD_EXCHANGE_DOMAIN_NAME']
-                ],
-                'column_sets': [
-                    [
-                        'AD_EXCHANGE_REVENUE',
-                        'AD_EXCHANGE_IMPRESSIONS',
-                        'AD_EXCHANGE_CLICKS',
-                        'AD_EXCHANGE_AVERAGE_ECPM',
-                        'AD_EXCHANGE_TOTAL_REQUESTS',
-                        'AD_EXCHANGE_RESPONSES_SERVED'
-                    ],
-                    [
-                        'AD_EXCHANGE_REVENUE',
-                        'AD_EXCHANGE_IMPRESSIONS',
-                        'AD_EXCHANGE_CLICKS',
-                        'AD_EXCHANGE_AVERAGE_ECPM',
-                        'AD_EXCHANGE_AD_REQUESTS',
-                        'AD_EXCHANGE_MATCHED_REQUESTS'
-                    ]
-                ]
-            },
-            {
-                'reportType': 'HISTORICAL',
                 'dimension_sets': [
                     ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME'],
@@ -511,7 +483,6 @@ class GAMService:
 
         for config in query_configs:
             successful_config = False
-            r_type = config.get('reportType', 'HISTORICAL')
             for dims in config['dimension_sets']:
                 successful_dim = False
                 for cols in config['column_sets']:
@@ -524,8 +495,6 @@ class GAMService:
                             'endDate': {'year': end_date.year, 'month': end_date.month, 'day': end_date.day},
                             'timeZoneType': 'TIME_ZONE_OF_NETWORK'
                         }
-                        if r_type != 'HISTORICAL':
-                            report_job_query['reportType'] = r_type
 
                         report_job = {'reportQuery': report_job_query}
                         report_job = report_service.runReportJob(report_job)
@@ -870,34 +839,6 @@ class GAMService:
 
         query_configs = [
             {
-                'reportType': 'AD_EXCHANGE',
-                'dimension_sets': [
-                    ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_EXCHANGE_TAG_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_URL_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_DOMAIN_NAME', 'AD_EXCHANGE_TAG_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'AD_EXCHANGE_DOMAIN_NAME']
-                ],
-                'column_sets': [
-                    [
-                        'AD_EXCHANGE_REVENUE',
-                        'AD_EXCHANGE_IMPRESSIONS',
-                        'AD_EXCHANGE_CLICKS',
-                        'AD_EXCHANGE_AVERAGE_ECPM',
-                        'AD_EXCHANGE_TOTAL_REQUESTS',
-                        'AD_EXCHANGE_RESPONSES_SERVED'
-                    ],
-                    [
-                        'AD_EXCHANGE_REVENUE',
-                        'AD_EXCHANGE_IMPRESSIONS',
-                        'AD_EXCHANGE_CLICKS',
-                        'AD_EXCHANGE_AVERAGE_ECPM',
-                        'AD_EXCHANGE_AD_REQUESTS',
-                        'AD_EXCHANGE_MATCHED_REQUESTS'
-                    ]
-                ]
-            },
-            {
-                'reportType': 'HISTORICAL',
                 'dimension_sets': [
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
@@ -935,7 +876,6 @@ class GAMService:
 
         for config in query_configs:
             successful_config = False
-            r_type = config.get('reportType', 'HISTORICAL')
             for dims in config['dimension_sets']:
                 successful_dim = False
                 for cols in config['column_sets']:
@@ -948,8 +888,6 @@ class GAMService:
                             'endDate': {'year': end_date.year, 'month': end_date.month, 'day': end_date.day},
                             'timeZoneType': 'TIME_ZONE_OF_NETWORK'
                         }
-                        if r_type != 'HISTORICAL':
-                            report_job_query['reportType'] = r_type
 
                         report_job = {'reportQuery': report_job_query}
                         report_job = report_service.runReportJob(report_job)
