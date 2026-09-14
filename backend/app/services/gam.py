@@ -323,6 +323,8 @@ class GAMService:
             ['DATE', 'SITE_NAME']
         ]
         req_col_sets = [
+            ['AD_EXCHANGE_TOTAL_REQUESTS', 'AD_EXCHANGE_RESPONSES_SERVED', 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS'],
+            ['AD_EXCHANGE_TOTAL_REQUESTS', 'AD_EXCHANGE_RESPONSES_SERVED'],
             ['TOTAL_CODE_SERVED_COUNT', 'TOTAL_INVENTORY_LEVEL_UNFILLED_IMPRESSIONS', 'TOTAL_INVENTORY_LEVEL_IMPRESSIONS'],
             ['TOTAL_CODE_SERVED_COUNT', 'TOTAL_INVENTORY_LEVEL_IMPRESSIONS'],
             ['TOTAL_INVENTORY_LEVEL_UNFILLED_IMPRESSIONS', 'TOTAL_INVENTORY_LEVEL_IMPRESSIONS'],
@@ -496,6 +498,13 @@ class GAMService:
                     ['DATE']
                 ],
                 'column_sets': [
+                    [
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
+                        'AD_EXCHANGE_TOTAL_REQUESTS',
+                        'AD_EXCHANGE_RESPONSES_SERVED'
+                    ],
                     [
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
@@ -891,6 +900,13 @@ class GAMService:
                     ['DATE', 'COUNTRY_NAME']
                 ],
                 'column_sets': [
+                    [
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
+                        'AD_EXCHANGE_TOTAL_REQUESTS',
+                        'AD_EXCHANGE_RESPONSES_SERVED'
+                    ],
                     [
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
