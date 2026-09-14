@@ -1,0 +1,90 @@
+[
+  {
+    "date": "2026-09-13",
+    "domain": "baleq.me",
+    "ad_unit": "InArticle_AdX",
+    "revenue_idr": 3371549.6,
+    "ad_requests": 585045,
+    "matched_requests": 193650,
+    "match_rate_pct": 33.1,
+    "ecpm": 17410.53,
+    "clicks": 3923
+  },
+  {
+    "date": "2026-09-12",
+    "domain": "baleq.me",
+    "ad_unit": "InArticle_AdX",
+    "revenue_idr": 3060474.63,
+    "ad_requests": 636030,
+    "matched_requests": 210526,
+    "match_rate_pct": 33.1,
+    "ecpm": 14537.28,
+    "clicks": 2652
+  },
+  {
+    "date": "2026-09-11",
+    "domain": "baleq.me",
+    "ad_unit": "InArticle_AdX",
+    "revenue_idr": 3313909.97,
+    "ad_requests": 464679,
+    "matched_requests": 153809,
+    "match_rate_pct": 33.1,
+    "ecpm": 21545.62,
+    "clicks": 2809
+  },
+  {
+    "date": "2026-09-10",
+    "domain": "baleq.me",
+    "ad_unit": "InArticle_AdX",
+    "revenue_idr": 3245999.04,
+    "ad_requests": 480386,
+    "matched_requests": 159008,
+    "match_rate_pct": 33.1,
+    "ecpm": 20414.06,
+    "clicks": 2366
+  },
+  {
+    "date": "2026-09-09",
+    "domain": "baleq.me",
+    "ad_unit": "InArticle_AdX",
+    "revenue_idr": 3048472.34,
+    "ad_requests": 553078,
+    "matched_requests": 183069,
+    "match_rate_pct": 33.1,
+    "ecpm": 16652.04,
+    "clicks": 3016
+  },
+  {
+    "date": "2026-09-08",
+    "domain": "baleq.me",
+    "ad_unit": "InArticle_AdX",
+    "revenue_idr": 2965231.54,
+    "ad_requests": 520543,
+    "matched_requests": 172300,
+    "match_rate_pct": 33.1,
+    "ecpm": 17209.7,
+    "clicks": 2212
+  },
+  {
+    "date": "2026-09-07",
+    "domain": "baleq.me",
+    "ad_unit": "InArticle_AdX",
+    "revenue_idr": 3725464.69,
+    "ad_requests": 631193,
+    "matched_requests": 208925,
+    "match_rate_pct": 33.1,
+    "ecpm": 17831.59,
+    "clicks": 2823
+  },
+  {
+    "date": "2026-09-06",
+    "domain": "baleq.me",
+    "ad_unit": "InArticle_AdX",
+    "revenue_idr": 3379076.01,
+    "ad_requests": 576498,
+    "matched_requests": 190821,
+    "match_rate_pct": 33.1,
+    "ecpm": 17708.09,
+    "clicks": 3463
+  }
+]

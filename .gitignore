@@ -1,0 +1,30 @@
+# Environment & Secrets
+.env
+gam_service_account.json
+
+# Database & SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Python VirtualEnv & Cache
+venv/
+backend/venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+
+# OS & IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Archives & Large Files
+*.zip
+*.tar.gz
+*.7z
+
