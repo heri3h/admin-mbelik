@@ -486,6 +486,10 @@ def export_site_today_json(
         os.makedirs(os.path.dirname(target_filepath), exist_ok=True)
         with open(target_filepath, "w", encoding="utf-8") as f:
             json.dump(data_payload, f, indent=2, ensure_ascii=False)
+        try:
+            os.chmod(target_filepath, 0o666)
+        except Exception:
+            pass
         logger.info(f"Auto-exported today's data for {domain} to {target_filepath}")
     except Exception as e:
         logger.warning(f"Failed to export JSON to {target_filepath}: {e}")
