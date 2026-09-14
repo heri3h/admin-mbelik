@@ -188,8 +188,10 @@ class GAMService:
 
         report_service = client.GetService('ReportService', version='v202602')
 
-        # Standard valid GAM API dimension sets (domain/site prioritized)
+        # Standard valid GAM API dimension sets (Platform & domain/site prioritized)
         dimension_sets = [
+            ['DATE', 'PLATFORM_NAME', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'PLATFORM_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'AD_EXCHANGE_URL_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
             ['DATE', 'AD_EXCHANGE_URL_NAME'],
