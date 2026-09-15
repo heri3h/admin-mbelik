@@ -124,6 +124,9 @@ export default function PlacementsTable({ placements }) {
               <th onClick={() => handleSort('clicks')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Clicks {renderSortIndicator('clicks')}
               </th>
+              <th onClick={() => handleSort('ctr')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+                CTR {renderSortIndicator('ctr')}
+              </th>
               <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Ad Requests {renderSortIndicator('ad_requests')}
               </th>
@@ -161,6 +164,7 @@ export default function PlacementsTable({ placements }) {
 
                   <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.impressions || 0).toLocaleString()}</td>
                   <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.clicks || 0).toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.ctr || 0).toFixed(2)}%</td>
 
                   <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.ad_requests || 0).toLocaleString()}</td>
                   <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.matched_requests || 0).toLocaleString()}</td>

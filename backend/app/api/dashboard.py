@@ -622,6 +622,7 @@ def get_placements_breakdown(
         tot_matched = int(row.total_matched_requests or 0)
         ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
         mr = round((tot_matched / tot_reqs * 100.0), 2) if tot_reqs > 0 else 0.0
+        ctr = round((tot_clicks / tot_imps * 100.0), 2) if tot_imps > 0 else 0.0
 
         key = (row.domain, row.ad_unit)
         prev_data = prev_placement_map.get(key, {"revenue": 0.0, "impressions": 0})
@@ -642,6 +643,7 @@ def get_placements_breakdown(
             ad_requests=tot_reqs,
             matched_requests=tot_matched,
             match_rate=mr,
+            ctr=ctr,
             revenue_change_pct=rev_change,
             ecpm_change_pct=ecpm_change,
             comparison_period_label=comp_label
@@ -932,6 +934,7 @@ def get_site_country_placements_breakdown(
         if tot_reqs < tot_matched and tot_matched > 0:
             tot_reqs = tot_matched
         mr = round((tot_matched / tot_reqs * 100.0), 2) if tot_reqs > 0 else 0.0
+        ctr = round((tot_clicks / tot_imps * 100.0), 2) if tot_imps > 0 else 0.0
 
         items.append(PlacementBreakdownItem(
             domain=domain_name,
@@ -943,6 +946,7 @@ def get_site_country_placements_breakdown(
             ad_requests=tot_reqs,
             matched_requests=tot_matched,
             match_rate=mr,
+            ctr=ctr,
             pricing_rule_name=getattr(r, 'pricing_rule_name', None) or "All Rules"
         ))
 
