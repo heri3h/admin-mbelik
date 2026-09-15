@@ -155,7 +155,7 @@ export default function TrendChart({ data, startDate, endDate }) {
             <XAxis
               dataKey="date"
               stroke="#64748b"
-              fontSize={12}
+              tick={false}
               tickLine={false}
             />
             {/* Left Y Axis for Monetary Values */}
