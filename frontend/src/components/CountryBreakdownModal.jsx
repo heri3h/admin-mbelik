@@ -109,17 +109,20 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   const avgCtr = totalImps > 0 ? (totalClicks / totalImps * 100) : 0;
 
   // --- Level 1: Country View Dataset ---
-  const filteredCountries = countries.filter(c =>
-    c.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.country_code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCountries = (countries || []).filter(c => {
+    if (!c) return false;
+    const countryName = (c.country || '').toString().toLowerCase();
+    const countryCode = (c.country_code || '').toString().toLowerCase();
+    const search = (searchTerm || '').toString().toLowerCase();
+    return countryName.includes(search) || countryCode.includes(search);
+  });
 
   const sortedCountries = [...filteredCountries].sort((a, b) => {
     let colKey = sortColumn === 'name' ? 'country' : sortColumn;
     let aVal = a[colKey] ?? 0;
     let bVal = b[colKey] ?? 0;
     if (typeof aVal === 'string') {
-      return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      return sortDirection === 'asc' ? aVal.localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
     }
     return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
   });
@@ -187,9 +190,12 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   const level2TotalClicks = countryPlacements.reduce((sum, p) => sum + (p.clicks || 0), 0);
   const level2AvgCtr = level2TotalImps > 0 ? ((level2TotalClicks / level2TotalImps) * 100) : (selectedCountry ? (selectedCountry.ctr || 0) : 0);
 
-  const filteredAdUnits = countryAdUnits.filter(p =>
-    p.ad_unit.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAdUnits = (countryAdUnits || []).filter(p => {
+    if (!p) return false;
+    const adUnitName = (p.ad_unit || '').toString().toLowerCase();
+    const search = (searchTerm || '').toString().toLowerCase();
+    return adUnitName.includes(search);
+  });
 
   const sortedAdUnits = [...filteredAdUnits].sort((a, b) => {
     let colKey = sortColumn === 'name' ? 'ad_unit' : sortColumn;
