@@ -904,13 +904,13 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
-                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
                     ['DATE', 'COUNTRY_NAME']
