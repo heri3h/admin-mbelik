@@ -10,6 +10,8 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   
   // Level 1: Country list | Level 2: Selected Country (Shows Ad Units inside that country)
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [adUnits, setAdUnits] = useState([]);
+  const [loadingAdUnits, setLoadingAdUnits] = useState(false);
 
   // Table Sort State
   const [sortColumn, setSortColumn] = useState('revenue');
@@ -34,6 +36,27 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
       fetchCountryData();
     }
   }, [domain, startDate, endDate]);
+
+  useEffect(() => {
+    const fetchAdUnits = async () => {
+      if (!selectedCountry) {
+        setAdUnits([]);
+        return;
+      }
+      setLoadingAdUnits(true);
+      try {
+        const data = await dashboardService.getSiteCountryPlacements(domain, selectedCountry.country, startDate, endDate);
+        setAdUnits(data || []);
+      } catch (err) {
+        console.error('Failed fetching ad unit placement data', err);
+        setAdUnits([]);
+      } finally {
+        setLoadingAdUnits(false);
+      }
+    };
+
+    fetchAdUnits();
+  }, [selectedCountry, domain, startDate, endDate]);
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('id-ID', {
@@ -102,7 +125,6 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   });
 
   // Level 2: Filter & Sort Ad Units within Selected Country
-  const adUnits = selectedCountry?.placements || [];
   const level2TotalAdReqs = adUnits.reduce((sum, p) => sum + (p.ad_requests || 0), 0);
   const level2TotalMatchedReqs = adUnits.reduce((sum, p) => sum + (p.matched_requests || 0), 0);
   const level2AvgMatchRate = level2TotalAdReqs > 0 ? (level2TotalMatchedReqs / level2TotalAdReqs * 100) : 0;
@@ -400,10 +422,19 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         )
                       ) : (
                         /* --- LEVEL 2: AD UNITS WITHIN SELECTED COUNTRY --- */
-                        sortedAdUnits.length === 0 ? (
+                        loadingAdUnits ? (
+                          <tr>
+                            <td colSpan="11" className="px-4 py-8 text-center text-slate-400">
+                              <div className="flex items-center justify-center space-x-2">
+                                <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+                                <span>Loading ad unit placements for {selectedCountry.country}...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : sortedAdUnits.length === 0 ? (
                           <tr>
                             <td colSpan="11" className="px-4 py-8 text-center text-slate-400 italic">
-                              Tidak ada data unit iklan (Ad Unit) untuk negara ini.
+                              No ad unit placement data found for this country.
                             </td>
                           </tr>
                         ) : (

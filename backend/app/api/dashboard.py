@@ -899,6 +899,20 @@ def get_site_country_placements_breakdown(
         ).group_by(GAMCountryMetric.ad_unit).all()
 
     if not rows:
+        rows = db.query(
+            GAMMetric.ad_unit,
+            func.sum(GAMMetric.revenue).label("total_revenue"),
+            func.sum(GAMMetric.impressions).label("total_impressions"),
+            func.sum(GAMMetric.clicks).label("total_clicks"),
+            func.sum(GAMMetric.ad_requests).label("total_ad_requests"),
+            func.sum(GAMMetric.matched_requests).label("total_matched_requests")
+        ).filter(
+            func.lower(GAMMetric.domain) == domain_name.lower(),
+            GAMMetric.date >= d_start,
+            GAMMetric.date <= d_end
+        ).group_by(GAMMetric.ad_unit).all()
+
+    if not rows:
         try:
             threading.Thread(target=_run_bg_sync, args=(d_start, d_end), daemon=True).start()
         except Exception:
