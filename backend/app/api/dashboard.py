@@ -834,8 +834,8 @@ def get_site_countries_breakdown(
         if c_matched_reqs == 0 and c_imps > 0:
             c_matched_reqs = c_imps
 
-        if c_ad_reqs <= c_matched_reqs and c_matched_reqs > 0:
-            c_ad_reqs = int(c_matched_reqs * 2.85)
+        if c_ad_reqs < c_matched_reqs and c_matched_reqs > 0:
+            c_ad_reqs = c_matched_reqs
 
         c_mr = (c_matched_reqs / c_ad_reqs * 100.0) if c_ad_reqs > 0 else 0.0
 
@@ -946,8 +946,8 @@ def get_site_country_placements_breakdown(
         ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
         if tot_matched == 0 and tot_imps > 0:
             tot_matched = tot_imps
-        if tot_reqs <= tot_matched and tot_matched > 0:
-            tot_reqs = int(tot_matched * 2.85)
+        if tot_reqs < tot_matched and tot_matched > 0:
+            tot_reqs = tot_matched
         mr = round((tot_matched / tot_reqs * 100.0), 2) if tot_reqs > 0 else 0.0
         ctr = round((tot_clicks / tot_imps * 100.0), 2) if tot_imps > 0 else 0.0
 
