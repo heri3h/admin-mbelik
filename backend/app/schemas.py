@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import date as DateType, datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 
 # Auth Schemas
 class Token(BaseModel):
@@ -127,7 +127,7 @@ class CountryBreakdownItem(BaseModel):
     ctr: float
     impressions: int
     clicks: int
-    upr: Optional[Any] = 0.0
+    upr: Optional[float] = 0.0
     pricing_rule_name: Optional[str] = "All Rules"
     rpm: float = 0.0
 
