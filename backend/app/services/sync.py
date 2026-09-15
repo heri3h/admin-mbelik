@@ -384,6 +384,7 @@ def export_site_today_json(
     db_country_rows = db.query(
         GAMCountryMetric.country,
         GAMCountryMetric.country_code,
+        func.max(GAMCountryMetric.pricing_rule_name).label("pricing_rule_name"),
         func.sum(GAMCountryMetric.revenue).label("revenue"),
         func.sum(GAMCountryMetric.impressions).label("impressions"),
         func.sum(GAMCountryMetric.clicks).label("clicks"),
@@ -402,6 +403,7 @@ def export_site_today_json(
             db_country_rows = db.query(
                 GAMCountryMetric.country,
                 GAMCountryMetric.country_code,
+                func.max(GAMCountryMetric.pricing_rule_name).label("pricing_rule_name"),
                 func.sum(GAMCountryMetric.revenue).label("revenue"),
                 func.sum(GAMCountryMetric.impressions).label("impressions"),
                 func.sum(GAMCountryMetric.clicks).label("clicks"),
@@ -427,6 +429,17 @@ def export_site_today_json(
             c_code = crow.country_code or c_meta["code"]
             c_flag = c_meta["flag"]
 
+            p_rule = getattr(crow, "pricing_rule_name", None) or "DFLT GML"
+            if p_rule in ["(No pricing rule applied)", "All Rules", None, ""]:
+                if c_code == "KZ" or c_name.lower() == "kazakhstan":
+                    p_rule = "DFLT GML kz"
+                elif c_code in ["US", "AU", "GB", "CA"]:
+                    p_rule = "DFLT GML T1"
+                elif c_code in ["MY", "SG", "JP", "KR"]:
+                    p_rule = "DFLT GML T2"
+                else:
+                    p_rule = "DFLT GML"
+
             if c_matched_reqs == 0 and c_imps > 0:
                 c_matched_reqs = c_imps
             if c_ad_reqs < c_matched_reqs and c_matched_reqs > 0:
@@ -446,7 +459,7 @@ def export_site_today_json(
                 "match_rate": c_mr,
                 "ecpm": c_ecpm,
                 "ctr": c_ctr,
-                "upr": 0.0,
+                "upr": p_rule,
                 "rpm": c_ecpm
             })
 
