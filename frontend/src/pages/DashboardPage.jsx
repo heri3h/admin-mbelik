@@ -30,13 +30,14 @@ export default function DashboardPage() {
   const [accounts, setAccounts] = useState([]);
   const [sites, setSites] = useState([]);
   const [placements, setPlacements] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Active breakdown view: 'sites' (default), 'placements', 'accounts'
   const [activeReportTab, setActiveReportTab] = useState('sites');
 
   const loadDashboardData = async () => {
-    setLoading(true);
+    if (!summary) setLoading(true);
+    setIsRefreshing(true);
     try {
       const [sumData, trendData, accData, siteData, placementData] = await Promise.all([
         dashboardService.getSummary(startDate, endDate),
@@ -55,6 +56,7 @@ export default function DashboardPage() {
       console.error('Failed loading dashboard data', err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -72,7 +74,10 @@ export default function DashboardPage() {
       {/* Top Header & Sync controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">Profitability Dashboard</h1>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <span>Profitability Dashboard</span>
+            {isRefreshing && <Loader2 className="w-4 h-4 animate-spin text-sky-400" title="Updating data..." />}
+          </h1>
           <div className="flex flex-wrap items-center gap-2 text-slate-400 text-xs mt-1">
             <span>Google Ads Spend vs Ad Exchange (GAM) Revenue Analytics</span>
             {summary?.last_synced_at && (
@@ -89,13 +94,13 @@ export default function DashboardPage() {
       {/* Date Filter Bar */}
       <DateFilter startDate={startDate} endDate={endDate} onFilterChange={handleFilterChange} />
 
-      {loading ? (
+      {loading && !summary ? (
         <div className="min-h-[400px] flex flex-col items-center justify-center space-y-3 text-slate-400">
           <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
           <span className="text-sm font-medium">Loading analytics data...</span>
         </div>
       ) : (
-        <>
+        <div className={`transition-opacity duration-200 ${isRefreshing ? 'opacity-85 pointer-events-none' : 'opacity-100'}`}>
           {/* Executive Summary Metric Cards */}
           <SummaryCards data={summary} />
 
@@ -151,7 +156,7 @@ export default function DashboardPage() {
             {activeReportTab === 'placements' && <PlacementsTable placements={placements} />}
             {activeReportTab === 'accounts' && <AccountsTable accounts={accounts} />}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

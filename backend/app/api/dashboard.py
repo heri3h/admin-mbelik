@@ -233,17 +233,30 @@ def get_daily_trend(
             ))
         return result
 
-    # Standard Multi-day Trend Breakdown (YYYY-MM-DD)
+    # Standard Multi-day Trend Breakdown (Bulk GROUP BY date query)
+    ads_rows = db.query(
+        GoogleAdsMetric.date,
+        func.sum(GoogleAdsMetric.spend).label("spend")
+    ).filter(
+        GoogleAdsMetric.date >= d_start,
+        GoogleAdsMetric.date <= d_end
+    ).group_by(GoogleAdsMetric.date).all()
+    spend_map = {r.date: r.spend or 0.0 for r in ads_rows}
+
+    gam_rows = db.query(
+        GAMMetric.date,
+        func.sum(GAMMetric.revenue).label("revenue")
+    ).filter(
+        GAMMetric.date >= d_start,
+        GAMMetric.date <= d_end
+    ).group_by(GAMMetric.date).all()
+    rev_map = {r.date: r.revenue or 0.0 for r in gam_rows}
+
     result = []
     curr_date = d_start
     while curr_date <= d_end:
-        day_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
-            GoogleAdsMetric.date == curr_date
-        ).scalar() or 0.0
-
-        day_revenue = db.query(func.sum(GAMMetric.revenue)).filter(
-            GAMMetric.date == curr_date
-        ).scalar() or 0.0
+        day_spend = spend_map.get(curr_date, 0.0)
+        day_revenue = rev_map.get(curr_date, 0.0)
 
         day_profit = day_revenue - day_spend
         day_roi = (day_revenue / day_spend * 100.0) if day_spend > 0 else 0.0
@@ -258,7 +271,6 @@ def get_daily_trend(
             margin=round(day_margin, 2)
         ))
         curr_date += timedelta(days=1)
-
     return result
 
 @router.get("/accounts", response_model=List[AccountBreakdownItem])
