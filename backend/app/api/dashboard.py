@@ -799,7 +799,33 @@ def get_site_countries_breakdown(
             fallback_items.sort(key=lambda x: x.revenue, reverse=True)
             return fallback_items
 
-    tot_domain_rev = sum(r.revenue or 0.0 for r in country_rows)
+    # Aggregate country_rows by country
+    country_map = {}
+    for row in country_rows:
+        country_name = row.country or "Unknown Region"
+        if country_name not in country_map:
+            country_map[country_name] = {
+                "country": country_name,
+                "country_code": row.country_code,
+                "revenue": 0.0,
+                "impressions": 0,
+                "clicks": 0,
+                "ad_requests": 0,
+                "matched_requests": 0,
+                "pricing_rule_name": getattr(row, 'pricing_rule_name', None) or "All Rules"
+            }
+        c_item = country_map[country_name]
+        c_item["revenue"] += (row.revenue or 0.0)
+        c_item["impressions"] += (row.impressions or 0)
+        c_item["clicks"] += (row.clicks or 0)
+        c_item["ad_requests"] += (row.ad_requests or 0)
+        c_item["matched_requests"] += (row.matched_requests or 0)
+        
+        p_rule = getattr(row, 'pricing_rule_name', None)
+        if p_rule and p_rule not in ["(No pricing rule applied)", "All Rules"]:
+            c_item["pricing_rule_name"] = p_rule
+
+    tot_domain_rev = sum(item["revenue"] for item in country_map.values())
 
     db_accounts = db.query(GoogleAdsAccount).filter(func.lower(GoogleAdsAccount.assigned_domain) == domain_name.lower()).all()
     cids = [a.customer_id for a in db_accounts]
@@ -812,19 +838,19 @@ def get_site_countries_breakdown(
         ).scalar() or 0.0
 
     final_items = []
-    for row in country_rows:
-        country_name = row.country or "Unknown Region"
-        c_rev = row.revenue or 0.0
-        c_imps = row.impressions or 0
-        c_clicks = row.clicks or 0
-        c_ad_reqs = row.ad_requests or 0
-        c_matched_reqs = row.matched_requests or 0
+    for c_item in country_map.values():
+        country_name = c_item["country"]
+        c_rev = c_item["revenue"]
+        c_imps = c_item["impressions"]
+        c_clicks = c_item["clicks"]
+        c_ad_reqs = c_item["ad_requests"]
+        c_matched_reqs = c_item["matched_requests"]
 
         c_meta = get_country_meta(country_name)
-        c_code = c_meta["code"] if (not row.country_code or row.country_code == "ID" and country_name.lower() not in ["indonesia", "id"]) else row.country_code
+        c_code = c_meta["code"] if (not c_item["country_code"] or c_item["country_code"] == "ID" and country_name.lower() not in ["indonesia", "id"]) else c_item["country_code"]
         c_flag = c_meta["flag"]
 
-        c_share = (c_rev / tot_domain_rev) if tot_domain_rev > 0 else (1.0 / len(country_rows) if country_rows else 0)
+        c_share = (c_rev / tot_domain_rev) if tot_domain_rev > 0 else (1.0 / len(country_map) if country_map else 0)
         c_spend = tot_spend * c_share
         c_profit = c_rev - c_spend
         c_roi = (c_rev / c_spend * 100.0) if c_spend > 0 else 0.0
@@ -855,7 +881,7 @@ def get_site_countries_breakdown(
             impressions=c_imps,
             clicks=c_clicks,
             upr=0.0,
-            pricing_rule_name=getattr(row, 'pricing_rule_name', None) or "All Rules",
+            pricing_rule_name=c_item["pricing_rule_name"],
             rpm=round(c_ecpm, 2)
         ))
 
@@ -936,24 +962,53 @@ def get_site_country_placements_breakdown(
         except Exception:
             pass
 
-    items = []
+    unit_map = {}
     for r in rows:
-        tot_rev = r.total_revenue or 0.0
-        tot_imps = r.total_impressions or 0
-        tot_clicks = r.total_clicks or 0
-        tot_reqs = int(r.total_ad_requests or 0)
-        tot_matched = int(r.total_matched_requests or 0)
-        ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
+        unit = r.ad_unit or "Standard Ad Unit"
+        p_rule = r.pricing_rule_name or "All Rules"
+
+        if unit not in unit_map:
+            unit_map[unit] = {
+                "domain": domain_name,
+                "ad_unit": unit,
+                "total_revenue": 0.0,
+                "impressions": 0,
+                "clicks": 0,
+                "total_ad_requests": 0,
+                "total_matched_requests": 0,
+                "pricing_rule_name": p_rule
+            }
+
+        item = unit_map[unit]
+        item["total_revenue"] += (r.total_revenue or 0.0)
+        item["impressions"] += (r.total_impressions or 0)
+        item["clicks"] += (r.total_clicks or 0)
+        item["total_ad_requests"] += int(r.total_ad_requests or 0)
+        item["total_matched_requests"] += int(r.total_matched_requests or 0)
+
+        if p_rule and p_rule not in ["(No pricing rule applied)", "All Rules"]:
+            item["pricing_rule_name"] = p_rule
+
+    items = []
+    for item in unit_map.values():
+        tot_rev = item["total_revenue"]
+        tot_imps = item["impressions"]
+        tot_clicks = item["clicks"]
+        tot_reqs = item["total_ad_requests"]
+        tot_matched = item["total_matched_requests"]
+
         if tot_matched == 0 and tot_imps > 0:
             tot_matched = tot_imps
         if tot_reqs < tot_matched and tot_matched > 0:
             tot_reqs = tot_matched
+
+        ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
         mr = round((tot_matched / tot_reqs * 100.0), 2) if tot_reqs > 0 else 0.0
         ctr = round((tot_clicks / tot_imps * 100.0), 2) if tot_imps > 0 else 0.0
 
         items.append(PlacementBreakdownItem(
             domain=domain_name,
-            ad_unit=r.ad_unit or "Standard Ad Unit",
+            ad_unit=item["ad_unit"],
             total_revenue=round(tot_rev, 2),
             impressions=tot_imps,
             clicks=tot_clicks,
@@ -962,7 +1017,8 @@ def get_site_country_placements_breakdown(
             matched_requests=tot_matched,
             match_rate=mr,
             ctr=ctr,
-            pricing_rule_name=getattr(r, 'pricing_rule_name', None) or "All Rules"
+            upr=0.0,
+            pricing_rule_name=item["pricing_rule_name"]
         ))
 
     items.sort(key=lambda x: x.total_revenue, reverse=True)
