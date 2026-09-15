@@ -912,7 +912,7 @@ def get_site_country_placements_breakdown(
 
     rows = db.query(
         GAMCountryMetric.ad_unit,
-        GAMCountryMetric.pricing_rule_name,
+        func.max(GAMCountryMetric.pricing_rule_name).label("pricing_rule_name"),
         func.sum(GAMCountryMetric.revenue).label("total_revenue"),
         func.sum(GAMCountryMetric.impressions).label("total_impressions"),
         func.sum(GAMCountryMetric.clicks).label("total_clicks"),
@@ -923,12 +923,12 @@ def get_site_country_placements_breakdown(
         func.lower(GAMCountryMetric.country) == country_name.lower(),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
-    ).group_by(GAMCountryMetric.ad_unit, GAMCountryMetric.pricing_rule_name).all()
+    ).group_by(GAMCountryMetric.ad_unit).all()
 
     if not rows and c_code:
         rows = db.query(
             GAMCountryMetric.ad_unit,
-            GAMCountryMetric.pricing_rule_name,
+            func.max(GAMCountryMetric.pricing_rule_name).label("pricing_rule_name"),
             func.sum(GAMCountryMetric.revenue).label("total_revenue"),
             func.sum(GAMCountryMetric.impressions).label("total_impressions"),
             func.sum(GAMCountryMetric.clicks).label("total_clicks"),
@@ -939,12 +939,12 @@ def get_site_country_placements_breakdown(
             func.lower(GAMCountryMetric.country_code) == c_code.lower(),
             GAMCountryMetric.date >= d_start,
             GAMCountryMetric.date <= d_end
-        ).group_by(GAMCountryMetric.ad_unit, GAMCountryMetric.pricing_rule_name).all()
+        ).group_by(GAMCountryMetric.ad_unit).all()
 
     if not rows:
         rows = db.query(
             GAMMetric.ad_unit,
-            GAMMetric.pricing_rule_name,
+            func.max(GAMMetric.pricing_rule_name).label("pricing_rule_name"),
             func.sum(GAMMetric.revenue).label("total_revenue"),
             func.sum(GAMMetric.impressions).label("total_impressions"),
             func.sum(GAMMetric.clicks).label("total_clicks"),
@@ -954,7 +954,7 @@ def get_site_country_placements_breakdown(
             func.lower(GAMMetric.domain) == domain_name.lower(),
             GAMMetric.date >= d_start,
             GAMMetric.date <= d_end
-        ).group_by(GAMMetric.ad_unit, GAMMetric.pricing_rule_name).all()
+        ).group_by(GAMMetric.ad_unit).all()
 
     if not rows:
         try:
