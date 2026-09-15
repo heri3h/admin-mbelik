@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ResponsiveContainer,
-  AreaChart,
+  ComposedChart,
   Area,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -11,6 +12,11 @@ import {
 } from 'recharts';
 
 export default function TrendChart({ data }) {
+  const [showRevenue, setShowRevenue] = useState(true);
+  const [showSpend, setShowSpend] = useState(true);
+  const [showProfit, setShowProfit] = useState(true);
+  const [showRoi, setShowRoi] = useState(true);
+
   if (!data || data.length === 0) {
     return (
       <div className="bg-slate-800 border border-slate-700/60 p-6 rounded-2xl h-80 flex items-center justify-center text-slate-400">
@@ -19,11 +25,15 @@ export default function TrendChart({ data }) {
     );
   }
 
-  const formatYAxis = (val) => {
+  const formatYAxisLeft = (val) => {
     if (val >= 1000000000) return `Rp ${(val / 1000000000).toFixed(1)}B`;
     if (val >= 1000000) return `Rp ${(val / 1000000).toFixed(1)}M`;
     if (val >= 1000) return `Rp ${(val / 1000).toFixed(0)}k`;
     return `Rp ${val}`;
+  };
+
+  const formatYAxisRight = (val) => {
+    return `${val.toFixed(0)}%`;
   };
 
   const formatCurrency = (val) => {
@@ -37,14 +47,22 @@ export default function TrendChart({ data }) {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-xl text-xs space-y-1">
+        <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-xl text-xs space-y-1.5 min-w-[180px]">
           <p className="font-semibold text-slate-200 border-b border-slate-700 pb-1">{label}</p>
-          {payload.map((entry, index) => (
-            <div key={`item-${index}`} className="flex items-center justify-between space-x-4">
-              <span style={{ color: entry.color }} className="font-medium">{entry.name}:</span>
-              <span className="font-bold text-white">{formatCurrency(entry.value)}</span>
-            </div>
-          ))}
+          {payload.map((entry, index) => {
+            const isRoi = entry.dataKey === 'roi' || entry.name.includes('ROI');
+            return (
+              <div key={`item-${index}`} className="flex items-center justify-between space-x-4">
+                <span style={{ color: entry.color }} className="font-medium flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: entry.color }}></span>
+                  {entry.name}:
+                </span>
+                <span className="font-bold text-white">
+                  {isRoi ? `${(entry.value || 0).toFixed(1)}%` : formatCurrency(entry.value)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       );
     }
@@ -52,17 +70,69 @@ export default function TrendChart({ data }) {
   };
 
   return (
-    <div className="bg-slate-800 border border-slate-700/60 p-6 rounded-2xl shadow-sm">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-slate-800 border border-slate-700/60 p-6 rounded-2xl shadow-sm space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-white">Daily Performance Comparison</h3>
-          <p className="text-slate-400 text-xs mt-0.5">Daily Spend (Google Ads) vs Revenue (AdX) vs Net Profit Trend</p>
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <span>Daily Performance & ROI Trend</span>
+          </h3>
+          <p className="text-slate-400 text-xs mt-0.5">
+            Perbandingan Daily Spend (Google Ads), Revenue (AdX), Net Profit, dan ROI (%)
+          </p>
+        </div>
+
+        {/* Metric Visibility Toggles */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setShowRevenue(!showRevenue)}
+            className={`px-2.5 py-1 rounded-lg font-medium border transition-all ${
+              showRevenue
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                : 'bg-slate-900/50 text-slate-500 border-slate-700/50 line-through'
+            }`}
+          >
+            ● Revenue
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSpend(!showSpend)}
+            className={`px-2.5 py-1 rounded-lg font-medium border transition-all ${
+              showSpend
+                ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                : 'bg-slate-900/50 text-slate-500 border-slate-700/50 line-through'
+            }`}
+          >
+            ● Spend
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowProfit(!showProfit)}
+            className={`px-2.5 py-1 rounded-lg font-medium border transition-all ${
+              showProfit
+                ? 'bg-sky-500/10 text-sky-400 border-sky-500/30'
+                : 'bg-slate-900/50 text-slate-500 border-slate-700/50 line-through'
+            }`}
+          >
+            ● Net Profit
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRoi(!showRoi)}
+            className={`px-2.5 py-1 rounded-lg font-medium border transition-all ${
+              showRoi
+                ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-sm'
+                : 'bg-slate-900/50 text-slate-500 border-slate-700/50 line-through'
+            }`}
+          >
+            📈 ROI (%)
+          </button>
         </div>
       </div>
 
       <div className="h-80 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 10, right: showRoi ? 15 : -10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
@@ -84,43 +154,77 @@ export default function TrendChart({ data }) {
               fontSize={12}
               tickLine={false}
             />
+            {/* Left Y Axis for Monetary Values */}
             <YAxis
+              yAxisId="left"
               stroke="#64748b"
               fontSize={12}
-              tickFormatter={formatYAxis}
+              tickFormatter={formatYAxisLeft}
               tickLine={false}
             />
+            {/* Right Y Axis for ROI % */}
+            {showRoi && (
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke="#f59e0b"
+                fontSize={12}
+                tickFormatter={formatYAxisRight}
+                tickLine={false}
+              />
+            )}
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '12px' }} />
-            
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              name="Revenue (AdX)"
-              stroke="#10b981"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorRevenue)"
-            />
-            <Area
-              type="monotone"
-              dataKey="spend"
-              name="Spend (Google Ads)"
-              stroke="#6366f1"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorSpend)"
-            />
-            <Area
-              type="monotone"
-              dataKey="profit"
-              name="Net Profit"
-              stroke="#0284c7"
-              strokeWidth={2.5}
-              fillOpacity={1}
-              fill="url(#colorProfit)"
-            />
-          </AreaChart>
+
+            {showRevenue && (
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="revenue"
+                name="Revenue (AdX)"
+                stroke="#10b981"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorRevenue)"
+              />
+            )}
+            {showSpend && (
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="spend"
+                name="Spend (Google Ads)"
+                stroke="#6366f1"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorSpend)"
+              />
+            )}
+            {showProfit && (
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="profit"
+                name="Net Profit"
+                stroke="#0284c7"
+                strokeWidth={2.5}
+                fillOpacity={1}
+                fill="url(#colorProfit)"
+              />
+            )}
+            {showRoi && (
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="roi"
+                name="ROI (%)"
+                stroke="#f59e0b"
+                strokeWidth={2.5}
+                dot={{ r: 3, fill: '#f59e0b' }}
+                activeDot={{ r: 6 }}
+              />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>
