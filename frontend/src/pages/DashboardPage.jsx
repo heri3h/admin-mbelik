@@ -111,12 +111,12 @@ export default function DashboardPage() {
           {/* Breakdown Reports Section */}
           <div className="space-y-4">
             {/* Report Selector Tabs */}
-            <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-3 max-w-full">
               <h2 className="text-lg font-bold text-white tracking-tight">Detailed Breakdown Reports</h2>
-              <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 space-x-1">
+              <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 space-x-1 overflow-x-auto max-w-full w-full sm:w-auto shrink-0">
                 <button
                   onClick={() => setActiveReportTab('sites')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
                     activeReportTab === 'sites'
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -128,7 +128,7 @@ export default function DashboardPage() {
 
                 <button
                   onClick={() => setActiveReportTab('placements')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
                     activeReportTab === 'placements'
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -140,7 +140,7 @@ export default function DashboardPage() {
 
                 <button
                   onClick={() => setActiveReportTab('accounts')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
                     activeReportTab === 'accounts'
                       ? 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'

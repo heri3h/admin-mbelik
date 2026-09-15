@@ -91,7 +91,7 @@ export default function AccountsTable({ accounts }) {
         </span>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto w-full max-w-full">
         <table className="w-full text-left text-xs text-slate-300">
           <thead className="sticky top-16 z-30 bg-slate-900/95 backdrop-blur text-slate-400 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-700/60 select-none shadow-md">
             <tr>

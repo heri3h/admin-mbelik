@@ -125,7 +125,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto sm:overflow-x-visible rounded-b-2xl">
+      <div className="overflow-x-auto w-full max-w-full rounded-b-2xl">
         <table className="w-full text-left text-xs text-slate-300 border-collapse">
           <thead className="sm:sticky sm:top-16 z-30 bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-700/60 select-none shadow-md">
             <tr>
