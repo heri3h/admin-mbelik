@@ -79,7 +79,10 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   const totalAdReqs = countries.reduce((sum, c) => sum + (c.ad_requests || 0), 0);
   const totalMatchedReqs = countries.reduce((sum, c) => sum + (c.matched_requests || 0), 0);
   const avgMatchRate = totalAdReqs > 0 ? (totalMatchedReqs / totalAdReqs * 100) : 0;
-  const avgEcpm = countries.length > 0 ? (totalRev / (countries.reduce((sum, c) => sum + (c.impressions || 0), 0) / 1000) || 0) : 0;
+  const totalImps = countries.reduce((sum, c) => sum + (c.impressions || 0), 0);
+  const totalClicks = countries.reduce((sum, c) => sum + (c.clicks || 0), 0);
+  const avgCtr = totalImps > 0 ? (totalClicks / totalImps * 100) : 0;
+  const avgEcpm = countries.length > 0 ? (totalRev / (totalImps / 1000) || 0) : 0;
   const avgUpr = totalAdReqs > 0 ? (totalRev / (totalAdReqs / 1000)) : 0;
 
   // Level 1: Filter & Sort Country List
