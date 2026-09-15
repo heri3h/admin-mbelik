@@ -290,15 +290,17 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                 <div className="overflow-x-auto w-full max-w-full">
                   <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
                     
-                    {/* --- UNIFIED UNIFORM THEAD ACROSS LEVEL 1 & LEVEL 2 --- */}
+                    {/* --- DYNAMIC THEAD ACROSS LEVEL 1 (COUNTRY) & LEVEL 2 (AD UNIT) --- */}
                     <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] tracking-wider select-none shadow-md">
                       <tr>
                         <th onClick={() => handleSort('name')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                           {selectedCountry ? 'Ad Unit / Placement' : 'Country'} {renderSortIndicator('name')}
                         </th>
-                        <th onClick={() => handleSort('spend')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          Spend (Ads) {renderSortIndicator('spend')}
-                        </th>
+                        {!selectedCountry && (
+                          <th onClick={() => handleSort('spend')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+                            Spend (Ads) {renderSortIndicator('spend')}
+                          </th>
+                        )}
                         <th onClick={() => handleSort('revenue')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                           Revenue (AdX) {renderSortIndicator('revenue')}
                         </th>
@@ -317,12 +319,16 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         <th onClick={() => handleSort('ctr')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                           CTR {renderSortIndicator('ctr')}
                         </th>
-                        <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          ROI {renderSortIndicator('roi')}
-                        </th>
-                        <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          Profit {renderSortIndicator('net_profit')}
-                        </th>
+                        {!selectedCountry && (
+                          <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+                            ROI {renderSortIndicator('roi')}
+                          </th>
+                        )}
+                        {!selectedCountry && (
+                          <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+                            Profit {renderSortIndicator('net_profit')}
+                          </th>
+                        )}
                         <th onClick={() => handleSort('upr')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                           UPR & RPM {renderSortIndicator('upr')}
                         </th>
@@ -350,7 +356,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                 className="hover:bg-emerald-500/10 cursor-pointer transition-colors group"
                                 title="Click to view ad unit details for this country"
                               >
-                                <td className="px-4 py-3.5 font-semibold text-white">
+                                <td className="px-4 py-3.5 font-semibold text-white whitespace-nowrap">
                                   <div className="flex items-center space-x-2">
                                     <span className="text-base group-hover:scale-125 transition-transform">{c.flag_emoji}</span>
                                     <span className="font-bold group-hover:text-emerald-400 group-hover:underline underline-offset-4 decoration-emerald-400 transition-colors">
@@ -360,35 +366,35 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   </div>
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-medium text-rose-400">
+                                <td className="px-4 py-3.5 text-right font-medium text-rose-400 whitespace-nowrap">
                                   {hasSpend ? formatCurrency(c.spend) : <span className="text-slate-500">-</span>}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-bold text-emerald-400">
+                                <td className="px-4 py-3.5 text-right font-bold text-emerald-400 whitespace-nowrap">
                                   {formatCurrency(c.revenue)}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-sky-400">
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">
                                   {formatCurrency(c.ecpm)}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300">
+                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(c.ad_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300">
+                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(c.matched_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-indigo-300">
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
                                   {(c.match_rate || 0).toFixed(1)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300">
+                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(c.ctr || 0).toFixed(2)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-bold">
+                                <td className="px-4 py-3.5 text-right font-mono font-bold whitespace-nowrap">
                                   {hasSpend ? (
                                     <span className={isProfitable ? 'text-emerald-400' : 'text-rose-400'}>
                                       {c.roi > 0 ? `+${c.roi.toFixed(1)}%` : `${c.roi.toFixed(1)}%`}
@@ -398,7 +404,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   )}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right">
+                                <td className="px-4 py-3.5 text-right whitespace-nowrap">
                                   {hasSpend ? (
                                     <span className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${
                                       isProfitable
@@ -413,7 +419,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   )}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-amber-300">
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-amber-300 whitespace-nowrap">
                                   {formatCurrency(c.upr || 0)}
                                 </td>
                               </tr>
@@ -424,7 +430,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         /* --- LEVEL 2: AD UNITS WITHIN SELECTED COUNTRY --- */
                         loadingAdUnits ? (
                           <tr>
-                            <td colSpan="11" className="px-4 py-8 text-center text-slate-400">
+                            <td colSpan="8" className="px-4 py-8 text-center text-slate-400">
                               <div className="flex items-center justify-center space-x-2">
                                 <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
                                 <span>Loading ad unit placements for {selectedCountry.country}...</span>
@@ -433,79 +439,46 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           </tr>
                         ) : sortedAdUnits.length === 0 ? (
                           <tr>
-                            <td colSpan="11" className="px-4 py-8 text-center text-slate-400 italic">
+                            <td colSpan="8" className="px-4 py-8 text-center text-slate-400 italic">
                               No ad unit placement data found for this country.
                             </td>
                           </tr>
                         ) : (
                           sortedAdUnits.map((p, idx) => {
-                            const pRoi = p.roi || 0;
-                            const pProfit = p.net_profit || 0;
-                            const isPProfitable = pProfit >= 0;
-
                             return (
                               <tr key={idx} className="hover:bg-slate-700/40 transition-colors">
-                                <td className="px-4 py-3.5 font-semibold text-white">
+                                <td className="px-4 py-3.5 font-semibold text-white whitespace-nowrap">
                                   <div className="flex flex-col space-y-0.5">
                                     <span className="font-bold text-slate-100">{p.ad_unit}</span>
                                     <span className="text-[10px] text-slate-400 font-mono">Domain: {p.domain}</span>
                                   </div>
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-medium text-rose-400">
-                                  {p.spend > 0 ? formatCurrency(p.spend) : <span className="text-slate-500">-</span>}
-                                </td>
-
-                                <td className="px-4 py-3.5 text-right font-bold text-emerald-400">
+                                <td className="px-4 py-3.5 text-right font-bold text-emerald-400 whitespace-nowrap">
                                   {formatCurrency(p.revenue)}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-sky-400">
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">
                                   {formatCurrency(p.ecpm)}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300">
+                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(p.ad_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300">
+                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(p.matched_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-indigo-300">
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
                                   {(p.match_rate || 0).toFixed(1)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300">
+                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(p.ctr || 0).toFixed(2)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-bold">
-                                  {p.spend > 0 ? (
-                                    <span className={isPProfitable ? 'text-emerald-400' : 'text-rose-400'}>
-                                      {pRoi > 0 ? `+${pRoi.toFixed(1)}%` : `${pRoi.toFixed(1)}%`}
-                                    </span>
-                                  ) : (
-                                    <span className="text-slate-500">N/A</span>
-                                  )}
-                                </td>
-
-                                <td className="px-4 py-3.5 text-right">
-                                  {p.spend > 0 ? (
-                                    <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-bold border ${
-                                      isPProfitable
-                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                    }`}>
-                                      {isPProfitable ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                      <span>{formatCurrency(pProfit)}</span>
-                                    </span>
-                                  ) : (
-                                    <span className="text-emerald-400 font-bold">{formatCurrency(p.revenue)}</span>
-                                  )}
-                                </td>
-
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-amber-300">
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-amber-300 whitespace-nowrap">
                                   {formatCurrency(p.upr || 0)}
                                 </td>
                               </tr>
@@ -515,41 +488,64 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                       )}
                     </tbody>
 
-                    {/* --- UNIFIED TFOOT ACROSS LEVEL 1 & LEVEL 2 --- */}
+                    {/* --- DYNAMIC TFOOT ACROSS LEVEL 1 (COUNTRY) & LEVEL 2 (AD UNIT) --- */}
                     <tfoot className="bg-slate-950 text-slate-200 font-semibold border-t border-slate-700/80 text-[11px]">
-                      <tr>
-                        <td className="px-4 py-3 font-bold">
-                          {selectedCountry ? `Total Ad Units (${selectedCountry.country})` : 'Total / Average All Countries'}
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-rose-400">{formatCurrency(activeSpend)}</td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-400">{formatCurrency(activeRev)}</td>
-                        <td className="px-4 py-3 text-right font-mono text-sky-400">{formatCurrency(activeEcpm)}</td>
-                        <td className="px-4 py-3 text-right font-mono">
-                          {(selectedCountry ? level2TotalAdReqs : totalAdReqs).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono">
-                          {(selectedCountry ? level2TotalMatchedReqs : totalMatchedReqs).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono text-indigo-300">
-                          {(selectedCountry ? level2AvgMatchRate : avgMatchRate).toFixed(1)}%
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono">
-                          {(selectedCountry ? level2AvgCtr : avgCtr).toFixed(2)}%
-                        </td>
-                        <td className="px-4 py-3 text-right font-mono font-bold">
-                          {activeSpend > 0 ? (
-                            <span className={activeProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                              {activeRoi > 0 ? `+${activeRoi.toFixed(1)}%` : `${activeRoi.toFixed(1)}%`}
-                            </span>
-                          ) : (
-                            <span className="text-slate-500">N/A</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-400">{formatCurrency(activeProfit)}</td>
-                        <td className="px-4 py-3 text-right font-mono text-amber-300">
-                          {formatCurrency(selectedCountry ? selectedCountry.upr || 0 : avgUpr)}
-                        </td>
-                      </tr>
+                      {selectedCountry ? (
+                        <tr>
+                          <td className="px-4 py-3 font-bold whitespace-nowrap">
+                            Total Ad Units ({selectedCountry.country})
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeRev)}</td>
+                          <td className="px-4 py-3 text-right font-mono text-sky-400 whitespace-nowrap">{formatCurrency(activeEcpm)}</td>
+                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                            {level2TotalAdReqs.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                            {level2TotalMatchedReqs.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-indigo-300 whitespace-nowrap">
+                            {level2AvgMatchRate.toFixed(1)}%
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                            {level2AvgCtr.toFixed(2)}%
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-amber-300 whitespace-nowrap">
+                            {formatCurrency(selectedCountry.upr || 0)}
+                          </td>
+                        </tr>
+                      ) : (
+                        <tr>
+                          <td className="px-4 py-3 font-bold whitespace-nowrap">Total / Average All Countries</td>
+                          <td className="px-4 py-3 text-right font-bold text-rose-400 whitespace-nowrap">{formatCurrency(activeSpend)}</td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeRev)}</td>
+                          <td className="px-4 py-3 text-right font-mono text-sky-400 whitespace-nowrap">{formatCurrency(activeEcpm)}</td>
+                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                            {totalAdReqs.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                            {totalMatchedReqs.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-indigo-300 whitespace-nowrap">
+                            {avgMatchRate.toFixed(1)}%
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                            {avgCtr.toFixed(2)}%
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono font-bold whitespace-nowrap">
+                            {activeSpend > 0 ? (
+                              <span className={activeProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                {activeRoi > 0 ? `+${activeRoi.toFixed(1)}%` : `${activeRoi.toFixed(1)}%`}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">N/A</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeProfit)}</td>
+                          <td className="px-4 py-3 text-right font-mono text-amber-300 whitespace-nowrap">
+                            {formatCurrency(avgUpr)}
+                          </td>
+                        </tr>
+                      )}
                     </tfoot>
 
                   </table>

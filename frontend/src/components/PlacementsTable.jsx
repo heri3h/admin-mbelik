@@ -144,25 +144,29 @@ export default function PlacementsTable({ placements }) {
 
               return (
                 <tr key={idx} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="px-5 py-4 font-semibold text-white">
+                  <td className="px-5 py-4 font-semibold text-white whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
                       <span>{item.ad_unit}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 font-mono text-slate-400">{item.domain}</td>
+                  <td className="px-5 py-4 font-mono text-slate-400 whitespace-nowrap">{item.domain}</td>
 
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-5 py-4 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end font-bold text-emerald-400">
                       <span>{formatCurrency(item.total_revenue)}</span>
                       {renderDeltaBadge(item.revenue_change_pct, compLabel)}
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-right">{item.impressions.toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right">{item.clicks.toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.impressions || 0).toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.clicks || 0).toLocaleString()}</td>
 
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.ad_requests || 0).toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.matched_requests || 0).toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">{(item.match_rate || 0).toFixed(1)}%</td>
+
+                  <td className="px-5 py-4 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end font-mono font-semibold text-sky-400">
                       <span>{formatCurrency(item.ecpm)}</span>
                       {renderDeltaBadge(item.ecpm_change_pct, compLabel)}
