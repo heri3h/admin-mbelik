@@ -23,7 +23,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col w-full max-w-full">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col w-full max-w-full pt-16">
       <Navbar
         isMockData={isMockData}
         activeTab={activeTab}
