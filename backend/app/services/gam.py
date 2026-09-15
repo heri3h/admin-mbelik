@@ -914,8 +914,6 @@ class GAMService:
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
-                        'TOTAL_CODE_SERVED_COUNT',
-                        'TOTAL_INVENTORY_LEVEL_UNFILLED_IMPRESSIONS',
                         'AD_EXCHANGE_TOTAL_REQUESTS',
                         'AD_EXCHANGE_RESPONSES_SERVED'
                     ],
