@@ -26,9 +26,7 @@ export default function LoginPage({ onLoginSuccess }) {
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="inline-flex p-3 bg-gradient-to-tr from-sky-500 to-indigo-600 rounded-2xl shadow-xl shadow-sky-500/20 text-white mb-4">
-            <BarChart3 className="w-8 h-8" />
-          </div>
+          <img src="/logo.png" alt="Mbelik" className="h-12 w-auto mx-auto mb-4 object-contain" />
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Ad Profitability Dashboard</h1>
           <p className="text-slate-400 text-sm mt-1">Masuk untuk mengakses analitik iklan internal</p>
         </div>

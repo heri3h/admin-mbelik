@@ -8,15 +8,8 @@ export default function Navbar({ isMockData, activeTab, setActiveTab }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-tr from-sky-500 to-indigo-500 p-2 rounded-xl text-white shadow-lg shadow-sky-500/20">
-              <BarChart3 className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="font-bold text-lg text-white tracking-tight">Ad Analytics</span>
-              <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-700 text-sky-400 border border-slate-600">
-                Dashboard
-              </span>
-            </div>
+            <img src="/logo.png" alt="Mbelik" className="h-8 sm:h-9 w-auto object-contain" />
+            <span className="font-bold text-lg text-white tracking-tight">Ad Analytics</span>
           </div>
 
           <div className="flex items-center space-x-4">
