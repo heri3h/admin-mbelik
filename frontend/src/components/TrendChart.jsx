@@ -136,7 +136,7 @@ export default function TrendChart({ data, startDate, endDate }) {
 
       <div className="h-80 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 10, right: showRoi ? 15 : -10, left: -20, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
@@ -162,8 +162,7 @@ export default function TrendChart({ data, startDate, endDate }) {
             <YAxis
               yAxisId="left"
               stroke="#64748b"
-              fontSize={12}
-              tickFormatter={formatYAxisLeft}
+              tick={false}
               tickLine={false}
             />
             {/* Right Y Axis for ROI % */}
@@ -172,8 +171,7 @@ export default function TrendChart({ data, startDate, endDate }) {
                 yAxisId="right"
                 orientation="right"
                 stroke="#f59e0b"
-                fontSize={12}
-                tickFormatter={formatYAxisRight}
+                tick={false}
                 tickLine={false}
               />
             )}
