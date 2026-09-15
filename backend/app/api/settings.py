@@ -231,6 +231,24 @@ def create_export_target(
     db.add(new_target)
     db.commit()
     db.refresh(new_target)
+
+    # Automatically create pricing_config.json and current_pricing.json in target public_html
+    try:
+        from app.services.sync import load_pricing_config, save_pricing_config_and_sync, export_site_today_json
+        cfg = load_pricing_config()
+        save_pricing_config_and_sync(cfg, db=db)
+        if new_target.is_active:
+            export_site_today_json(
+                db,
+                domain=new_target.domain,
+                target_filepath=new_target.target_filepath,
+                start_hour=new_target.start_hour,
+                end_hour=new_target.end_hour,
+                force=True
+            )
+    except Exception as e:
+        logger.warning(f"Auto-generate files for new export target {clean_domain} notice: {e}")
+
     return new_target
 
 @router.put("/export-targets/{target_id}", response_model=JSONExportTargetResponse)
@@ -257,7 +275,17 @@ def update_export_target(
 
     db.commit()
     db.refresh(target)
+
+    # Auto sync pricing_config.json if active
+    try:
+        from app.services.sync import load_pricing_config, save_pricing_config_and_sync
+        cfg = load_pricing_config()
+        save_pricing_config_and_sync(cfg, db=db)
+    except Exception as e:
+        logger.warning(f"Auto-sync pricing_config on target update notice: {e}")
+
     return target
+
 
 @router.delete("/export-targets/{target_id}")
 def delete_export_target(
