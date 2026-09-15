@@ -682,6 +682,7 @@ def get_site_countries_breakdown(
     country_rows = db.query(
         GAMCountryMetric.country,
         GAMCountryMetric.country_code,
+        GAMCountryMetric.pricing_rule_name,
         func.sum(GAMCountryMetric.revenue).label("revenue"),
         func.sum(GAMCountryMetric.impressions).label("impressions"),
         func.sum(GAMCountryMetric.clicks).label("clicks"),
@@ -691,7 +692,7 @@ def get_site_countries_breakdown(
         func.lower(GAMCountryMetric.domain) == domain_name.lower(),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
-    ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code).all()
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code, GAMCountryMetric.pricing_rule_name).all()
 
     if not country_rows:
         try:
@@ -765,6 +766,14 @@ def get_site_countries_breakdown(
                 c_ad_reqs = int(tot_ad_reqs * share) if tot_ad_reqs > 0 else (int(c_matched_reqs / (c["match_rate"] / 100.0)) if c["match_rate"] > 0 else int(c_matched_reqs * 2.8))
                 c_mr = (c_matched_reqs / c_ad_reqs * 100.0) if c_ad_reqs > 0 else c["match_rate"]
 
+                p_rule = "DFLT GML"
+                if c["code"] == "KZ" or c["country"].lower() == "kazakhstan":
+                    p_rule = "DFLT GML kz"
+                elif c["code"] in ["US", "AU", "GB", "CA"]:
+                    p_rule = "DFLT GML T1"
+                elif c["code"] in ["MY", "SG", "JP", "KR"]:
+                    p_rule = "DFLT GML T2"
+
                 fallback_items.append(CountryBreakdownItem(
                     country=c["country"],
                     country_code=c["code"],
@@ -781,6 +790,7 @@ def get_site_countries_breakdown(
                     impressions=c_imps,
                     clicks=c_clicks,
                     upr=0.0,
+                    pricing_rule_name=p_rule,
                     rpm=round(c_ecpm, 2)
                 ))
 

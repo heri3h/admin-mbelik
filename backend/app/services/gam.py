@@ -887,6 +887,10 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
@@ -1008,11 +1012,17 @@ class GAMService:
                                     ad_unit = v.strip()
                                     break
 
+                            pricing_rule = "All Rules"
+                            for k, v in row.items():
+                                if k and ('PRICING_RULE' in k.upper() or 'RULE_NAME' in k.upper()) and v:
+                                    pricing_rule = v.strip()
+                                    break
+
                             clean_ad_unit = ad_unit or "Standard Ad Unit"
                             domain = extract_domain_from_row(row, clean_ad_unit)
                             c_meta = get_country_meta(country)
 
-                            dc_key = (row_date, domain, country, clean_ad_unit)
+                            dc_key = (row_date, domain, country, clean_ad_unit, pricing_rule)
 
                             impressions = 0
                             for k, v in row.items():
@@ -1077,6 +1087,7 @@ class GAMService:
                                     "country": country,
                                     "country_code": c_meta["code"],
                                     "ad_unit": clean_ad_unit,
+                                    "pricing_rule_name": pricing_rule,
                                     "revenue": revenue,
                                     "impressions": impressions,
                                     "clicks": clicks,
@@ -1131,14 +1142,15 @@ class GAMService:
 
     def _generate_mock_country_data(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
         results = []
-        domains = ["spotgames.top", "dpr.skuy.me", "mbelik.com", "2b.nubmaster.com", "baleq.me", "polpasulsa.com"]
+        domains = ["spotgames.top", "dpr.skuy.me", "mbelik.com", "2b.nubmaster.com", "baleq.me", "polpasulsa.com", "play.gemol.me"]
         country_configs = [
-            {"country": "Indonesia", "code": "ID", "weight": 0.65, "ecpm": 18000},
-            {"country": "United States", "code": "US", "weight": 0.15, "ecpm": 48000},
-            {"country": "Malaysia", "code": "MY", "weight": 0.08, "ecpm": 22000},
-            {"country": "Singapore", "code": "SG", "weight": 0.05, "ecpm": 38000},
-            {"country": "Japan", "code": "JP", "weight": 0.04, "ecpm": 32000},
-            {"country": "Australia", "code": "AU", "weight": 0.03, "ecpm": 35000}
+            {"country": "Indonesia", "code": "ID", "weight": 0.65, "ecpm": 18000, "rule": "DFLT GML"},
+            {"country": "Kazakhstan", "code": "KZ", "weight": 0.12, "ecpm": 26000, "rule": "DFLT GML kz"},
+            {"country": "United States", "code": "US", "weight": 0.08, "ecpm": 48000, "rule": "DFLT GML T1"},
+            {"country": "Malaysia", "code": "MY", "weight": 0.05, "ecpm": 22000, "rule": "DFLT GML T2"},
+            {"country": "Singapore", "code": "SG", "weight": 0.05, "ecpm": 38000, "rule": "DFLT GML T2"},
+            {"country": "Japan", "code": "JP", "weight": 0.03, "ecpm": 32000, "rule": "DFLT GML T1"},
+            {"country": "Australia", "code": "AU", "weight": 0.02, "ecpm": 35000, "rule": "DFLT GML T1"}
         ]
         units = ["Header_Responsive", "InArticle_Native", "Mobile_Sticky_Bottom", "Sidebar_300x600"]
 
@@ -1155,6 +1167,9 @@ class GAMService:
                         ad_reqs = int(imps * rng.uniform(2.5, 3.2))
                         match_reqs = imps
                         mr = (match_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 34.5
+                        p_rule = c.get("rule", "DFLT GML")
+                        if dom == "play.gemol.me" and c["code"] == "KZ":
+                            p_rule = "DFLT GML kz"
 
                         results.append({
                             "date": curr,
@@ -1162,6 +1177,7 @@ class GAMService:
                             "country": c["country"],
                             "country_code": c.get("code", "ID"),
                             "ad_unit": unit,
+                            "pricing_rule_name": p_rule,
                             "revenue": round(base_rev, 2),
                             "impressions": imps,
                             "ecpm": round(c["ecpm"], 2),

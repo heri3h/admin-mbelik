@@ -191,9 +191,10 @@ class SyncService:
                 dom = (item.get("domain") or "").strip().lower()
                 c_name = (item.get("country") or "Indonesia").strip()
                 unit = (item.get("ad_unit") or "Standard Ad Unit").strip()
+                p_rule = item.get("pricing_rule_name", "All Rules")
                 if not dom:
                     continue
-                norm_c_key = (item["date"], dom, c_name.lower(), unit.lower())
+                norm_c_key = (item["date"], dom, c_name.lower(), unit.lower(), p_rule.lower())
                 if norm_c_key not in aggregated_country:
                     aggregated_country[norm_c_key] = {
                         "date": item["date"],
@@ -201,6 +202,7 @@ class SyncService:
                         "country": c_name,
                         "country_code": item.get("country_code", "ID"),
                         "ad_unit": unit,
+                        "pricing_rule_name": p_rule,
                         "revenue": 0.0,
                         "impressions": 0,
                         "clicks": 0,
@@ -232,6 +234,7 @@ class SyncService:
                     country=item["country"],
                     country_code=country_code,
                     ad_unit=item["ad_unit"],
+                    pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
                     revenue=adj_rev,
                     impressions=imps,
                     ecpm=adj_ecpm,
