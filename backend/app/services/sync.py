@@ -384,7 +384,7 @@ def export_site_today_json(
     db_country_rows = db.query(
         GAMCountryMetric.country,
         GAMCountryMetric.country_code,
-        func.max(GAMCountryMetric.pricing_rule_name).label("pricing_rule_name"),
+        GAMCountryMetric.pricing_rule_name,
         func.sum(GAMCountryMetric.revenue).label("revenue"),
         func.sum(GAMCountryMetric.impressions).label("impressions"),
         func.sum(GAMCountryMetric.clicks).label("clicks"),
@@ -393,7 +393,7 @@ def export_site_today_json(
     ).filter(
         func.lower(GAMCountryMetric.domain) == domain.lower(),
         GAMCountryMetric.date == today_date
-    ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code).all()
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code, GAMCountryMetric.pricing_rule_name).all()
 
     if not db_country_rows:
         latest_c_date = db.query(func.max(GAMCountryMetric.date)).filter(
@@ -403,7 +403,7 @@ def export_site_today_json(
             db_country_rows = db.query(
                 GAMCountryMetric.country,
                 GAMCountryMetric.country_code,
-                func.max(GAMCountryMetric.pricing_rule_name).label("pricing_rule_name"),
+                GAMCountryMetric.pricing_rule_name,
                 func.sum(GAMCountryMetric.revenue).label("revenue"),
                 func.sum(GAMCountryMetric.impressions).label("impressions"),
                 func.sum(GAMCountryMetric.clicks).label("clicks"),
@@ -412,33 +412,48 @@ def export_site_today_json(
             ).filter(
                 func.lower(GAMCountryMetric.domain) == domain.lower(),
                 GAMCountryMetric.date == latest_c_date
-            ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code).all()
+            ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code, GAMCountryMetric.pricing_rule_name).all()
+
+    country_map = {}
+    for crow in db_country_rows:
+        c_name = crow.country or "Unknown Region"
+        if c_name not in country_map:
+            country_map[c_name] = {
+                "country": c_name,
+                "country_code": crow.country_code,
+                "revenue": 0.0,
+                "impressions": 0,
+                "clicks": 0,
+                "ad_requests": 0,
+                "matched_requests": 0,
+                "pricing_rule_name": getattr(crow, 'pricing_rule_name', None) or "All Rules"
+            }
+        c_item = country_map[c_name]
+        c_item["revenue"] += (crow.revenue or 0.0)
+        c_item["impressions"] += (crow.impressions or 0)
+        c_item["clicks"] += (crow.clicks or 0)
+        c_item["ad_requests"] += (crow.ad_requests or 0)
+        c_item["matched_requests"] += (crow.matched_requests or 0)
+
+        p_rule = getattr(crow, 'pricing_rule_name', None)
+        if p_rule and p_rule not in ["(No pricing rule applied)", "All Rules"]:
+            c_item["pricing_rule_name"] = p_rule
 
     countries_list = []
-    if db_country_rows:
+    if country_map:
         from app.services.gam import get_country_meta
-        for crow in db_country_rows:
-            c_name = crow.country or "Unknown Region"
-            c_rev = crow.revenue or 0.0
-            c_imps = crow.impressions or 0
-            c_clks = crow.clicks or 0
-            c_ad_reqs = crow.ad_requests or 0
-            c_matched_reqs = crow.matched_requests or 0
+        for c_item in country_map.values():
+            c_name = c_item["country"]
+            c_rev = c_item["revenue"]
+            c_imps = c_item["impressions"]
+            c_clks = c_item["clicks"]
+            c_ad_reqs = c_item["ad_requests"]
+            c_matched_reqs = c_item["matched_requests"]
 
             c_meta = get_country_meta(c_name)
-            c_code = crow.country_code or c_meta["code"]
+            c_code = c_item["country_code"] or c_meta["code"]
             c_flag = c_meta["flag"]
-
-            p_rule = getattr(crow, "pricing_rule_name", None) or "DFLT GML"
-            if p_rule in ["(No pricing rule applied)", "All Rules", None, ""]:
-                if c_code == "KZ" or c_name.lower() == "kazakhstan":
-                    p_rule = "DFLT GML kz"
-                elif c_code in ["US", "AU", "GB", "CA"]:
-                    p_rule = "DFLT GML T1"
-                elif c_code in ["MY", "SG", "JP", "KR"]:
-                    p_rule = "DFLT GML T2"
-                else:
-                    p_rule = "DFLT GML"
+            p_rule = c_item["pricing_rule_name"]
 
             if c_matched_reqs == 0 and c_imps > 0:
                 c_matched_reqs = c_imps
