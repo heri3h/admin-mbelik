@@ -91,29 +91,29 @@ export default function AccountsTable({ accounts }) {
         </span>
       </div>
 
-      <div className="w-full max-w-full rounded-b-2xl">
+      <div className="overflow-x-auto w-full max-w-full rounded-b-2xl">
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
           <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider select-none shadow-md">
             <tr>
-              <th onClick={() => handleSort('account_name')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('account_name')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Google Ads Account {renderSortIndicator('account_name')}
               </th>
-              <th onClick={() => handleSort('customer_id')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('customer_id')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Customer ID {renderSortIndicator('customer_id')}
               </th>
-              <th onClick={() => handleSort('total_spend')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('total_spend')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Total Spend {renderSortIndicator('total_spend')}
               </th>
-              <th onClick={() => handleSort('impressions')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('impressions')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Impressions {renderSortIndicator('impressions')}
               </th>
-              <th onClick={() => handleSort('clicks')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('clicks')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Clicks {renderSortIndicator('clicks')}
               </th>
-              <th onClick={() => handleSort('cpc')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('cpc')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Avg CPC {renderSortIndicator('cpc')}
               </th>
-              <th onClick={() => handleSort('ctr')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('ctr')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 CTR (%) {renderSortIndicator('ctr')}
               </th>
             </tr>
