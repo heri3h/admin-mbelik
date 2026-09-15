@@ -106,7 +106,7 @@ export default function DashboardPage() {
           <SummaryCards data={summary} />
 
           {/* Daily Trend Chart */}
-          <TrendChart data={trend} />
+          <TrendChart data={trend} startDate={startDate} endDate={endDate} />
 
           {/* Breakdown Reports Section */}
           <div className="space-y-4">

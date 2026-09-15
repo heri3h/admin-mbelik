@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -11,11 +11,21 @@ import {
   Legend
 } from 'recharts';
 
-export default function TrendChart({ data }) {
+export default function TrendChart({ data, startDate, endDate }) {
+  const isSingleDay = Boolean(startDate && endDate && startDate === endDate);
+
   const [showRevenue, setShowRevenue] = useState(true);
   const [showSpend, setShowSpend] = useState(true);
   const [showProfit, setShowProfit] = useState(true);
-  const [showRoi, setShowRoi] = useState(true);
+  const [showRoi, setShowRoi] = useState(!isSingleDay);
+
+  useEffect(() => {
+    if (isSingleDay) {
+      setShowRoi(false);
+    } else {
+      setShowRoi(true);
+    }
+  }, [startDate, endDate, isSingleDay]);
 
   if (!data || data.length === 0) {
     return (
@@ -74,10 +84,12 @@ export default function TrendChart({ data }) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <span>Daily Performance & ROI Trend</span>
+            <span>{isSingleDay ? 'Intraday Hourly Performance Trend' : 'Daily Performance & ROI Trend'}</span>
           </h3>
           <p className="text-slate-400 text-xs mt-0.5">
-            Perbandingan Daily Spend (Google Ads), Revenue (AdX), Net Profit, dan ROI (%)
+            {isSingleDay
+              ? 'Trend jam demi jam Spend (Google Ads), Revenue (AdX), dan Net Profit'
+              : 'Perbandingan Daily Spend (Google Ads), Revenue (AdX), Net Profit, dan ROI (%)'}
           </p>
         </div>
 
@@ -116,23 +128,25 @@ export default function TrendChart({ data }) {
           >
             ● Net Profit
           </button>
-          <button
-            type="button"
-            onClick={() => setShowRoi(!showRoi)}
-            className={`px-2.5 py-1 rounded-lg font-medium border transition-all ${
-              showRoi
-                ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-sm'
-                : 'bg-slate-900/50 text-slate-500 border-slate-700/50 line-through'
-            }`}
-          >
-            📈 ROI (%)
-          </button>
+          {!isSingleDay && (
+            <button
+              type="button"
+              onClick={() => setShowRoi(!showRoi)}
+              className={`px-2.5 py-1 rounded-lg font-medium border transition-all ${
+                showRoi
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-sm'
+                  : 'bg-slate-900/50 text-slate-500 border-slate-700/50 line-through'
+              }`}
+            >
+              📈 ROI (%)
+            </button>
+          )}
         </div>
       </div>
 
       <div className="h-80 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 10, right: showRoi ? 15 : -10, left: -20, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 10, right: (showRoi && !isSingleDay) ? 15 : -10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
@@ -163,7 +177,7 @@ export default function TrendChart({ data }) {
               tickLine={false}
             />
             {/* Right Y Axis for ROI % */}
-            {showRoi && (
+            {showRoi && !isSingleDay && (
               <YAxis
                 yAxisId="right"
                 orientation="right"
@@ -212,7 +226,7 @@ export default function TrendChart({ data }) {
                 fill="url(#colorProfit)"
               />
             )}
-            {showRoi && (
+            {showRoi && !isSingleDay && (
               <Line
                 yAxisId="right"
                 type="monotone"

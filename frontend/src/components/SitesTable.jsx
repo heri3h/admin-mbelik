@@ -3,6 +3,8 @@ import { Globe, Search, Link as LinkIcon, TrendingUp, TrendingDown, ChevronRight
 import CountryBreakdownModal from './CountryBreakdownModal';
 
 export default function SitesTable({ sites, startDate, endDate }) {
+  const isSingleDay = Boolean(startDate && endDate && startDate === endDate);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [sortColumn, setSortColumn] = useState('total_revenue');
@@ -139,9 +141,11 @@ export default function SitesTable({ sites, startDate, endDate }) {
               <th onClick={() => handleSort('net_profit')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
                 Net Profit {renderSortIndicator('net_profit')}
               </th>
-              <th onClick={() => handleSort('roi')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
-                ROI {renderSortIndicator('roi')}
-              </th>
+              {!isSingleDay && (
+                <th onClick={() => handleSort('roi')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+                  ROI {renderSortIndicator('roi')}
+                </th>
+              )}
               <th onClick={() => handleSort('ad_requests')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
                 Ad Requests {renderSortIndicator('ad_requests')}
               </th>
@@ -226,18 +230,20 @@ export default function SitesTable({ sites, startDate, endDate }) {
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-right">
-                    <div className="flex flex-col items-end font-mono font-bold">
-                      {hasSpend ? (
-                        <span className={isProfitable ? 'text-emerald-400' : 'text-rose-400'}>
-                          {site.roi > 0 ? `+${site.roi}%` : `${site.roi}%`}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">N/A</span>
-                      )}
-                      {hasSpend && renderDeltaBadge(site.roi_change_pct, false, compLabel)}
-                    </div>
-                  </td>
+                  {!isSingleDay && (
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex flex-col items-end font-mono font-bold">
+                        {hasSpend ? (
+                          <span className={isProfitable ? 'text-emerald-400' : 'text-rose-400'}>
+                            {site.roi > 0 ? `+${site.roi}%` : `${site.roi}%`}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">N/A</span>
+                        )}
+                        {hasSpend && renderDeltaBadge(site.roi_change_pct, false, compLabel)}
+                      </div>
+                    </td>
+                  )}
 
                   <td className="px-5 py-4 text-right font-mono text-slate-300">
                     {(site.ad_requests || 0).toLocaleString()}
