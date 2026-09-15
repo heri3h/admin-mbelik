@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
 import { Globe, Search, Link as LinkIcon, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
 import CountryBreakdownModal from './CountryBreakdownModal';
+import ColumnToggleDropdown from './ColumnToggleDropdown';
+
+const ALL_COLUMNS = [
+  { key: 'domain', label: 'Site / Domain' },
+  { key: 'total_spend', label: 'Spend (Ads)' },
+  { key: 'total_revenue', label: 'Revenue (AdX)' },
+  { key: 'net_profit', label: 'Net Profit' },
+  { key: 'roi', label: 'ROI' },
+  { key: 'ad_requests', label: 'Ad Requests' },
+  { key: 'matched_requests', label: 'Matched Requests' },
+  { key: 'match_rate', label: 'MR AdX' },
+  { key: 'ecpm', label: 'eCPM' },
+];
 
 export default function SitesTable({ sites, startDate, endDate }) {
   const isSingleDay = Boolean(startDate && endDate && startDate === endDate);
@@ -9,6 +22,17 @@ export default function SitesTable({ sites, startDate, endDate }) {
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [sortColumn, setSortColumn] = useState('total_revenue');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [visibleColumns, setVisibleColumns] = useState(
+    ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {})
+  );
+
+  const handleToggleColumn = (key) => {
+    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleResetColumns = () => {
+    setVisibleColumns(ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {}));
+  };
 
   if (!sites || sites.length === 0) {
     return (
@@ -119,6 +143,14 @@ export default function SitesTable({ sites, startDate, endDate }) {
               className="bg-slate-900 border border-slate-700 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg focus:outline-none focus:border-sky-500 w-full sm:w-48"
             />
           </div>
+
+          <ColumnToggleDropdown
+            columns={ALL_COLUMNS}
+            visibleColumns={visibleColumns}
+            onToggleColumn={handleToggleColumn}
+            onResetColumns={handleResetColumns}
+          />
+
           <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg shrink-0">
             {filteredSites.length} Active Sites
           </span>
@@ -129,60 +161,78 @@ export default function SitesTable({ sites, startDate, endDate }) {
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
           <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] tracking-wider select-none shadow-md">
             <tr>
-              <th onClick={() => handleSort('domain')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center space-x-1 leading-tight">
-                  <span>Site /<br/>Domain</span>
-                  {renderSortIndicator('domain')}
-                </div>
-              </th>
-              <th onClick={() => handleSort('total_spend')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center justify-end space-x-1 leading-tight">
-                  <span>Spend<br/>(Ads)</span>
-                  {renderSortIndicator('total_spend')}
-                </div>
-              </th>
-              <th onClick={() => handleSort('total_revenue')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center justify-end space-x-1 leading-tight">
-                  <span>Revenue<br/>(AdX)</span>
-                  {renderSortIndicator('total_revenue')}
-                </div>
-              </th>
-              <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center justify-end space-x-1 leading-tight">
-                  <span>Net<br/>Profit</span>
-                  {renderSortIndicator('net_profit')}
-                </div>
-              </th>
-              <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center justify-end space-x-1 leading-tight">
-                  <span>ROI</span>
-                  {renderSortIndicator('roi')}
-                </div>
-              </th>
-              <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center justify-end space-x-1 leading-tight">
-                  <span>Ad<br/>Requests</span>
-                  {renderSortIndicator('ad_requests')}
-                </div>
-              </th>
-              <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center justify-end space-x-1 leading-tight">
-                  <span>Matched<br/>Requests</span>
-                  {renderSortIndicator('matched_requests')}
-                </div>
-              </th>
-              <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center justify-end space-x-1 leading-tight">
-                  <span>MR AdX</span>
-                  {renderSortIndicator('match_rate')}
-                </div>
-              </th>
-              <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                <div className="flex items-center justify-end space-x-1 leading-tight">
-                  <span>eCPM</span>
-                  {renderSortIndicator('ecpm')}
-                </div>
-              </th>
+              {visibleColumns.domain && (
+                <th onClick={() => handleSort('domain')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center space-x-1 leading-tight">
+                    <span>Site /<br/>Domain</span>
+                    {renderSortIndicator('domain')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.total_spend && (
+                <th onClick={() => handleSort('total_spend')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>Spend<br/>(Ads)</span>
+                    {renderSortIndicator('total_spend')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.total_revenue && (
+                <th onClick={() => handleSort('total_revenue')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>Revenue<br/>(AdX)</span>
+                    {renderSortIndicator('total_revenue')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.net_profit && (
+                <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>Net<br/>Profit</span>
+                    {renderSortIndicator('net_profit')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.roi && (
+                <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>ROI</span>
+                    {renderSortIndicator('roi')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.ad_requests && (
+                <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>Ad<br/>Requests</span>
+                    {renderSortIndicator('ad_requests')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.matched_requests && (
+                <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>Matched<br/>Requests</span>
+                    {renderSortIndicator('matched_requests')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.match_rate && (
+                <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>MR AdX</span>
+                    {renderSortIndicator('match_rate')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.ecpm && (
+                <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>eCPM</span>
+                    {renderSortIndicator('ecpm')}
+                  </div>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
@@ -193,99 +243,117 @@ export default function SitesTable({ sites, startDate, endDate }) {
 
               return (
                 <tr key={idx} className="hover:bg-slate-700/40 transition-colors group">
-                  <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
-                    <div className="flex flex-col space-y-1">
-                      <button
-                        onClick={() => setSelectedDomain(site.domain)}
-                        className="flex items-center space-x-2 text-left hover:text-emerald-400 transition-colors focus:outline-none cursor-pointer"
-                        title="Click to view country breakdown"
-                      >
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform"></span>
-                        <span className="text-sm font-bold hover:underline decoration-emerald-400 underline-offset-4">
-                          {site.domain}
-                        </span>
-                      </button>
-
-                      {site.assigned_customer_ids && site.assigned_customer_ids.length > 0 ? (
-                        <div className="flex items-center space-x-1 pl-4">
-                          <LinkIcon className="w-3 h-3 text-sky-400 shrink-0" />
-                          <span className="text-[10px] font-mono text-sky-300">
-                            Ads ID: {site.assigned_customer_ids.join(', ')}
+                  {visibleColumns.domain && (
+                    <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
+                      <div className="flex flex-col space-y-1">
+                        <button
+                          onClick={() => setSelectedDomain(site.domain)}
+                          className="flex items-center space-x-2 text-left hover:text-emerald-400 transition-colors focus:outline-none cursor-pointer"
+                          title="Click to view country breakdown"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform"></span>
+                          <span className="text-sm font-bold hover:underline decoration-emerald-400 underline-offset-4">
+                            {site.domain}
                           </span>
-                        </div>
-                      ) : (
-                        <span className="text-[10px] text-slate-500 pl-4 italic">
-                          No Ads ID Assigned
+                        </button>
+
+                        {site.assigned_customer_ids && site.assigned_customer_ids.length > 0 ? (
+                          <div className="flex items-center space-x-1 pl-4">
+                            <LinkIcon className="w-3 h-3 text-sky-400 shrink-0" />
+                            <span className="text-[10px] font-mono text-sky-300">
+                              Ads ID: {site.assigned_customer_ids.join(', ')}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 pl-4 italic">
+                            No Ads ID Assigned
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  )}
+
+                  {visibleColumns.total_spend && (
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <div className="flex flex-col items-end">
+                        <span className={`font-medium ${hasSpend ? 'text-rose-400' : 'text-slate-500'}`}>
+                          {hasSpend ? formatCurrency(site.total_spend) : '-'}
                         </span>
-                      )}
-                    </div>
-                  </td>
+                        {hasSpend && renderDeltaBadge(site.spend_change_pct, true, compLabel)}
+                      </div>
+                    </td>
+                  )}
 
-                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                    <div className="flex flex-col items-end">
-                      <span className={`font-medium ${hasSpend ? 'text-rose-400' : 'text-slate-500'}`}>
-                        {hasSpend ? formatCurrency(site.total_spend) : '-'}
-                      </span>
-                      {hasSpend && renderDeltaBadge(site.spend_change_pct, true, compLabel)}
-                    </div>
-                  </td>
+                  {visibleColumns.total_revenue && (
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <div className="flex flex-col items-end">
+                        <span className="font-bold text-emerald-400">{formatCurrency(site.total_revenue)}</span>
+                        {renderDeltaBadge(site.revenue_change_pct, false, compLabel)}
+                      </div>
+                    </td>
+                  )}
 
-                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                    <div className="flex flex-col items-end">
-                      <span className="font-bold text-emerald-400">{formatCurrency(site.total_revenue)}</span>
-                      {renderDeltaBadge(site.revenue_change_pct, false, compLabel)}
-                    </div>
-                  </td>
+                  {visibleColumns.net_profit && (
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <div className="flex flex-col items-end">
+                        {hasSpend ? (
+                          <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold border ${
+                            isProfitable
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                              : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                          }`}>
+                            {isProfitable ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                            <span>{formatCurrency(site.net_profit)}</span>
+                          </span>
+                        ) : (
+                          <span className="text-emerald-400 font-bold">{formatCurrency(site.total_revenue)}</span>
+                        )}
+                        {renderDeltaBadge(site.profit_change_pct, false, compLabel)}
+                      </div>
+                    </td>
+                  )}
 
-                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                    <div className="flex flex-col items-end">
-                      {hasSpend ? (
-                        <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold border ${
-                          isProfitable
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                        }`}>
-                          {isProfitable ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                          <span>{formatCurrency(site.net_profit)}</span>
-                        </span>
-                      ) : (
-                        <span className="text-emerald-400 font-bold">{formatCurrency(site.total_revenue)}</span>
-                      )}
-                      {renderDeltaBadge(site.profit_change_pct, false, compLabel)}
-                    </div>
-                  </td>
+                  {visibleColumns.roi && (
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <div className="flex flex-col items-end font-mono font-bold">
+                        {hasSpend ? (
+                          <span className={isProfitable ? 'text-emerald-400' : 'text-rose-400'}>
+                            {site.roi > 0 ? `+${site.roi}%` : `${site.roi}%`}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">N/A</span>
+                        )}
+                        {hasSpend && renderDeltaBadge(site.roi_change_pct, false, compLabel)}
+                      </div>
+                    </td>
+                  )}
 
-                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                    <div className="flex flex-col items-end font-mono font-bold">
-                      {hasSpend ? (
-                        <span className={isProfitable ? 'text-emerald-400' : 'text-rose-400'}>
-                          {site.roi > 0 ? `+${site.roi}%` : `${site.roi}%`}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">N/A</span>
-                      )}
-                      {hasSpend && renderDeltaBadge(site.roi_change_pct, false, compLabel)}
-                    </div>
-                  </td>
+                  {visibleColumns.ad_requests && (
+                    <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                      {(site.ad_requests || 0).toLocaleString()}
+                    </td>
+                  )}
 
-                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
-                    {(site.ad_requests || 0).toLocaleString()}
-                  </td>
+                  {visibleColumns.matched_requests && (
+                    <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                      {(site.matched_requests || 0).toLocaleString()}
+                    </td>
+                  )}
 
-                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
-                    {(site.matched_requests || 0).toLocaleString()}
-                  </td>
+                  {visibleColumns.match_rate && (
+                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
+                      {(site.match_rate || 0).toFixed(1)}%
+                    </td>
+                  )}
 
-                  <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
-                    {(site.match_rate || 0).toFixed(1)}%
-                  </td>
-
-                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                    <div className="flex flex-col items-end font-mono font-semibold text-sky-400">
-                      <span>{formatCurrency(site.ecpm)}</span>
-                      {renderDeltaBadge(site.ecpm_change_pct, false, compLabel)}
-                    </div>
-                  </td>
+                  {visibleColumns.ecpm && (
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <div className="flex flex-col items-end font-mono font-semibold text-sky-400">
+                        <span>{formatCurrency(site.ecpm)}</span>
+                        {renderDeltaBadge(site.ecpm_change_pct, false, compLabel)}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
