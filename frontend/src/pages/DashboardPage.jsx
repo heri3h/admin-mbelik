@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [accounts, setAccounts] = useState([]);
   const [sites, setSites] = useState([]);
   const [placements, setPlacements] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Active breakdown view: 'sites' (default), 'placements', 'accounts'
