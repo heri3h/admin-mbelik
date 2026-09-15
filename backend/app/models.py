@@ -47,7 +47,7 @@ class GAMMetric(Base):
     synced_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint('date', 'domain', 'ad_unit', name='_date_domain_adunit_uc'),
+        UniqueConstraint('date', 'domain', 'ad_unit', 'pricing_rule_name', name='_date_domain_adunit_pricing_uc'),
     )
 
 class DailyProfitSummary(Base):
@@ -102,7 +102,7 @@ class GAMCountryMetric(Base):
     synced_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint('date', 'domain', 'country', 'ad_unit', name='_date_domain_country_adunit_uc'),
+        UniqueConstraint('date', 'domain', 'country', 'ad_unit', 'pricing_rule_name', name='_date_domain_country_adunit_pricing_uc'),
     )
 
 

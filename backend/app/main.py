@@ -23,6 +23,26 @@ def auto_migrate_db():
             if settings.DATABASE_URL.startswith("sqlite"):
                 conn.execute(text("PRAGMA journal_mode=WAL;"))
                 conn.execute(text("PRAGMA busy_timeout=30000;"))
+
+                # Recreate gam_metrics if it still has old unique constraint
+                res_m = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='gam_metrics';")).fetchone()
+                if res_m and res_m[0] and "_date_domain_adunit_uc" in res_m[0]:
+                    print("Migrating gam_metrics table schema...")
+                    conn.execute(text("DROP TABLE IF EXISTS gam_metrics;"))
+                    conn.commit()
+
+                # Recreate gam_country_metrics if it still has old unique constraint
+                res_c = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='gam_country_metrics';")).fetchone()
+                if res_c and res_c[0] and "_date_domain_country_adunit_uc" in res_c[0]:
+                    print("Migrating gam_country_metrics table schema...")
+                    conn.execute(text("DROP TABLE IF EXISTS gam_country_metrics;"))
+                    conn.commit()
+
+        # Re-create tables with new schema metadata
+        Base.metadata.create_all(bind=engine)
+
+        with engine.connect() as conn:
+            if settings.DATABASE_URL.startswith("sqlite"):
                 res = conn.execute(text("PRAGMA table_info(gam_metrics);"))
                 columns = [row[1] for row in res.fetchall()]
                 if "match_rate" not in columns:
