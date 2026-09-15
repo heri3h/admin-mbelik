@@ -34,14 +34,14 @@ export default function DomainsTable({ domains }) {
       </div>
 
       <div className="overflow-x-auto w-full max-w-full rounded-b-2xl">
-        <table className="w-full text-left text-xs text-slate-300 border-collapse">
-          <thead className="sticky top-16 z-30 bg-slate-900/95 backdrop-blur text-slate-400 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-700/60 select-none shadow-md">
+        <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
+          <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-700/60 select-none shadow-md">
             <tr>
-              <th className="sticky top-16 z-30 bg-slate-900/95 px-5 py-3.5">Domain</th>
-              <th className="sticky top-16 z-30 bg-slate-900/95 px-5 py-3.5 text-right">AdX Revenue</th>
-              <th className="sticky top-16 z-30 bg-slate-900/95 px-5 py-3.5 text-right">AdX Impressions</th>
-              <th className="sticky top-16 z-30 bg-slate-900/95 px-5 py-3.5 text-right">Clicks</th>
-              <th className="sticky top-16 z-30 bg-slate-900/95 px-5 py-3.5 text-right">eCPM</th>
+              <th className="px-5 py-3.5 border-b border-slate-700/60">Domain</th>
+              <th className="px-5 py-3.5 border-b border-slate-700/60 text-right">AdX Revenue</th>
+              <th className="px-5 py-3.5 border-b border-slate-700/60 text-right">AdX Impressions</th>
+              <th className="px-5 py-3.5 border-b border-slate-700/60 text-right">Clicks</th>
+              <th className="px-5 py-3.5 border-b border-slate-700/60 text-right">eCPM</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">

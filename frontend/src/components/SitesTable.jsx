@@ -126,34 +126,34 @@ export default function SitesTable({ sites, startDate, endDate }) {
       </div>
 
       <div className="overflow-x-auto w-full max-w-full rounded-b-2xl">
-        <table className="w-full text-left text-xs text-slate-300 border-collapse">
-          <thead className="sm:sticky sm:top-16 z-30 bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-700/60 select-none shadow-md">
+        <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
+          <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider select-none shadow-md">
             <tr>
-              <th onClick={() => handleSort('domain')} className="px-5 py-3.5 cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('domain')} className="px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
                 Site / Domain Name {renderSortIndicator('domain')}
               </th>
-              <th onClick={() => handleSort('total_spend')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('total_spend')} className="px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                 Spend (Ads) {renderSortIndicator('total_spend')}
               </th>
-              <th onClick={() => handleSort('total_revenue')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('total_revenue')} className="px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                 Revenue (AdX) {renderSortIndicator('total_revenue')}
               </th>
-              <th onClick={() => handleSort('net_profit')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('net_profit')} className="px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                 Net Profit {renderSortIndicator('net_profit')}
               </th>
-              <th onClick={() => handleSort('roi')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('roi')} className="px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                 ROI {renderSortIndicator('roi')}
               </th>
-              <th onClick={() => handleSort('ad_requests')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('ad_requests')} className="px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                 Ad Requests {renderSortIndicator('ad_requests')}
               </th>
-              <th onClick={() => handleSort('matched_requests')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('matched_requests')} className="px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                 Matched Requests {renderSortIndicator('matched_requests')}
               </th>
-              <th onClick={() => handleSort('match_rate')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('match_rate')} className="px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                 MR AdX {renderSortIndicator('match_rate')}
               </th>
-              <th onClick={() => handleSort('ecpm')} className="px-5 py-3.5 text-right cursor-pointer hover:text-white transition-colors">
+              <th onClick={() => handleSort('ecpm')} className="px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                 eCPM {renderSortIndicator('ecpm')}
               </th>
             </tr>
