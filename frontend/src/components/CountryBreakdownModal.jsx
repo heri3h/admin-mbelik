@@ -293,44 +293,77 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                     {/* --- DYNAMIC THEAD ACROSS LEVEL 1 (COUNTRY) & LEVEL 2 (AD UNIT) --- */}
                     <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] tracking-wider select-none shadow-md">
                       <tr>
-                        <th onClick={() => handleSort('name')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          {selectedCountry ? 'Ad Unit / Placement' : 'Country'} {renderSortIndicator('name')}
+                        <th onClick={() => handleSort('name')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
+                          <div className="flex items-center space-x-1 leading-tight">
+                            <span>{selectedCountry ? 'Ad Unit /<br/>Placement' : 'Country'}</span>
+                            {renderSortIndicator('name')}
+                          </div>
                         </th>
                         {!selectedCountry && (
-                          <th onClick={() => handleSort('spend')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                            Spend (Ads) {renderSortIndicator('spend')}
+                          <th onClick={() => handleSort('spend')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>Spend<br/>(Ads)</span>
+                              {renderSortIndicator('spend')}
+                            </div>
                           </th>
                         )}
-                        <th onClick={() => handleSort('revenue')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          Revenue (AdX) {renderSortIndicator('revenue')}
+                        <th onClick={() => handleSort('revenue')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                          <div className="flex items-center justify-end space-x-1 leading-tight">
+                            <span>Revenue<br/>(AdX)</span>
+                            {renderSortIndicator('revenue')}
+                          </div>
                         </th>
-                        <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          CPM AdX (eCPM) {renderSortIndicator('ecpm')}
+                        <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                          <div className="flex items-center justify-end space-x-1 leading-tight">
+                            <span>CPM AdX<br/>(eCPM)</span>
+                            {renderSortIndicator('ecpm')}
+                          </div>
                         </th>
-                        <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          Ad Requests {renderSortIndicator('ad_requests')}
+                        <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                          <div className="flex items-center justify-end space-x-1 leading-tight">
+                            <span>Ad<br/>Requests</span>
+                            {renderSortIndicator('ad_requests')}
+                          </div>
                         </th>
-                        <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          Matched Requests {renderSortIndicator('matched_requests')}
+                        <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                          <div className="flex items-center justify-end space-x-1 leading-tight">
+                            <span>Matched<br/>Requests</span>
+                            {renderSortIndicator('matched_requests')}
+                          </div>
                         </th>
-                        <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          Match Rate {renderSortIndicator('match_rate')}
+                        <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                          <div className="flex items-center justify-end space-x-1 leading-tight">
+                            <span>Match<br/>Rate</span>
+                            {renderSortIndicator('match_rate')}
+                          </div>
                         </th>
-                        <th onClick={() => handleSort('ctr')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          CTR {renderSortIndicator('ctr')}
+                        <th onClick={() => handleSort('ctr')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                          <div className="flex items-center justify-end space-x-1 leading-tight">
+                            <span>CTR</span>
+                            {renderSortIndicator('ctr')}
+                          </div>
                         </th>
                         {!selectedCountry && (
-                          <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                            ROI {renderSortIndicator('roi')}
+                          <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>ROI</span>
+                              {renderSortIndicator('roi')}
+                            </div>
                           </th>
                         )}
                         {!selectedCountry && (
-                          <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                            Profit {renderSortIndicator('net_profit')}
+                          <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>Profit</span>
+                              {renderSortIndicator('net_profit')}
+                            </div>
                           </th>
                         )}
-                        <th onClick={() => handleSort('pricing_rule_name')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          PRICING_RULE_NAME {renderSortIndicator('pricing_rule_name')}
+                        <th onClick={() => handleSort('pricing_rule_name')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                          <div className="flex items-center justify-end space-x-1 leading-tight">
+                            <span>PRICING_<br/>RULE_NAME</span>
+                            {renderSortIndicator('pricing_rule_name')}
+                          </div>
                         </th>
                       </tr>
                     </thead>
@@ -340,7 +373,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                       {!selectedCountry ? (
                         sortedCountries.length === 0 ? (
                           <tr>
-                            <td colSpan="11" className="px-4 py-8 text-center text-slate-400 italic">
+                            <td colSpan="11" className="px-3 py-6 text-center text-slate-400 italic">
                               No country data found.
                             </td>
                           </tr>
@@ -356,7 +389,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                 className="hover:bg-emerald-500/10 cursor-pointer transition-colors group"
                                 title="Click to view ad unit details for this country"
                               >
-                                <td className="px-4 py-3.5 font-semibold text-white whitespace-nowrap">
+                                <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
                                   <div className="flex items-center space-x-2">
                                     <span className="text-base group-hover:scale-125 transition-transform">{c.flag_emoji}</span>
                                     <span className="font-bold group-hover:text-emerald-400 group-hover:underline underline-offset-4 decoration-emerald-400 transition-colors">
@@ -366,35 +399,35 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   </div>
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-medium text-rose-400 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-medium text-rose-400 whitespace-nowrap">
                                   {hasSpend ? formatCurrency(c.spend) : <span className="text-slate-500">-</span>}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-bold text-emerald-400 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">
                                   {formatCurrency(c.revenue)}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">
                                   {formatCurrency(c.ecpm)}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(c.ad_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(c.matched_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
                                   {(c.match_rate || 0).toFixed(1)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(c.ctr || 0).toFixed(2)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-bold whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono font-bold whitespace-nowrap">
                                   {hasSpend ? (
                                     <span className={isProfitable ? 'text-emerald-400' : 'text-rose-400'}>
                                       {c.roi > 0 ? `+${c.roi.toFixed(1)}%` : `${c.roi.toFixed(1)}%`}
@@ -404,9 +437,9 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   )}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right whitespace-nowrap">
                                   {hasSpend ? (
-                                    <span className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                                    <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold border ${
                                       isProfitable
                                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                                         : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
@@ -419,7 +452,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   )}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-medium text-amber-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
                                   {c.pricing_rule_name || 'All Rules'}
                                 </td>
                               </tr>
@@ -430,7 +463,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         /* --- LEVEL 2: AD UNITS WITHIN SELECTED COUNTRY --- */
                         loadingAdUnits ? (
                           <tr>
-                            <td colSpan="8" className="px-4 py-8 text-center text-slate-400">
+                            <td colSpan="8" className="px-3 py-6 text-center text-slate-400">
                               <div className="flex items-center justify-center space-x-2">
                                 <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
                                 <span>Loading ad unit placements for {selectedCountry.country}...</span>
@@ -439,7 +472,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           </tr>
                         ) : sortedAdUnits.length === 0 ? (
                           <tr>
-                            <td colSpan="8" className="px-4 py-8 text-center text-slate-400 italic">
+                            <td colSpan="8" className="px-3 py-6 text-center text-slate-400 italic">
                               No ad unit placement data found for this country.
                             </td>
                           </tr>
@@ -448,38 +481,38 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             const revVal = p.total_revenue ?? p.revenue ?? 0;
                             return (
                               <tr key={idx} className="hover:bg-slate-700/40 transition-colors">
-                                <td className="px-4 py-3.5 font-semibold text-white whitespace-nowrap">
+                                <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
                                   <div className="flex flex-col space-y-0.5">
                                     <span className="font-bold text-slate-100">{p.ad_unit}</span>
                                     <span className="text-[10px] text-slate-400 font-mono">Domain: {p.domain}</span>
                                   </div>
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-bold text-emerald-400 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">
                                   {formatCurrency(revVal)}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">
                                   {formatCurrency(p.ecpm)}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(p.ad_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(p.matched_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
                                   {(p.match_rate || 0).toFixed(1)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
                                   {(p.ctr || 0).toFixed(2)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-medium text-amber-300 whitespace-nowrap">
+                                <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
                                   {p.pricing_rule_name || 'All Rules'}
                                 </td>
                               </tr>
@@ -493,46 +526,46 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                     <tfoot className="bg-slate-950 text-slate-200 font-semibold border-t border-slate-700/80 text-[11px]">
                       {selectedCountry ? (
                         <tr>
-                          <td className="px-4 py-3 font-bold whitespace-nowrap">
+                          <td className="px-3 py-2.5 font-bold whitespace-nowrap">
                             Total Ad Units ({selectedCountry.country})
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeRev)}</td>
-                          <td className="px-4 py-3 text-right font-mono text-sky-400 whitespace-nowrap">{formatCurrency(activeEcpm)}</td>
-                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeRev)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono text-sky-400 whitespace-nowrap">{formatCurrency(activeEcpm)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                             {level2TotalAdReqs.toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                             {level2TotalMatchedReqs.toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono text-indigo-300 whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-mono text-indigo-300 whitespace-nowrap">
                             {level2AvgMatchRate.toFixed(1)}%
                           </td>
-                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                             {level2AvgCtr.toFixed(2)}%
                           </td>
-                          <td className="px-4 py-3 text-right font-medium text-amber-300 whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
                             All Rules
                           </td>
                         </tr>
                       ) : (
                         <tr>
-                          <td className="px-4 py-3 font-bold whitespace-nowrap">Total / Average All Countries</td>
-                          <td className="px-4 py-3 text-right font-bold text-rose-400 whitespace-nowrap">{formatCurrency(activeSpend)}</td>
-                          <td className="px-4 py-3 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeRev)}</td>
-                          <td className="px-4 py-3 text-right font-mono text-sky-400 whitespace-nowrap">{formatCurrency(activeEcpm)}</td>
-                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                          <td className="px-3 py-2.5 font-bold whitespace-nowrap">Total / Average All Countries</td>
+                          <td className="px-3 py-2.5 text-right font-bold text-rose-400 whitespace-nowrap">{formatCurrency(activeSpend)}</td>
+                          <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeRev)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono text-sky-400 whitespace-nowrap">{formatCurrency(activeEcpm)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                             {totalAdReqs.toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                             {totalMatchedReqs.toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono text-indigo-300 whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-mono text-indigo-300 whitespace-nowrap">
                             {avgMatchRate.toFixed(1)}%
                           </td>
-                          <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                             {avgCtr.toFixed(2)}%
                           </td>
-                          <td className="px-4 py-3 text-right font-mono font-bold whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-mono font-bold whitespace-nowrap">
                             {activeSpend > 0 ? (
                               <span className={activeProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
                                 {activeRoi > 0 ? `+${activeRoi.toFixed(1)}%` : `${activeRoi.toFixed(1)}%`}
@@ -541,8 +574,8 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                               <span className="text-slate-500">N/A</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeProfit)}</td>
-                          <td className="px-4 py-3 text-right font-medium text-amber-300 whitespace-nowrap">
+                          <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeProfit)}</td>
+                          <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
                             All Rules
                           </td>
                         </tr>

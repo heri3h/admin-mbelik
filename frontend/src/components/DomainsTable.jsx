@@ -35,30 +35,30 @@ export default function DomainsTable({ domains }) {
 
       <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60">
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
-          <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider select-none shadow-md">
+          <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] tracking-wider select-none shadow-md">
             <tr>
-              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 whitespace-nowrap">Domain</th>
-              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">AdX Revenue</th>
-              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">AdX Impressions</th>
-              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">Clicks</th>
-              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">eCPM</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 leading-tight">Domain</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right leading-tight">AdX<br/>Revenue</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right leading-tight">AdX<br/>Impressions</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right leading-tight">Clicks</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right leading-tight">eCPM</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
             {domains.map((dom, idx) => (
               <tr key={idx} className="hover:bg-slate-700/30 transition-colors">
-                <td className="px-5 py-4 font-semibold text-white">
+                <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
                   <div className="flex items-center space-x-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                     <span>{dom.domain}</span>
                   </div>
                 </td>
-                <td className="px-5 py-4 text-right font-bold text-emerald-400">
+                <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">
                   {formatCurrency(dom.total_revenue)}
                 </td>
-                <td className="px-5 py-4 text-right">{dom.impressions.toLocaleString()}</td>
-                <td className="px-5 py-4 text-right">{dom.clicks.toLocaleString()}</td>
-                <td className="px-5 py-4 text-right font-mono font-semibold text-sky-400">{formatCurrency(dom.ecpm)}</td>
+                <td className="px-3 py-2.5 text-right whitespace-nowrap">{dom.impressions.toLocaleString()}</td>
+                <td className="px-3 py-2.5 text-right whitespace-nowrap">{dom.clicks.toLocaleString()}</td>
+                <td className="px-3 py-2.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">{formatCurrency(dom.ecpm)}</td>
               </tr>
             ))}
           </tbody>

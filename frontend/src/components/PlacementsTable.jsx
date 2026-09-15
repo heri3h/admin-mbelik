@@ -107,37 +107,73 @@ export default function PlacementsTable({ placements }) {
 
       <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60">
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
-          <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider select-none shadow-md">
+          <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] tracking-wider select-none shadow-md">
             <tr>
-              <th onClick={() => handleSort('ad_unit')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Ad Unit / Placement Name {renderSortIndicator('ad_unit')}
+              <th onClick={() => handleSort('ad_unit')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center space-x-1 leading-tight">
+                  <span>Ad Unit /<br/>Placement</span>
+                  {renderSortIndicator('ad_unit')}
+                </div>
               </th>
-              <th onClick={() => handleSort('domain')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Site / Domain {renderSortIndicator('domain')}
+              <th onClick={() => handleSort('domain')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center space-x-1 leading-tight">
+                  <span>Site /<br/>Domain</span>
+                  {renderSortIndicator('domain')}
+                </div>
               </th>
-              <th onClick={() => handleSort('total_revenue')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                AdX Revenue {renderSortIndicator('total_revenue')}
+              <th onClick={() => handleSort('total_revenue')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>AdX Revenue</span>
+                  {renderSortIndicator('total_revenue')}
+                </div>
               </th>
-              <th onClick={() => handleSort('impressions')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                AdX Impressions {renderSortIndicator('impressions')}
+              <th onClick={() => handleSort('impressions')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>AdX<br/>Impressions</span>
+                  {renderSortIndicator('impressions')}
+                </div>
               </th>
-              <th onClick={() => handleSort('clicks')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Clicks {renderSortIndicator('clicks')}
+              <th onClick={() => handleSort('clicks')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Clicks</span>
+                  {renderSortIndicator('clicks')}
+                </div>
               </th>
-              <th onClick={() => handleSort('ctr')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                CTR {renderSortIndicator('ctr')}
+              <th onClick={() => handleSort('ctr')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>CTR</span>
+                  {renderSortIndicator('ctr')}
+                </div>
               </th>
-              <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Ad Requests {renderSortIndicator('ad_requests')}
+              <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Ad<br/>Requests</span>
+                  {renderSortIndicator('ad_requests')}
+                </div>
               </th>
-              <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Matched Requests {renderSortIndicator('matched_requests')}
+              <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Matched<br/>Requests</span>
+                  {renderSortIndicator('matched_requests')}
+                </div>
               </th>
-              <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Match Rate {renderSortIndicator('match_rate')}
+              <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Match<br/>Rate</span>
+                  {renderSortIndicator('match_rate')}
+                </div>
               </th>
-              <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                eCPM {renderSortIndicator('ecpm')}
+              <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>eCPM</span>
+                  {renderSortIndicator('ecpm')}
+                </div>
+              </th>
+              <th onClick={() => handleSort('pricing_rule_name')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>PRICING_<br/>RULE_NAME</span>
+                  {renderSortIndicator('pricing_rule_name')}
+                </div>
               </th>
             </tr>
           </thead>
@@ -147,34 +183,38 @@ export default function PlacementsTable({ placements }) {
 
               return (
                 <tr key={idx} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="px-5 py-4 font-semibold text-white whitespace-nowrap">
+                  <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
                       <span>{item.ad_unit}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 font-mono text-slate-400 whitespace-nowrap">{item.domain}</td>
+                  <td className="px-3 py-2.5 font-mono text-slate-400 whitespace-nowrap">{item.domain}</td>
 
-                  <td className="px-5 py-4 text-right whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end font-bold text-emerald-400">
                       <span>{formatCurrency(item.total_revenue)}</span>
                       {renderDeltaBadge(item.revenue_change_pct, compLabel)}
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.impressions || 0).toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.clicks || 0).toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.ctr || 0).toFixed(2)}%</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.impressions || 0).toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.clicks || 0).toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.ctr || 0).toFixed(2)}%</td>
 
-                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.ad_requests || 0).toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right font-mono text-slate-300 whitespace-nowrap">{(item.matched_requests || 0).toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">{(item.match_rate || 0).toFixed(1)}%</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.ad_requests || 0).toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.matched_requests || 0).toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">{(item.match_rate || 0).toFixed(1)}%</td>
 
-                  <td className="px-5 py-4 text-right whitespace-nowrap">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end font-mono font-semibold text-sky-400">
                       <span>{formatCurrency(item.ecpm)}</span>
                       {renderDeltaBadge(item.ecpm_change_pct, compLabel)}
                     </div>
+                  </td>
+
+                  <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
+                    {item.pricing_rule_name || 'All Rules'}
                   </td>
                 </tr>
               );

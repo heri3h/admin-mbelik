@@ -126,14 +126,16 @@ class SyncService:
         for item in gam_data:
             dom = (item.get("domain") or "").strip().lower()
             unit = (item.get("ad_unit") or "Standard Ad Unit").strip()
+            p_rule = item.get("pricing_rule_name", "All Rules")
             if not dom:
                 continue
-            norm_key = (item["date"], dom, unit.lower())
+            norm_key = (item["date"], dom, unit.lower(), p_rule.lower())
             if norm_key not in aggregated_gam:
                 aggregated_gam[norm_key] = {
                     "date": item["date"],
                     "domain": dom,
                     "ad_unit": unit,
+                    "pricing_rule_name": p_rule,
                     "revenue": 0.0,
                     "impressions": 0,
                     "clicks": 0,
@@ -162,6 +164,7 @@ class SyncService:
                 date=item["date"],
                 domain=item["domain"],
                 ad_unit=item["ad_unit"],
+                pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
                 revenue=adj_rev,
                 impressions=imps,
                 ecpm=adj_ecpm,

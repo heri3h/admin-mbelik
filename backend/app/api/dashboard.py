@@ -603,6 +603,7 @@ def get_placements_breakdown(
     query_results = db.query(
         GAMMetric.domain,
         GAMMetric.ad_unit,
+        GAMMetric.pricing_rule_name,
         func.sum(GAMMetric.revenue).label("total_revenue"),
         func.sum(GAMMetric.impressions).label("total_impressions"),
         func.sum(GAMMetric.clicks).label("total_clicks"),
@@ -611,7 +612,7 @@ def get_placements_breakdown(
     ).filter(
         GAMMetric.date >= d_start,
         GAMMetric.date <= d_end
-    ).group_by(GAMMetric.domain, GAMMetric.ad_unit).all()
+    ).group_by(GAMMetric.domain, GAMMetric.ad_unit, GAMMetric.pricing_rule_name).all()
 
     items = []
     for row in query_results:
@@ -644,6 +645,7 @@ def get_placements_breakdown(
             matched_requests=tot_matched,
             match_rate=mr,
             ctr=ctr,
+            pricing_rule_name=getattr(row, 'pricing_rule_name', None) or "All Rules",
             revenue_change_pct=rev_change,
             ecpm_change_pct=ecpm_change,
             comparison_period_label=comp_label

@@ -127,34 +127,61 @@ export default function SitesTable({ sites, startDate, endDate }) {
 
       <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60">
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
-          <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider select-none shadow-md">
+          <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] tracking-wider select-none shadow-md">
             <tr>
-              <th onClick={() => handleSort('domain')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Site / Domain Name {renderSortIndicator('domain')}
+              <th onClick={() => handleSort('domain')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center space-x-1 leading-tight">
+                  <span>Site /<br/>Domain</span>
+                  {renderSortIndicator('domain')}
+                </div>
               </th>
-              <th onClick={() => handleSort('total_spend')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Spend (Ads) {renderSortIndicator('total_spend')}
+              <th onClick={() => handleSort('total_spend')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Spend<br/>(Ads)</span>
+                  {renderSortIndicator('total_spend')}
+                </div>
               </th>
-              <th onClick={() => handleSort('total_revenue')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Revenue (AdX) {renderSortIndicator('total_revenue')}
+              <th onClick={() => handleSort('total_revenue')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Revenue<br/>(AdX)</span>
+                  {renderSortIndicator('total_revenue')}
+                </div>
               </th>
-              <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Net Profit {renderSortIndicator('net_profit')}
+              <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Net<br/>Profit</span>
+                  {renderSortIndicator('net_profit')}
+                </div>
               </th>
-              <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                ROI {renderSortIndicator('roi')}
+              <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>ROI</span>
+                  {renderSortIndicator('roi')}
+                </div>
               </th>
-              <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Ad Requests {renderSortIndicator('ad_requests')}
+              <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Ad<br/>Requests</span>
+                  {renderSortIndicator('ad_requests')}
+                </div>
               </th>
-              <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                Matched Requests {renderSortIndicator('matched_requests')}
+              <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>Matched<br/>Requests</span>
+                  {renderSortIndicator('matched_requests')}
+                </div>
               </th>
-              <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                MR AdX {renderSortIndicator('match_rate')}
+              <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>MR AdX</span>
+                  {renderSortIndicator('match_rate')}
+                </div>
               </th>
-              <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                eCPM {renderSortIndicator('ecpm')}
+              <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                <div className="flex items-center justify-end space-x-1 leading-tight">
+                  <span>eCPM</span>
+                  {renderSortIndicator('ecpm')}
+                </div>
               </th>
             </tr>
           </thead>
@@ -166,7 +193,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
 
               return (
                 <tr key={idx} className="hover:bg-slate-700/40 transition-colors group">
-                  <td className="px-5 py-4 font-semibold text-white">
+                  <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
                     <div className="flex flex-col space-y-1">
                       <button
                         onClick={() => setSelectedDomain(site.domain)}
@@ -194,7 +221,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end">
                       <span className={`font-medium ${hasSpend ? 'text-rose-400' : 'text-slate-500'}`}>
                         {hasSpend ? formatCurrency(site.total_spend) : '-'}
@@ -203,17 +230,17 @@ export default function SitesTable({ sites, startDate, endDate }) {
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end">
                       <span className="font-bold text-emerald-400">{formatCurrency(site.total_revenue)}</span>
                       {renderDeltaBadge(site.revenue_change_pct, false, compLabel)}
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end">
                       {hasSpend ? (
-                        <span className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                        <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold border ${
                           isProfitable
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                             : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
@@ -228,7 +255,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
                     <div className="flex flex-col items-end font-mono font-bold">
                       {hasSpend ? (
                         <span className={isProfitable ? 'text-emerald-400' : 'text-rose-400'}>
@@ -241,19 +268,24 @@ export default function SitesTable({ sites, startDate, endDate }) {
                     </div>
                   </td>
 
-                  <td className="px-5 py-4 text-right font-mono text-slate-300">
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
                     {(site.ad_requests || 0).toLocaleString()}
                   </td>
 
-                  <td className="px-5 py-4 text-right font-mono text-slate-300">
+                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
                     {(site.matched_requests || 0).toLocaleString()}
                   </td>
 
-                  <td className="px-5 py-4 text-right font-mono font-semibold text-indigo-300">
+                  <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
                     {(site.match_rate || 0).toFixed(1)}%
                   </td>
 
-                  <td className="px-5 py-4 text-right font-mono font-semibold text-sky-400">{formatCurrency(site.ecpm)}</td>
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                    <div className="flex flex-col items-end font-mono font-semibold text-sky-400">
+                      <span>{formatCurrency(site.ecpm)}</span>
+                      {renderDeltaBadge(site.ecpm_change_pct, false, compLabel)}
+                    </div>
+                  </td>
                 </tr>
               );
             })}

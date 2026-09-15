@@ -485,6 +485,8 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME'],
                     ['DATE', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
@@ -733,14 +735,21 @@ class GAMService:
                             if ad_requests < matched_requests:
                                 ad_requests = matched_requests
 
+                            pricing_rule = "All Rules"
+                            for k, v in row.items():
+                                if k and ('PRICING_RULE' in k.upper() or 'RULE_NAME' in k.upper()) and v:
+                                    pricing_rule = v.strip()
+                                    break
+
                             match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
-                            key = (row_date, domain, ad_unit)
+                            key = (row_date, domain, ad_unit, pricing_rule)
                             if is_new_domain or key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
                                 aggregated_results[key] = {
                                     "date": row_date,
                                     "domain": domain,
                                     "ad_unit": ad_unit,
+                                    "pricing_rule_name": pricing_rule,
                                     "revenue": round(revenue, 2),
                                     "impressions": impressions,
                                     "ecpm": round(ecpm, 2),
@@ -817,10 +826,12 @@ class GAMService:
                     matched_requests = int(impressions * rng.uniform(0.95, 1.05))
                     match_rate = (matched_requests / ad_requests) * 100.0 if ad_requests > 0 else 34.5
 
+                    p_rule = "DFLT GML kz" if dom == "play.gemol.me" else "DFLT GML"
                     results.append({
                         "date": curr_date,
                         "domain": dom,
                         "ad_unit": unit["name"],
+                        "pricing_rule_name": p_rule,
                         "revenue": round(revenue, 2),
                         "impressions": impressions,
                         "ecpm": round(ecpm, 2),
