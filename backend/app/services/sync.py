@@ -459,6 +459,7 @@ def export_site_today_json(
                 "match_rate": c_mr,
                 "ecpm": c_ecpm,
                 "ctr": c_ctr,
+                "pricing": p_rule,
                 "rpm": c_ecpm
             })
 
