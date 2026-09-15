@@ -380,66 +380,75 @@ def export_site_today_json(
 
     ecpm = round((tot_rev / tot_imps * 1000.0), 2) if tot_imps > 0 else 0.0
 
-    country_weights = [
-        {"country": "Indonesia", "code": "ID", "flag": "🇮🇩", "weight": 0.650, "ecpm_mult": 0.9, "match_rate": 34.5, "upr": 15000.0},
-        {"country": "United States", "code": "US", "flag": "🇺🇸", "weight": 0.120, "ecpm_mult": 2.8, "match_rate": 38.2, "upr": 45000.0},
-        {"country": "Malaysia", "code": "MY", "flag": "🇲🇾", "weight": 0.060, "ecpm_mult": 1.1, "match_rate": 33.8, "upr": 18000.0},
-        {"country": "Singapore", "code": "SG", "flag": "🇸🇬", "weight": 0.040, "ecpm_mult": 2.4, "match_rate": 36.5, "upr": 35000.0},
-        {"country": "Japan", "code": "JP", "flag": "🇯🇵", "weight": 0.025, "ecpm_mult": 1.9, "match_rate": 35.1, "upr": 30000.0},
-        {"country": "Australia", "code": "AU", "flag": "🇦🇺", "weight": 0.015, "ecpm_mult": 2.2, "match_rate": 37.0, "upr": 32000.0},
-        {"country": "United Kingdom", "code": "GB", "flag": "🇬🇧", "weight": 0.012, "ecpm_mult": 2.1, "match_rate": 36.8, "upr": 31000.0},
-        {"country": "Germany", "code": "DE", "flag": "🇩🇪", "weight": 0.010, "ecpm_mult": 1.8, "match_rate": 35.6, "upr": 28000.0},
-        {"country": "Netherlands", "code": "NL", "flag": "🇳🇱", "weight": 0.008, "ecpm_mult": 1.9, "match_rate": 34.8, "upr": 0.0},
-        {"country": "South Korea", "code": "KR", "flag": "🇰🇷", "weight": 0.008, "ecpm_mult": 1.7, "match_rate": 33.5, "upr": 0.0},
-        {"country": "Philippines", "code": "PH", "flag": "🇵🇭", "weight": 0.008, "ecpm_mult": 0.8, "match_rate": 32.4, "upr": 0.0},
-        {"country": "Vietnam", "code": "VN", "flag": "🇻🇳", "weight": 0.007, "ecpm_mult": 0.75, "match_rate": 31.9, "upr": 0.0},
-        {"country": "India", "code": "IN", "flag": "🇮🇳", "weight": 0.007, "ecpm_mult": 0.6, "match_rate": 30.5, "upr": 0.0},
-        {"country": "Thailand", "code": "TH", "flag": "🇹🇭", "weight": 0.006, "ecpm_mult": 0.9, "match_rate": 33.2, "upr": 0.0},
-        {"country": "Canada", "code": "CA", "flag": "🇨🇦", "weight": 0.005, "ecpm_mult": 2.0, "match_rate": 37.4, "upr": 30000.0},
-        {"country": "France", "code": "FR", "flag": "🇫🇷", "weight": 0.004, "ecpm_mult": 1.7, "match_rate": 35.2, "upr": 0.0},
-        {"country": "Saudi Arabia", "code": "SA", "flag": "🇸🇦", "weight": 0.003, "ecpm_mult": 1.5, "match_rate": 34.0, "upr": 0.0},
-        {"country": "United Arab Emirates", "code": "AE", "flag": "🇦🇪", "weight": 0.003, "ecpm_mult": 2.3, "match_rate": 37.8, "upr": 34000.0},
-        {"country": "Taiwan", "code": "TW", "flag": "🇹🇼", "weight": 0.003, "ecpm_mult": 1.6, "match_rate": 34.6, "upr": 0.0},
-        {"country": "Hong Kong", "code": "HK", "flag": "🇭🇰", "weight": 0.003, "ecpm_mult": 2.2, "match_rate": 37.2, "upr": 0.0},
-        {"country": "Brazil", "code": "BR", "flag": "🇧🇷", "weight": 0.002, "ecpm_mult": 0.7, "match_rate": 31.2, "upr": 0.0},
-        {"country": "Mexico", "code": "MX", "flag": "🇲🇽", "weight": 0.002, "ecpm_mult": 0.75, "match_rate": 31.8, "upr": 0.0},
-        {"country": "Turkey", "code": "TR", "flag": "🇹🇷", "weight": 0.002, "ecpm_mult": 0.65, "match_rate": 30.8, "upr": 0.0},
-        {"country": "Spain", "code": "ES", "flag": "🇪🇸", "weight": 0.002, "ecpm_mult": 1.4, "match_rate": 34.2, "upr": 0.0},
-        {"country": "Italy", "code": "IT", "flag": "🇮🇹", "weight": 0.002, "ecpm_mult": 1.5, "match_rate": 34.9, "upr": 0.0},
-        {"country": "Sweden", "code": "SE", "flag": "🇸🇪", "weight": 0.001, "ecpm_mult": 2.0, "match_rate": 36.2, "upr": 0.0},
-        {"country": "Norway", "code": "NO", "flag": "🇳🇴", "weight": 0.001, "ecpm_mult": 2.1, "match_rate": 36.8, "upr": 0.0},
-        {"country": "New Zealand", "code": "NZ", "flag": "🇳🇿", "weight": 0.001, "ecpm_mult": 2.0, "match_rate": 36.4, "upr": 0.0},
-    ]
+    # Query real GAM country metrics from DB for the specified domain
+    db_country_rows = db.query(
+        GAMCountryMetric.country,
+        GAMCountryMetric.country_code,
+        func.sum(GAMCountryMetric.revenue).label("revenue"),
+        func.sum(GAMCountryMetric.impressions).label("impressions"),
+        func.sum(GAMCountryMetric.clicks).label("clicks"),
+        func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
+    ).filter(
+        func.lower(GAMCountryMetric.domain) == domain.lower(),
+        GAMCountryMetric.date == today_date
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code).all()
 
-    tot_weight = sum(c["weight"] for c in country_weights)
-    raw_rev_sum = sum((tot_rev * (c["weight"] / tot_weight)) * c["ecpm_mult"] for c in country_weights)
+    if not db_country_rows:
+        latest_c_date = db.query(func.max(GAMCountryMetric.date)).filter(
+            func.lower(GAMCountryMetric.domain) == domain.lower()
+        ).scalar()
+        if latest_c_date:
+            db_country_rows = db.query(
+                GAMCountryMetric.country,
+                GAMCountryMetric.country_code,
+                func.sum(GAMCountryMetric.revenue).label("revenue"),
+                func.sum(GAMCountryMetric.impressions).label("impressions"),
+                func.sum(GAMCountryMetric.clicks).label("clicks"),
+                func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
+                func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
+            ).filter(
+                func.lower(GAMCountryMetric.domain) == domain.lower(),
+                GAMCountryMetric.date == latest_c_date
+            ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code).all()
 
     countries_list = []
-    for c in country_weights:
-        share = c["weight"] / tot_weight
-        c_imps = int(tot_imps * share)
-        c_clks = int(tot_clicks * share)
-        raw_c_rev = (tot_rev * share) * c["ecpm_mult"]
-        norm_rev = (raw_c_rev / raw_rev_sum * tot_rev) if raw_rev_sum > 0 else 0.0
-        c_ecpm = round((norm_rev / c_imps * 1000.0), 2) if c_imps > 0 else 0.0
-        c_ctr = round((c_clks / c_imps * 100.0), 2) if c_imps > 0 else 0.0
-        c_matched_reqs = c_imps
-        c_mr = c["match_rate"]
-        c_ad_reqs = int(c_matched_reqs / (c_mr / 100.0)) if c_mr > 0 else int(c_matched_reqs * 2.8)
+    if db_country_rows:
+        from app.services.gam import get_country_meta
+        for crow in db_country_rows:
+            c_name = crow.country or "Unknown Region"
+            c_rev = crow.revenue or 0.0
+            c_imps = crow.impressions or 0
+            c_clks = crow.clicks or 0
+            c_ad_reqs = crow.ad_requests or 0
+            c_matched_reqs = crow.matched_requests or 0
 
-        countries_list.append({
-            "country": c["country"],
-            "country_code": c["code"],
-            "flag_emoji": c["flag"],
-            "revenue": round(norm_rev, 2),
-            "ad_requests": c_ad_reqs,
-            "matched_requests": c_matched_reqs,
-            "match_rate": c_mr,
-            "ecpm": c_ecpm,
-            "ctr": c_ctr,
-            "upr": c["upr"],
-            "rpm": c_ecpm
-        })
+            c_meta = get_country_meta(c_name)
+            c_code = crow.country_code or c_meta["code"]
+            c_flag = c_meta["flag"]
+
+            if c_matched_reqs == 0 and c_imps > 0:
+                c_matched_reqs = c_imps
+            if c_ad_reqs < c_matched_reqs and c_matched_reqs > 0:
+                c_ad_reqs = c_matched_reqs
+
+            c_mr = round((c_matched_reqs / c_ad_reqs * 100.0), 1) if c_ad_reqs > 0 else 0.0
+            c_ecpm = round((c_rev / c_imps * 1000.0), 2) if c_imps > 0 else 0.0
+            c_ctr = round((c_clks / c_imps * 100.0), 2) if c_imps > 0 else 0.0
+
+            countries_list.append({
+                "country": c_name,
+                "country_code": c_code,
+                "flag_emoji": c_flag,
+                "revenue": round(c_rev, 2),
+                "ad_requests": int(c_ad_reqs),
+                "matched_requests": int(c_matched_reqs),
+                "match_rate": c_mr,
+                "ecpm": c_ecpm,
+                "ctr": c_ctr,
+                "upr": 0.0,
+                "rpm": c_ecpm
+            })
 
     countries_list.sort(key=lambda x: x["revenue"], reverse=True)
 
