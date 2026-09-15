@@ -31,11 +31,21 @@ def auto_migrate_db():
                     conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN ad_requests INTEGER DEFAULT 0;"))
                 if "matched_requests" not in columns:
                     conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN matched_requests INTEGER DEFAULT 0;"))
+                if "pricing_rule_name" not in columns:
+                    conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
+
+                res_c = conn.execute(text("PRAGMA table_info(gam_country_metrics);"))
+                c_columns = [row[1] for row in res_c.fetchall()]
+                if "pricing_rule_name" not in c_columns:
+                    conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
+
                 conn.commit()
             else:
                 conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS match_rate FLOAT DEFAULT 0.0;"))
                 conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS ad_requests INTEGER DEFAULT 0;"))
                 conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS matched_requests INTEGER DEFAULT 0;"))
+                conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
+                conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN IF NOT EXISTS pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
                 conn.commit()
     except Exception as e:
         print(f"Auto DB migration notice: {e}")

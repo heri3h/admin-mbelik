@@ -106,6 +106,7 @@ class PlacementBreakdownItem(BaseModel):
     ad_requests: int = 0
     matched_requests: int = 0
     match_rate: float = 0.0
+    pricing_rule_name: Optional[str] = "All Rules"
     revenue_change_pct: Optional[float] = None
     ecpm_change_pct: Optional[float] = None
     comparison_period_label: Optional[str] = None
@@ -126,6 +127,7 @@ class CountryBreakdownItem(BaseModel):
     impressions: int
     clicks: int
     upr: float
+    pricing_rule_name: Optional[str] = "All Rules"
     rpm: float = 0.0
 
 class SyncResponse(BaseModel):

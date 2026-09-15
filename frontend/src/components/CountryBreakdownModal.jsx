@@ -329,8 +329,8 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             Profit {renderSortIndicator('net_profit')}
                           </th>
                         )}
-                        <th onClick={() => handleSort('upr')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
-                          UPR & RPM {renderSortIndicator('upr')}
+                        <th onClick={() => handleSort('pricing_rule_name')} className="sticky top-0 z-30 bg-slate-900 px-4 py-3 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+                          PRICING_RULE_NAME {renderSortIndicator('pricing_rule_name')}
                         </th>
                       </tr>
                     </thead>
@@ -419,8 +419,8 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   )}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-amber-300 whitespace-nowrap">
-                                  {formatCurrency(c.upr || 0)}
+                                <td className="px-4 py-3.5 text-right font-medium text-amber-300 whitespace-nowrap">
+                                  {c.pricing_rule_name || 'All Rules'}
                                 </td>
                               </tr>
                             );
@@ -445,6 +445,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           </tr>
                         ) : (
                           sortedAdUnits.map((p, idx) => {
+                            const revVal = p.total_revenue ?? p.revenue ?? 0;
                             return (
                               <tr key={idx} className="hover:bg-slate-700/40 transition-colors">
                                 <td className="px-4 py-3.5 font-semibold text-white whitespace-nowrap">
@@ -455,7 +456,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right font-bold text-emerald-400 whitespace-nowrap">
-                                  {formatCurrency(p.revenue)}
+                                  {formatCurrency(revVal)}
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">
@@ -478,8 +479,8 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   {(p.ctr || 0).toFixed(2)}%
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-amber-300 whitespace-nowrap">
-                                  {formatCurrency(p.upr || 0)}
+                                <td className="px-4 py-3.5 text-right font-medium text-amber-300 whitespace-nowrap">
+                                  {p.pricing_rule_name || 'All Rules'}
                                 </td>
                               </tr>
                             );
@@ -509,8 +510,8 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           <td className="px-4 py-3 text-right font-mono whitespace-nowrap">
                             {level2AvgCtr.toFixed(2)}%
                           </td>
-                          <td className="px-4 py-3 text-right font-mono text-amber-300 whitespace-nowrap">
-                            {formatCurrency(selectedCountry.upr || 0)}
+                          <td className="px-4 py-3 text-right font-medium text-amber-300 whitespace-nowrap">
+                            All Rules
                           </td>
                         </tr>
                       ) : (
@@ -541,8 +542,8 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             )}
                           </td>
                           <td className="px-4 py-3 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeProfit)}</td>
-                          <td className="px-4 py-3 text-right font-mono text-amber-300 whitespace-nowrap">
-                            {formatCurrency(avgUpr)}
+                          <td className="px-4 py-3 text-right font-medium text-amber-300 whitespace-nowrap">
+                            All Rules
                           </td>
                         </tr>
                       )}

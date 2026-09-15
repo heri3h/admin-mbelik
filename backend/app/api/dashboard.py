@@ -841,6 +841,7 @@ def get_site_countries_breakdown(
             impressions=c_imps,
             clicks=c_clicks,
             upr=0.0,
+            pricing_rule_name=getattr(row, 'pricing_rule_name', None) or "All Rules",
             rpm=round(c_ecpm, 2)
         ))
 
@@ -941,7 +942,8 @@ def get_site_country_placements_breakdown(
             ecpm=round(ecpm, 2),
             ad_requests=tot_reqs,
             matched_requests=tot_matched,
-            match_rate=mr
+            match_rate=mr,
+            pricing_rule_name=getattr(r, 'pricing_rule_name', None) or "All Rules"
         ))
 
     items.sort(key=lambda x: x.total_revenue, reverse=True)

@@ -43,6 +43,7 @@ class GAMMetric(Base):
     match_rate = Column(Float, default=0.0)
     ad_requests = Column(Integer, default=0)
     matched_requests = Column(Integer, default=0)
+    pricing_rule_name = Column(String(150), nullable=True, default="All Rules")
     synced_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
@@ -97,6 +98,7 @@ class GAMCountryMetric(Base):
     match_rate = Column(Float, default=0.0)
     ad_requests = Column(Integer, default=0)
     matched_requests = Column(Integer, default=0)
+    pricing_rule_name = Column(String(150), nullable=True, default="All Rules")
     synced_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
