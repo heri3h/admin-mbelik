@@ -123,11 +123,11 @@ def get_summary(
 
             prev_spend = prev_day_spend * active_spend_sum
             prev_revenue = prev_day_revenue * active_rev_sum
-            comp_label = "vs kemarin jam yang sama"
+            comp_label = "vs yesterday same time"
         else:
             prev_spend = prev_day_spend
             prev_revenue = prev_day_revenue
-            comp_label = "vs kemarin"
+            comp_label = "vs yesterday"
     else:
         days_count = (d_end - d_start).days + 1
         prev_start = d_start - timedelta(days=days_count)
@@ -141,7 +141,7 @@ def get_summary(
             GAMMetric.date >= prev_start, GAMMetric.date <= prev_end
         ).scalar() or 0.0
 
-        comp_label = f"vs {days_count} hari sebelumnya"
+        comp_label = f"vs previous {days_count} days"
 
     prev_profit = prev_revenue - prev_spend
     prev_roi = (prev_revenue / prev_spend * 100.0) if prev_spend > 0 else 0.0
@@ -307,7 +307,7 @@ def get_accounts_breakdown(
     current_hour = wib_now.hour if is_today_only else 23
     intraday_factor = sum(HOURLY_WEIGHTS[:current_hour + 1]) if is_today_only else 1.0
 
-    comp_label = "vs kemarin jam yang sama" if is_today_only else ("vs kemarin" if num_days == 1 else f"vs {num_days} hari sebelumnya")
+    comp_label = "vs yesterday same time" if is_today_only else ("vs yesterday" if num_days == 1 else f"vs previous {num_days} days")
 
     prev_spend_rows = db.query(
         GoogleAdsMetric.customer_id,
@@ -378,7 +378,7 @@ def get_sites_breakdown(
     current_hour = wib_now.hour if is_today_only else 23
     intraday_factor = sum(HOURLY_WEIGHTS[:current_hour + 1]) if is_today_only else 1.0
 
-    comp_label = "vs kemarin jam yang sama" if is_today_only else ("vs kemarin" if num_days == 1 else f"vs {num_days} hari sebelumnya")
+    comp_label = "vs yesterday same time" if is_today_only else ("vs yesterday" if num_days == 1 else f"vs previous {num_days} days")
 
     # Fetch Google Ads Account domain mappings
     db_accounts = db.query(GoogleAdsAccount).all()
@@ -578,7 +578,7 @@ def get_placements_breakdown(
     current_hour = wib_now.hour if is_today_only else 23
     intraday_factor = sum(HOURLY_WEIGHTS[:current_hour + 1]) if is_today_only else 1.0
 
-    comp_label = "vs kemarin jam yang sama" if is_today_only else ("vs kemarin" if num_days == 1 else f"vs {num_days} hari sebelumnya")
+    comp_label = "vs yesterday same time" if is_today_only else ("vs yesterday" if num_days == 1 else f"vs previous {num_days} days")
 
     prev_gam_rows = db.query(
         GAMMetric.domain,

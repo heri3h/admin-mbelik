@@ -5,7 +5,7 @@ export default function DomainsTable({ domains }) {
   if (!domains || domains.length === 0) {
     return (
       <div className="bg-slate-800 border border-slate-700/60 p-6 rounded-2xl text-center text-slate-400 text-sm">
-        Belum ada data performa domain Ad Manager.
+        No Ad Manager domain performance data available.
       </div>
     );
   }
@@ -24,16 +24,16 @@ export default function DomainsTable({ domains }) {
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Globe className="w-5 h-5 text-emerald-400" />
-            <span>Breakdown Performa GAM / AdX per Domain</span>
+            <span>GAM / AdX Domain Performance Breakdown</span>
           </h3>
-          <p className="text-slate-400 text-xs mt-0.5">Rincian pendapatan, eCPM, dan tayangan iklan Ad Exchange per situs website</p>
+          <p className="text-slate-400 text-xs mt-0.5">Ad Exchange earnings, eCPM, and ad impression breakdown per website</p>
         </div>
         <span className="text-xs font-semibold px-2.5 py-1 bg-slate-700 text-slate-300 rounded-lg">
-          {domains.length} Domain Aktif
+          {domains.length} Active Domains
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-b-2xl">
+      <div className="overflow-x-auto w-full max-w-full rounded-b-2xl">
         <table className="w-full text-left text-xs text-slate-300 border-collapse">
           <thead className="sticky top-16 z-30 bg-slate-900/95 backdrop-blur text-slate-400 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-700/60 select-none shadow-md">
             <tr>

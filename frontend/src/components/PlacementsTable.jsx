@@ -131,7 +131,7 @@ export default function PlacementsTable({ placements }) {
           </thead>
           <tbody className="divide-y divide-slate-700/50">
             {sortedPlacements.map((item, idx) => {
-              const compLabel = item.comparison_period_label || 'vs periode sebelumnya';
+              const compLabel = item.comparison_period_label || 'vs previous period';
 
               return (
                 <tr key={idx} className="hover:bg-slate-700/30 transition-colors">

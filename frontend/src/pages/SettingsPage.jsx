@@ -73,7 +73,7 @@ export default function SettingsPage() {
     setExportSuccess('');
 
     if (!targetDomain.trim() || !targetFilepath.trim()) {
-      setExportError('Domain dan Target Filepath wajib diisi.');
+      setExportError('Domain and Target Filepath are required.');
       return;
     }
 
@@ -85,14 +85,14 @@ export default function SettingsPage() {
         end_hour: parseInt(targetEndHour),
         is_active: true
       });
-      setExportSuccess(`Export target untuk ${targetDomain.trim()} berhasil ditambahkan!`);
+      setExportSuccess(`Export target for ${targetDomain.trim()} added successfully!`);
       setTargetDomain('');
       setTargetFilepath('');
       setTargetStartHour(10);
       setTargetEndHour(23);
       fetchExportTargets();
     } catch (err) {
-      setExportError(err.response?.data?.detail || 'Gagal menambahkan export target.');
+      setExportError(err.response?.data?.detail || 'Failed to add export target.');
     }
   };
 
@@ -103,23 +103,23 @@ export default function SettingsPage() {
       await dashboardService.updateExportTarget(target.id, {
         is_active: !target.is_active
       });
-      setExportSuccess(`Status target ${target.domain} berhasil diperbarui.`);
+      setExportSuccess(`Target status for ${target.domain} updated successfully.`);
       fetchExportTargets();
     } catch (err) {
-      setExportError('Gagal mengubah status target.');
+      setExportError('Failed to update target status.');
     }
   };
 
   const handleDeleteTarget = async (id, domain) => {
-    if (!window.confirm(`Hapus export target untuk ${domain}?`)) return;
+    if (!window.confirm(`Delete export target for ${domain}?`)) return;
     setExportError('');
     setExportSuccess('');
     try {
       await dashboardService.deleteExportTarget(id);
-      setExportSuccess(`Export target untuk ${domain} berhasil dihapus.`);
+      setExportSuccess(`Export target for ${domain} deleted successfully.`);
       fetchExportTargets();
     } catch (err) {
-      setExportError('Gagal menghapus export target.');
+      setExportError('Failed to delete export target.');
     }
   };
 
@@ -128,9 +128,9 @@ export default function SettingsPage() {
     setExportSuccess('');
     try {
       const res = await dashboardService.testExportTarget(id);
-      setExportSuccess(res.message || `Export JSON ${domain} berhasil disimulasikan!`);
+      setExportSuccess(res.message || `JSON export for ${domain} simulated successfully!`);
     } catch (err) {
-      setExportError(err.response?.data?.detail || `Gagal mengekspor JSON untuk ${domain}.`);
+      setExportError(err.response?.data?.detail || `Failed to export JSON for ${domain}.`);
     }
   };
 
@@ -178,7 +178,7 @@ export default function SettingsPage() {
     setGadsSuccess('');
 
     if (!newCid.trim()) {
-      setGadsError('Google Ads Customer ID wajib diisi.');
+      setGadsError('Google Ads Customer ID is required.');
       return;
     }
 
@@ -188,14 +188,14 @@ export default function SettingsPage() {
         account_name: newAccName.trim() || `Google Ads (${newCid.trim()})`,
         assigned_domain: newDomain
       });
-      setGadsSuccess(`Google Ads Account ${newCid.trim()} berhasil ditambahkan!`);
+      setGadsSuccess(`Google Ads Account ${newCid.trim()} added successfully!`);
       setNewCid('');
       setNewAccName('');
       setNewDomain('All / Unassigned');
       fetchGadsAccounts();
       fetchStatus();
     } catch (err) {
-      setGadsError(err.response?.data?.detail || 'Gagal menambahkan Google Ads Account.');
+      setGadsError(err.response?.data?.detail || 'Failed to add Google Ads Account.');
     }
   };
 
@@ -213,30 +213,30 @@ export default function SettingsPage() {
         account_name: editAccName,
         assigned_domain: editDomain
       });
-      setGadsSuccess('Mapping akun berhasil diperbarui!');
+      setGadsSuccess('Account mapping updated successfully!');
       setEditingId(null);
       fetchGadsAccounts();
     } catch (err) {
-      setGadsError(err.response?.data?.detail || 'Gagal memperbarui akun.');
+      setGadsError(err.response?.data?.detail || 'Failed to update account.');
     }
   };
 
   const handleDeleteAccount = async (id, cid) => {
-    if (!window.confirm(`Hapus Google Ads ID ${cid}?`)) return;
+    if (!window.confirm(`Delete Google Ads ID ${cid}?`)) return;
     setGadsError('');
     setGadsSuccess('');
     try {
       await dashboardService.deleteGoogleAdsAccount(id);
-      setGadsSuccess(`Google Ads ID ${cid} berhasil dihapus.`);
+      setGadsSuccess(`Google Ads ID ${cid} deleted successfully.`);
       fetchGadsAccounts();
       fetchStatus();
     } catch (err) {
-      setGadsError(err.response?.data?.detail || 'Gagal menghapus akun.');
+      setGadsError(err.response?.data?.detail || 'Failed to delete account.');
     }
   };
 
   const handleClearCache = async () => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus cache data analitik dan melakukan sync ulang? Password & akun admin Anda TETAP AMAN.')) {
+    if (!window.confirm('Are you sure you want to clear analytics data cache and re-sync? Your admin password & account REMAIN SAFE.')) {
       return;
     }
 
@@ -246,9 +246,9 @@ export default function SettingsPage() {
 
     try {
       const res = await dashboardService.clearCache();
-      setCacheSuccess(res.message || 'Cache data analitik berhasil dibersihkan dan di-sync ulang!');
+      setCacheSuccess(res.message || 'Analytics data cache cleared and re-synced successfully!');
     } catch (err) {
-      setCacheError(err.response?.data?.detail || 'Gagal membersihkan cache.');
+      setCacheError(err.response?.data?.detail || 'Failed to clear cache.');
     } finally {
       setCacheLoading(false);
     }
@@ -260,24 +260,24 @@ export default function SettingsPage() {
     setPwdSuccess('');
 
     if (newPassword !== confirmPassword) {
-      setPwdError('Konfirmasi password baru tidak cocok.');
+      setPwdError('New password confirmation does not match.');
       return;
     }
 
     if (newPassword.length < 6) {
-      setPwdError('Password baru minimal 6 karakter.');
+      setPwdError('New password must be at least 6 characters.');
       return;
     }
 
     setPwdLoading(true);
     try {
       const res = await authService.changePassword(currentPassword, newPassword);
-      setPwdSuccess(res.message || 'Password berhasil diperbarui.');
+      setPwdSuccess(res.message || 'Password updated successfully.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      setPwdError(err.response?.data?.detail || 'Gagal mengubah password. Pastikan password lama sesuai.');
+      setPwdError(err.response?.data?.detail || 'Failed to change password. Make sure current password is correct.');
     } finally {
       setPwdLoading(false);
     }
@@ -287,7 +287,7 @@ export default function SettingsPage() {
     return (
       <div className="p-8 text-center text-slate-400">
         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-sky-400" />
-        <span>Memuat status integrasi...</span>
+        <span>Loading integration status...</span>
       </div>
     );
   }
@@ -297,14 +297,14 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
           <Settings className="w-6 h-6 text-sky-400" />
-          <span>Pengaturan Sistem & Integrasi API</span>
+          <span>System Settings & API Integration</span>
         </h1>
         <p className="text-slate-400 text-xs mt-1">
-          Kelola keamanan akun admin dan status koneksi Google Ads API / Google Ad Manager
+          Manage admin account security and Google Ads API / Google Ad Manager connection status
         </p>
       </div>
 
-      {/* Mode Data Banner */}
+      {/* Data Mode Banner */}
       <div className={`p-5 rounded-2xl border ${
         status.use_mock_data
           ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
@@ -318,18 +318,18 @@ export default function SettingsPage() {
           )}
           <div className="w-full">
             <h3 className="font-bold text-sm">
-              {status.use_mock_data ? 'Mode Simulasi (Mock Data) Aktif' : 'Mode Live API Aktif'}
+              {status.use_mock_data ? 'Simulation Mode (Mock Data) Active' : 'Live API Mode Active'}
             </h3>
             <p className="text-xs opacity-90 mt-1 leading-relaxed">
               {status.use_mock_data
-                ? 'Aplikasi saat ini menampilkan data simulasi realistis karena beberapa kredensial API belum diisi atau diset ke false di file .env.'
-                : 'Aplikasi terhubung langsung ke Google Ads API & Google Ad Manager API untuk menyajikan data harian real-time.'}
+                ? 'The application is currently displaying realistic simulation data because some API credentials are not set or set to false in the .env file.'
+                : 'The application connects directly to Google Ads API & Google Ad Manager API to present real-time daily data.'}
             </p>
 
             {status.use_mock_data && status.missing_fields && status.missing_fields.length > 0 && (
               <div className="mt-4 pt-3 border-t border-amber-500/20">
                 <span className="text-xs font-semibold block mb-2 text-amber-200">
-                  Daftar Penyebab Mode Mock Masih Aktif:
+                  Reasons Mock Mode Is Still Active:
                 </span>
                 <ul className="space-y-1">
                   {status.missing_fields.map((msg, idx) => (
@@ -352,8 +352,8 @@ export default function SettingsPage() {
             <Lock className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-base">Ubah Password Admin</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Perbarui password akun administrator aplikasi</p>
+            <h3 className="font-bold text-white text-base">Change Admin Password</h3>
+            <p className="text-slate-400 text-xs mt-0.5">Update application administrator account password</p>
           </div>
         </div>
 
@@ -374,7 +374,7 @@ export default function SettingsPage() {
         <form onSubmit={handleChangePassword} className="space-y-4 max-w-lg">
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Password Saat Ini
+              Current Password
             </label>
             <div className="relative">
               <KeyRound className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
@@ -383,7 +383,7 @@ export default function SettingsPage() {
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Masukkan password saat ini"
+                placeholder="Enter current password"
                 className="w-full pl-9 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-sky-500"
               />
             </div>
@@ -391,7 +391,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Password Baru
+              New Password
             </label>
             <div className="relative">
               <Key className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
@@ -400,7 +400,7 @@ export default function SettingsPage() {
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Masukkan password baru (min 6 karakter)"
+                placeholder="Enter new password (min 6 characters)"
                 className="w-full pl-9 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-sky-500"
               />
             </div>
@@ -408,7 +408,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Konfirmasi Password Baru
+              Confirm New Password
             </label>
             <div className="relative">
               <Key className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
@@ -417,7 +417,7 @@ export default function SettingsPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Ulangi password baru"
+                placeholder="Repeat new password"
                 className="w-full pl-9 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-sky-500"
               />
             </div>
@@ -428,7 +428,7 @@ export default function SettingsPage() {
             disabled={pwdLoading}
             className="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 mt-2"
           >
-            {pwdLoading ? 'Menyimpan...' : 'Simpan Password Baru'}
+            {pwdLoading ? 'Saving...' : 'Save New Password'}
           </button>
         </form>
       </div>
@@ -440,8 +440,8 @@ export default function SettingsPage() {
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-base">Kelola Google Ads Accounts & Mapping Situs</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Tambah Google Ads Customer ID baru dan hubungkan ke situs/domain tertentu untuk menghitung profit per situs</p>
+            <h3 className="font-bold text-white text-base">Manage Google Ads Accounts & Site Mapping</h3>
+            <p className="text-slate-400 text-xs mt-0.5">Add new Google Ads Customer IDs and link them to specific sites/domains to calculate profit per site</p>
           </div>
         </div>
 
@@ -459,11 +459,11 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Form Tambah Account Baru */}
+        {/* Form Add New Account */}
         <form onSubmit={handleAddAccount} className="bg-slate-900/60 p-4 rounded-xl border border-slate-700/60 space-y-4">
           <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
             <Plus className="w-4 h-4" />
-            <span>Tambah Google Ads ID Baru</span>
+            <span>Add New Google Ads ID</span>
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -471,24 +471,24 @@ export default function SettingsPage() {
               <input
                 type="text"
                 required
-                placeholder="Contoh: 123-456-7890"
+                placeholder="e.g. 123-456-7890"
                 value={newCid}
                 onChange={(e) => setNewCid(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-mono"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">Nama Akun (Opsional)</label>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">Account Name (Optional)</label>
               <input
                 type="text"
-                placeholder="Contoh: Google Ads - Domain A"
+                placeholder="e.g. Google Ads - Domain A"
                 value={newAccName}
                 onChange={(e) => setNewAccName(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">Mapping Ke Situs (Domain)</label>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">Site Mapping (Domain)</label>
               <select
                 value={isCustomDomain ? '__custom__' : newDomain}
                 onChange={(e) => {
@@ -507,13 +507,13 @@ export default function SettingsPage() {
                     {domain}
                   </option>
                 ))}
-                <option value="__custom__">+ Ketik Domain Custom / Manual...</option>
+                <option value="__custom__">+ Enter Custom / Manual Domain...</option>
               </select>
 
               {isCustomDomain && (
                 <input
                   type="text"
-                  placeholder="Ketik nama domain (contoh: sub.mbelik.com)"
+                  placeholder="Enter domain name (e.g. sub.mbelik.com)"
                   value={newDomain}
                   onChange={(e) => setNewDomain(e.target.value)}
                   className="w-full mt-2 px-3 py-2 bg-slate-900 border border-sky-500/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none"
@@ -526,19 +526,19 @@ export default function SettingsPage() {
             className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-lg shadow transition-all flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Simpan Google Ads ID</span>
+            <span>Save Google Ads ID</span>
           </button>
         </form>
 
-        {/* Tabel Daftar Account & Mapping */}
+        {/* Account & Mapping List Table */}
         <div className="overflow-x-auto border border-slate-700/60 rounded-xl">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-900/80 uppercase text-[10px] tracking-wider text-slate-400 border-b border-slate-700/60">
               <tr>
                 <th className="px-4 py-3">Customer ID</th>
-                <th className="px-4 py-3">Nama Akun</th>
-                <th className="px-4 py-3">Domain Terhubung</th>
-                <th className="px-4 py-3 text-right">Aksi</th>
+                <th className="px-4 py-3">Account Name</th>
+                <th className="px-4 py-3">Connected Domain</th>
+                <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/40">
@@ -585,7 +585,7 @@ export default function SettingsPage() {
                         <button
                           onClick={() => handleSaveEdit(acc.id)}
                           className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all"
-                          title="Simpan"
+                          title="Save"
                         >
                           <Save className="w-3.5 h-3.5" />
                         </button>
@@ -601,7 +601,7 @@ export default function SettingsPage() {
                       <button
                         onClick={() => handleDeleteAccount(acc.id, acc.customer_id)}
                         className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all border border-rose-500/30"
-                        title="Hapus"
+                        title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -611,7 +611,7 @@ export default function SettingsPage() {
               ) : (
                 <tr>
                   <td colSpan="4" className="px-4 py-6 text-center text-slate-500 italic">
-                    Belum ada Google Ads Account terdaftar.
+                    No Google Ads Accounts registered yet.
                   </td>
                 </tr>
               )}
@@ -627,8 +627,8 @@ export default function SettingsPage() {
             <Globe className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-base">Pengaturan Auto-Export JSON Situs</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Kelola domain dan lokasi folder VPS tempat file current_pricing.json dihasilkan saat sync</p>
+            <h3 className="font-bold text-white text-base">Site Auto-Export JSON Settings</h3>
+            <p className="text-slate-400 text-xs mt-0.5">Manage domains and VPS folder paths where current_pricing.json is generated during sync</p>
           </div>
         </div>
 
@@ -650,7 +650,7 @@ export default function SettingsPage() {
         <form onSubmit={handleAddExportTarget} className="mb-6 p-4 bg-slate-900/60 border border-slate-700/50 rounded-xl space-y-4">
           <div className="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
             <Plus className="w-4 h-4 text-purple-400" />
-            <span>Tambah Target Ekspor JSON Baru</span>
+            <span>Add New JSON Export Target</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -660,12 +660,12 @@ export default function SettingsPage() {
                 type="text"
                 value={targetDomain}
                 onChange={(e) => setTargetDomain(e.target.value)}
-                placeholder="contoh: spotgames.top atau zse.ugames.top"
+                placeholder="e.g. spotgames.top or zse.ugames.top"
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-400 mb-1">Path Lokasi File JSON di VPS</label>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">JSON File Path on VPS</label>
               <input
                 type="text"
                 value={targetFilepath}
@@ -678,7 +678,7 @@ export default function SettingsPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <div className="flex items-center space-x-3 text-xs">
-              <span className="text-slate-400">Jam Operasional:</span>
+              <span className="text-slate-400">Operating Hours:</span>
               <div className="flex items-center space-x-1.5">
                 <input
                   type="number"
@@ -688,7 +688,7 @@ export default function SettingsPage() {
                   onChange={(e) => setTargetStartHour(e.target.value)}
                   className="w-14 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white text-center"
                 />
-                <span className="text-slate-500">s/d</span>
+                <span className="text-slate-500">to</span>
                 <input
                   type="number"
                   min="0"
@@ -697,7 +697,7 @@ export default function SettingsPage() {
                   onChange={(e) => setTargetEndHour(e.target.value)}
                   className="w-14 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white text-center"
                 />
-                <span className="text-slate-400">WIB</span>
+                <span className="text-slate-400">UTC+7</span>
               </div>
             </div>
 
@@ -706,7 +706,7 @@ export default function SettingsPage() {
               className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs rounded-lg transition-all flex items-center space-x-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Simpan Target Ekspor</span>
+              <span>Save Export Target</span>
             </button>
           </div>
         </form>
@@ -717,10 +717,10 @@ export default function SettingsPage() {
             <thead className="bg-slate-900/80 text-slate-400 font-semibold border-b border-slate-700">
               <tr>
                 <th className="px-4 py-3">Domain</th>
-                <th className="px-4 py-3">Path File Target</th>
-                <th className="px-4 py-3 text-center">Jam Operasional</th>
+                <th className="px-4 py-3">Target File Path</th>
+                <th className="px-4 py-3 text-center">Operating Hours</th>
                 <th className="px-4 py-3 text-center">Status</th>
-                <th className="px-4 py-3 text-right">Aksi</th>
+                <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50 text-slate-300">
@@ -732,7 +732,7 @@ export default function SettingsPage() {
                       {target.target_filepath}
                     </td>
                     <td className="px-4 py-3 text-center font-mono text-xs text-slate-300">
-                      {target.start_hour}:00 - {target.end_hour}:00 WIB
+                      {target.start_hour}:00 - {target.end_hour}:00 UTC+7
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
@@ -743,21 +743,21 @@ export default function SettingsPage() {
                             : 'bg-slate-700/50 text-slate-400 border-slate-600'
                         }`}
                       >
-                        {target.is_active ? 'Aktif' : 'Nonaktif'}
+                        {target.is_active ? 'Active' : 'Inactive'}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right space-x-1.5">
                       <button
                         onClick={() => handleTestExport(target.id, target.domain)}
                         className="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded-lg font-medium text-[11px] transition-all"
-                        title="Uji coba export sekarang"
+                        title="Test export now"
                       >
-                        Uji Export
+                        Test Export
                       </button>
                       <button
                         onClick={() => handleDeleteTarget(target.id, target.domain)}
                         className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all border border-rose-500/30"
-                        title="Hapus Target"
+                        title="Delete Target"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -767,7 +767,7 @@ export default function SettingsPage() {
               ) : (
                 <tr>
                   <td colSpan="5" className="px-4 py-6 text-center text-slate-500 italic">
-                    Belum ada target auto-export JSON terdaftar.
+                    No auto-export JSON targets registered yet.
                   </td>
                 </tr>
               )}
@@ -783,13 +783,13 @@ export default function SettingsPage() {
             <Database className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-base">Pembersihan Cache Data (Safe Reset)</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Kosongkan cache analitik & sync ulang dari API tanpa mereset password admin</p>
+            <h3 className="font-bold text-white text-base">Data Cache Cleanup (Safe Reset)</h3>
+            <p className="text-slate-400 text-xs mt-0.5">Clear analytics cache & re-sync from API without resetting admin password</p>
           </div>
         </div>
 
         <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-          Gunakan tombol ini jika Anda ingin menyegarkan ulang seluruh data history dari Google Ads & GAM. Akun dan password admin Anda <strong className="text-emerald-400 font-semibold">TETAP AMAN</strong> dan tidak akan kembali ke default.
+          Use this button to refresh all historical data from Google Ads & GAM. Your admin account and password <strong className="text-emerald-400 font-semibold">REMAIN SAFE</strong> and will not reset to default.
         </p>
 
         {cacheError && (
@@ -814,12 +814,12 @@ export default function SettingsPage() {
           {cacheLoading ? (
             <>
               <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>Membersihkan & Sync Ulang Data...</span>
+              <span>Clearing & Re-syncing Data...</span>
             </>
           ) : (
             <>
               <Trash2 className="w-4 h-4" />
-              <span>Hapus Cache Data & Sync Ulang</span>
+              <span>Clear Data Cache & Re-sync</span>
             </>
           )}
         </button>
@@ -841,13 +841,13 @@ export default function SettingsPage() {
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                 : 'bg-slate-700 text-slate-400 border-slate-600'
             }`}>
-              {status.google_ads_configured ? 'Terhubung' : 'Belum Konfigurasi'}
+              {status.google_ads_configured ? 'Connected' : 'Not Configured'}
             </span>
           </div>
 
           <div className="mt-4 space-y-3 text-xs">
             <div>
-              <span className="text-slate-400 block font-medium">Akun / Customer IDs Terdaftar:</span>
+              <span className="text-slate-400 block font-medium">Registered Accounts / Customer IDs:</span>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {status.configured_customer_ids.length > 0 ? (
                   status.configured_customer_ids.map((cid, idx) => (
@@ -856,7 +856,7 @@ export default function SettingsPage() {
                     </span>
                   ))
                 ) : (
-                  <span className="text-slate-500 italic">Belum ada Customer ID di .env</span>
+                  <span className="text-slate-500 italic">No Customer IDs in .env yet</span>
                 )}
               </div>
             </div>
@@ -877,7 +877,7 @@ export default function SettingsPage() {
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                 : 'bg-slate-700 text-slate-400 border-slate-600'
             }`}>
-              {status.gam_configured ? 'Terhubung' : 'Belum Konfigurasi'}
+              {status.gam_configured ? 'Connected' : 'Not Configured'}
             </span>
           </div>
 
@@ -885,7 +885,7 @@ export default function SettingsPage() {
             <div>
               <span className="text-slate-400 block font-medium">GAM Network Code:</span>
               <span className="font-mono bg-slate-900 px-2.5 py-1 rounded text-emerald-400 border border-slate-700 mt-1 inline-block">
-                {status.gam_network_code || 'Belum diisi'}
+                {status.gam_network_code || 'Not set'}
               </span>
             </div>
           </div>

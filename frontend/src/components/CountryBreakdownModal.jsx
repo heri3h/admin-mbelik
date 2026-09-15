@@ -1,71 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Loader2, Globe, TrendingUp, TrendingDown, LayoutGrid, ArrowLeft } from 'lucide-react';
+import { X, Globe, TrendingUp, TrendingDown, Search, ArrowLeft, Loader2, Layers } from 'lucide-react';
 import { dashboardService } from '../services/api';
 
 export default function CountryBreakdownModal({ domain, startDate, endDate, onClose }) {
   const [countries, setCountries] = useState([]);
-  const [placements, setPlacements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Level 1: Country list | Level 2: Selected Country (Shows Ad Units inside that country)
+  const [selectedCountry, setSelectedCountry] = useState(null);
+
+  // Table Sort State
   const [sortColumn, setSortColumn] = useState('revenue');
   const [sortDirection, setSortDirection] = useState('desc');
 
-  // Selected country for Level 2 drill-down (null = Level 1 Country List)
-  const [selectedCountry, setSelectedCountry] = useState(null);
-  const [countryPlacements, setCountryPlacements] = useState([]);
-  const [loadingCountryPlacements, setLoadingCountryPlacements] = useState(false);
-
   useEffect(() => {
-    let isMounted = true;
-    const fetchDomainDetails = async () => {
+    const fetchCountryData = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const countryData = await dashboardService.getSiteCountries(domain, startDate, endDate);
-
-        if (isMounted) {
-          setCountries(countryData || []);
-        }
+        const data = await dashboardService.getSiteCountries(domain, startDate, endDate);
+        setCountries(data || []);
       } catch (err) {
-        console.error('Failed fetching site breakdown details:', err);
-        if (isMounted) setCountries([]);
+        console.error('Failed fetching site country metrics', err);
+        setError('Failed loading country data. Please try again.');
       } finally {
-        if (isMounted) setLoading(false);
+        setLoading(false);
       }
     };
 
     if (domain) {
-      fetchDomainDetails();
+      fetchCountryData();
     }
-
-    return () => {
-      isMounted = false;
-    };
   }, [domain, startDate, endDate]);
-
-  const handleCountryClick = async (countryObj) => {
-    setSelectedCountry(countryObj);
-    setCountryPlacements([]);
-    setSearchTerm('');
-    setSortColumn('revenue');
-    setLoadingCountryPlacements(true);
-
-    try {
-      const realPlacements = await dashboardService.getSiteCountryPlacements(domain, countryObj.country, startDate, endDate);
-      setCountryPlacements(realPlacements || []);
-    } catch (err) {
-      console.error('Failed fetching country placements:', err);
-      setCountryPlacements([]);
-    } finally {
-      setLoadingCountryPlacements(false);
-    }
-  };
-
-  const handleBackToCountries = () => {
-    setSelectedCountry(null);
-    setCountryPlacements([]);
-    setSearchTerm('');
-    setSortColumn('revenue');
-  };
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('id-ID', {
@@ -89,113 +57,59 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     return sortDirection === 'asc' ? <span className="text-emerald-400 ml-1 font-bold">↑</span> : <span className="text-emerald-400 ml-1 font-bold">↓</span>;
   };
 
-  // Base Summary Calculations across the entire domain dataset (Level 1)
-  const totalRev = countries.reduce((sum, item) => sum + (item.revenue || 0), 0);
-  const totalSpend = countries.reduce((sum, item) => sum + (item.spend || 0), 0);
-  const totalProfit = totalRev - totalSpend;
-  const totalImps = countries.reduce((sum, item) => sum + (item.impressions || 0), 0);
-  const totalClicks = countries.reduce((sum, item) => sum + (item.clicks || 0), 0);
-  const totalAdReqs = countries.reduce((sum, item) => sum + (item.ad_requests || 0), 0);
-  const totalMatchedReqs = countries.reduce((sum, item) => sum + (item.matched_requests || 0), 0);
+  const handleCountryClick = (countryObj) => {
+    setSelectedCountry(countryObj);
+    setSearchTerm('');
+    setSortColumn('revenue');
+    setSortDirection('desc');
+  };
 
-  const avgEcpm = totalImps > 0 ? (totalRev / totalImps * 1000) : 0;
+  const handleBackToCountries = () => {
+    setSelectedCountry(null);
+    setSearchTerm('');
+    setSortColumn('revenue');
+    setSortDirection('desc');
+  };
+
+  // Calculations for Summary Cards
+  const totalRev = countries.reduce((sum, c) => sum + (c.revenue || 0), 0);
+  const totalSpend = countries.reduce((sum, c) => sum + (c.spend || 0), 0);
+  const netProfit = totalRev - totalSpend;
   const overallRoi = totalSpend > 0 ? (totalRev / totalSpend * 100) : 0;
-  const avgMatchRate = totalAdReqs > 0 
-    ? ((totalMatchedReqs / totalAdReqs) * 100) 
-    : (countries.length > 0 ? (countries.reduce((sum, item) => sum + (item.match_rate || 0), 0) / countries.length) : 0);
-  const avgUpr = countries.length > 0 
-    ? (countries.reduce((sum, item) => sum + (item.upr || 0), 0) / countries.length) 
-    : 0;
-  const avgCtr = totalImps > 0 ? (totalClicks / totalImps * 100) : 0;
+  const totalAdReqs = countries.reduce((sum, c) => sum + (c.ad_requests || 0), 0);
+  const totalMatchedReqs = countries.reduce((sum, c) => sum + (c.matched_requests || 0), 0);
+  const avgMatchRate = totalAdReqs > 0 ? (totalMatchedReqs / totalAdReqs * 100) : 0;
+  const avgEcpm = countries.length > 0 ? (totalRev / (countries.reduce((sum, c) => sum + (c.impressions || 0), 0) / 1000) || 0) : 0;
+  const avgUpr = totalAdReqs > 0 ? (totalRev / (totalAdReqs / 1000)) : 0;
 
-  // --- Level 1: Country View Dataset ---
-  const filteredCountries = (countries || []).filter(c => {
-    if (!c) return false;
-    const countryName = (c.country || '').toString().toLowerCase();
-    const countryCode = (c.country_code || '').toString().toLowerCase();
-    const search = (searchTerm || '').toString().toLowerCase();
-    return countryName.includes(search) || countryCode.includes(search);
-  });
+  // Level 1: Filter & Sort Country List
+  const filteredCountries = countries.filter(c =>
+    c.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.country_code && c.country_code.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   const sortedCountries = [...filteredCountries].sort((a, b) => {
     let colKey = sortColumn === 'name' ? 'country' : sortColumn;
     let aVal = a[colKey] ?? 0;
     let bVal = b[colKey] ?? 0;
     if (typeof aVal === 'string') {
-      return sortDirection === 'asc' ? aVal.localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+      return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
     return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
   });
 
-  // --- Level 2: Ad Unit View Dataset (Filtered for Selected Country) ---
-  const getCountryAdUnits = () => {
-    if (!selectedCountry) return [];
+  // Level 2: Filter & Sort Ad Units within Selected Country
+  const adUnits = selectedCountry?.placements || [];
+  const level2TotalAdReqs = adUnits.reduce((sum, p) => sum + (p.ad_requests || 0), 0);
+  const level2TotalMatchedReqs = adUnits.reduce((sum, p) => sum + (p.matched_requests || 0), 0);
+  const level2AvgMatchRate = level2TotalAdReqs > 0 ? (level2TotalMatchedReqs / level2TotalAdReqs * 100) : 0;
+  const level2TotalImps = adUnits.reduce((sum, p) => sum + (p.impressions || 0), 0);
+  const level2TotalClicks = adUnits.reduce((sum, p) => sum + (p.clicks || 0), 0);
+  const level2AvgCtr = level2TotalImps > 0 ? (level2TotalClicks / level2TotalImps * 100) : 0;
 
-    const cSpend = selectedCountry.spend || 0;
-    const cRev = selectedCountry.revenue || 0;
-    const cImps = selectedCountry.impressions || 0;
-    const cClicks = selectedCountry.clicks || 0;
-    const cAdReqs = selectedCountry.ad_requests || 0;
-    const cMatchedReqs = selectedCountry.matched_requests || 0;
-    const cMatchRate = selectedCountry.match_rate || avgMatchRate || 34.8;
-    const cUpr = selectedCountry.upr || 0;
-
-    // Use real country placement records from API if available
-    if (countryPlacements && countryPlacements.length > 0) {
-      const totPlacRev = countryPlacements.reduce((sum, p) => sum + (p.total_revenue || 0), 0);
-      return countryPlacements.map((p) => {
-        const pRev = p.total_revenue || 0;
-        const pImps = p.impressions || 0;
-        const pClicks = p.clicks || 0;
-        const pShare = totPlacRev > 0 ? (pRev / totPlacRev) : (1 / countryPlacements.length);
-        const pSpend = cSpend * pShare;
-        const pProfit = pRev - pSpend;
-        const pRoi = pSpend > 0 ? (pRev / pSpend * 100) : 0;
-        const pEcpm = p.ecpm || (pImps > 0 ? pRev / pImps * 1000 : 0);
-        const pCtr = pImps > 0 ? (pClicks / pImps * 100) : 0;
-        const pAdR = (p.ad_requests !== undefined && p.ad_requests !== null) ? p.ad_requests : 0;
-        const pMatchedR = (p.matched_requests !== undefined && p.matched_requests !== null) ? p.matched_requests : 0;
-        const pMr = (p.match_rate !== undefined && p.match_rate !== null) ? p.match_rate : (pAdR > 0 ? ((pMatchedR / pAdR) * 100) : 0);
-
-        return {
-          ad_unit: p.ad_unit || 'Standard Ad Unit',
-          spend: pSpend,
-          revenue: pRev,
-          ecpm: pEcpm,
-          ad_requests: pAdR,
-          matched_requests: pMatchedR,
-          match_rate: pMr,
-          ctr: pCtr,
-          roi: pRoi,
-          net_profit: pProfit,
-          upr: cUpr,
-          rpm: pEcpm
-        };
-      });
-    }
-
-    return [];
-  };
-
-  const countryAdUnits = getCountryAdUnits();
-
-  // Dynamic totals for Level 2 Ad Unit drill-down footer
-  const level2TotalAdReqs = countryAdUnits.reduce((sum, p) => sum + (p.ad_requests || 0), 0);
-  const level2TotalMatchedReqs = countryAdUnits.reduce((sum, p) => sum + (p.matched_requests || 0), 0);
-  const level2AvgMatchRate = level2TotalAdReqs > 0
-    ? ((level2TotalMatchedReqs / level2TotalAdReqs) * 100)
-    : (selectedCountry ? (selectedCountry.match_rate || 0) : 0);
-
-  const level2TotalImps = countryPlacements.reduce((sum, p) => sum + (p.impressions || 0), 0);
-  const level2TotalClicks = countryPlacements.reduce((sum, p) => sum + (p.clicks || 0), 0);
-  const level2AvgCtr = level2TotalImps > 0 ? ((level2TotalClicks / level2TotalImps) * 100) : (selectedCountry ? (selectedCountry.ctr || 0) : 0);
-
-  const filteredAdUnits = (countryAdUnits || []).filter(p => {
-    if (!p) return false;
-    const adUnitName = (p.ad_unit || '').toString().toLowerCase();
-    const search = (searchTerm || '').toString().toLowerCase();
-    return adUnitName.includes(search);
-  });
+  const filteredAdUnits = adUnits.filter(p =>
+    p.ad_unit.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const sortedAdUnits = [...filteredAdUnits].sort((a, b) => {
     let colKey = sortColumn === 'name' ? 'ad_unit' : sortColumn;
@@ -225,7 +139,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
               <button
                 onClick={handleBackToCountries}
                 className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700 flex items-center space-x-1 shrink-0 cursor-pointer"
-                title="Kembali ke Daftar Negara"
+                title="Back to Country List"
               >
                 <ArrowLeft className="w-5 h-5 text-emerald-400" />
               </button>
@@ -239,14 +153,14 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 {selectedCountry ? (
                   <>
-                    <span>Report Unit Iklan (Ad Unit) - {selectedCountry.flag_emoji} {selectedCountry.country}</span>
+                    <span>Ad Unit Performance Report - {selectedCountry.flag_emoji} {selectedCountry.country}</span>
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {domain}
                     </span>
                   </>
                 ) : (
                   <>
-                    <span>Breakdown Kinerja Domain Per Negara</span>
+                    <span>Domain Country Performance Breakdown</span>
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {domain}
                     </span>
@@ -255,9 +169,9 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
               </h2>
               <p className="text-slate-400 text-xs mt-0.5">
                 {selectedCountry ? (
-                  <span>Rincian unit iklan (Ad Unit) untuk negara <strong className="text-white">{selectedCountry.country}</strong> ({startDate} s.d {endDate})</span>
+                  <span>Ad Unit details for country <strong className="text-white">{selectedCountry.country}</strong> ({startDate} to {endDate})</span>
                 ) : (
-                  <span>Klik salah satu baris negara untuk melihat report rincian Ad Unit di negara tersebut. ({startDate} s.d {endDate})</span>
+                  <span>Click on any country row to view ad unit breakdown for that country. ({startDate} to {endDate})</span>
                 )}
               </p>
             </div>
@@ -271,14 +185,14 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                 className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white transition-all border border-emerald-500/30 flex items-center space-x-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>← Kembali ke Daftar Negara</span>
+                <span>← Back to Country List</span>
               </button>
             )}
 
             <button
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-xl transition-all border border-slate-700/50 shrink-0 cursor-pointer"
-              title="Tutup Modal"
+              title="Close Modal"
             >
               <X className="w-5 h-5" />
             </button>
@@ -286,67 +200,61 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 overflow-y-auto space-y-5 flex-1">
-          {loading || loadingCountryPlacements ? (
-            <div className="min-h-[300px] flex flex-col items-center justify-center space-y-3 text-slate-400">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          {loading ? (
+            <div className="min-h-[350px] flex flex-col items-center justify-center space-y-3 text-slate-400">
               <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
-              <span className="text-xs font-medium">
-                {loadingCountryPlacements
-                  ? `Memuat data unit iklan GAM untuk negara ${selectedCountry?.country}...`
-                  : `Memuat data rincian untuk domain ${domain}...`}
-              </span>
+              <span className="text-sm font-medium">Loading country breakdown metrics...</span>
+            </div>
+          ) : error ? (
+            <div className="min-h-[300px] flex flex-col items-center justify-center text-center p-6 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-400">
+              <span className="text-sm font-semibold">{error}</span>
             </div>
           ) : (
             <>
-              {/* Metric Summary Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl">
-                  <span className="text-[11px] font-semibold text-slate-400 block">Total Revenue</span>
-                  <span className="text-base font-extrabold text-emerald-400 block mt-0.5">{formatCurrency(activeRev)}</span>
+              {/* Executive Summary Cards inside Modal */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl">
+                  <span className="text-slate-400 text-[11px] font-semibold uppercase">Total Revenue</span>
+                  <p className="text-lg font-extrabold text-emerald-400 mt-1">{formatCurrency(activeRev)}</p>
                 </div>
-                <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl">
-                  <span className="text-[11px] font-semibold text-slate-400 block">Total Spend</span>
-                  <span className="text-base font-extrabold text-rose-400 block mt-0.5">{formatCurrency(activeSpend)}</span>
+                <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl">
+                  <span className="text-slate-400 text-[11px] font-semibold uppercase">Total Spend</span>
+                  <p className="text-lg font-extrabold text-rose-400 mt-1">{formatCurrency(activeSpend)}</p>
                 </div>
-                <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl">
-                  <span className="text-[11px] font-semibold text-slate-400 block">Net Profit</span>
-                  <span className={`text-base font-extrabold block mt-0.5 ${activeProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl">
+                  <span className="text-slate-400 text-[11px] font-semibold uppercase">Net Profit</span>
+                  <p className={`text-lg font-extrabold mt-1 ${activeProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {formatCurrency(activeProfit)}
-                  </span>
+                  </p>
                 </div>
-                <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl">
-                  <span className="text-[11px] font-semibold text-slate-400 block">Rata-rata eCPM</span>
-                  <span className="text-base font-extrabold text-sky-400 block mt-0.5">{formatCurrency(activeEcpm)}</span>
-                </div>
-                <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl">
-                  <span className="text-[11px] font-semibold text-slate-400 block">Overall ROI</span>
-                  <span className={`text-base font-extrabold block mt-0.5 ${activeRoi >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {activeSpend > 0 ? `${activeRoi.toFixed(1)}%` : 'N/A'}
-                  </span>
+                <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl">
+                  <span className="text-slate-400 text-[11px] font-semibold uppercase">Avg eCPM</span>
+                  <p className="text-lg font-extrabold text-sky-400 mt-1">{formatCurrency(activeEcpm)}</p>
                 </div>
               </div>
 
-              {/* Toolbar & Search */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="relative flex-1 sm:flex-initial">
+              {/* Table Controls (Search & Counter) */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="relative w-full sm:w-64">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                   <input
                     type="text"
-                    placeholder={selectedCountry ? `Cari unit iklan di ${selectedCountry.country}...` : "Cari nama atau kode negara..."}
+                    placeholder={selectedCountry ? "Search ad unit placement..." : "Search country..."}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="bg-slate-950 border border-slate-700 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg focus:outline-none focus:border-emerald-500 w-full sm:w-64"
+                    className="bg-slate-900 border border-slate-700 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg focus:outline-none focus:border-emerald-500 w-full"
                   />
                 </div>
 
                 <div className="flex items-center space-x-2">
                   {selectedCountry ? (
                     <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
-                      {filteredAdUnits.length} Unit Iklan ({selectedCountry.country})
+                      {filteredAdUnits.length} Ad Units ({selectedCountry.country})
                     </span>
                   ) : (
                     <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg">
-                      {filteredCountries.length} Negara (Klik negara untuk detail)
+                      {filteredCountries.length} Countries (Click country for details)
                     </span>
                   )}
                 </div>
@@ -354,14 +262,14 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
               {/* Data Table */}
               <div className="border border-slate-700/60 rounded-xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto w-full max-w-full">
                   <table className="w-full text-left text-xs text-slate-300 border-collapse">
                     
                     {/* --- UNIFIED UNIFORM THEAD ACROSS LEVEL 1 & LEVEL 2 --- */}
                     <thead className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-700/60 select-none shadow-md">
                       <tr>
                         <th onClick={() => handleSort('name')} className="px-4 py-3 cursor-pointer hover:text-white transition-colors">
-                          {selectedCountry ? 'Unit Iklan / Placement' : 'Negara'} {renderSortIndicator('name')}
+                          {selectedCountry ? 'Ad Unit / Placement' : 'Country'} {renderSortIndicator('name')}
                         </th>
                         <th onClick={() => handleSort('spend')} className="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors">
                           Spend (Ads) {renderSortIndicator('spend')}
@@ -402,7 +310,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         sortedCountries.length === 0 ? (
                           <tr>
                             <td colSpan="11" className="px-4 py-8 text-center text-slate-400 italic">
-                              Tidak ada data negara ditemukan.
+                              No country data found.
                             </td>
                           </tr>
                         ) : (
@@ -415,7 +323,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                 key={idx}
                                 onClick={() => handleCountryClick(c)}
                                 className="hover:bg-emerald-500/10 cursor-pointer transition-colors group"
-                                title="Klik untuk melihat detail unit iklan (Ad Unit) di negara ini"
+                                title="Click to view ad unit details for this country"
                               >
                                 <td className="px-4 py-3.5 font-semibold text-white">
                                   <div className="flex items-center space-x-2">
@@ -424,9 +332,6 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                       {c.country}
                                     </span>
                                     <span className="text-[10px] font-mono text-slate-400">({c.country_code})</span>
-                                    <span className="text-[10px] bg-slate-800 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                                      Lihat Ad Unit →
-                                    </span>
                                   </div>
                                 </td>
 
@@ -450,12 +355,12 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   {(c.matched_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-indigo-300">
-                                  {c.match_rate.toFixed(1)}%
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-indigo-300">
+                                  {(c.match_rate || 0).toFixed(1)}%
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right font-mono text-slate-300">
-                                  {c.ctr.toFixed(2)}%
+                                  {(c.ctr || 0).toFixed(2)}%
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right font-mono font-bold">
@@ -470,12 +375,12 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
                                 <td className="px-4 py-3.5 text-right">
                                   {hasSpend ? (
-                                    <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-bold border ${
+                                    <span className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-bold border ${
                                       isProfitable
                                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                                         : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                                     }`}>
-                                      {isProfitable ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                      {isProfitable ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                                       <span>{formatCurrency(c.net_profit)}</span>
                                     </span>
                                   ) : (
@@ -483,44 +388,38 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   )}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono">
-                                  <div className="flex flex-col items-end">
-                                    <span className="text-amber-300 font-semibold text-[11px]">
-                                      {c.upr > 0 ? formatCurrency(c.upr) : '-'}
-                                    </span>
-                                    <span className="text-[10px] text-sky-400/80 font-normal mt-0.5">
-                                      RPM: {formatCurrency(c.rpm)}
-                                    </span>
-                                  </div>
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-amber-300">
+                                  {formatCurrency(c.upr || 0)}
                                 </td>
                               </tr>
                             );
                           })
                         )
                       ) : (
-                        /* --- LEVEL 2: AD UNIT DRILL-DOWN FOR SELECTED COUNTRY --- */
+                        /* --- LEVEL 2: AD UNITS WITHIN SELECTED COUNTRY --- */
                         sortedAdUnits.length === 0 ? (
                           <tr>
                             <td colSpan="11" className="px-4 py-8 text-center text-slate-400 italic">
-                              Tidak ada unit iklan (Ad Unit) ditemukan untuk negara {selectedCountry.country}.
+                              Tidak ada data unit iklan (Ad Unit) untuk negara ini.
                             </td>
                           </tr>
                         ) : (
                           sortedAdUnits.map((p, idx) => {
-                            const hasSpend = p.spend > 0;
-                            const isProfitable = p.net_profit >= 0;
+                            const pRoi = p.roi || 0;
+                            const pProfit = p.net_profit || 0;
+                            const isPProfitable = pProfit >= 0;
 
                             return (
-                              <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
+                              <tr key={idx} className="hover:bg-slate-700/40 transition-colors">
                                 <td className="px-4 py-3.5 font-semibold text-white">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="w-2 h-2 rounded-full bg-indigo-400 shrink-0"></span>
-                                    <span className="font-bold">{p.ad_unit}</span>
+                                  <div className="flex flex-col space-y-0.5">
+                                    <span className="font-bold text-slate-100">{p.ad_unit}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">Domain: {p.domain}</span>
                                   </div>
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right font-medium text-rose-400">
-                                  {hasSpend ? formatCurrency(p.spend) : <span className="text-slate-500">-</span>}
+                                  {p.spend > 0 ? formatCurrency(p.spend) : <span className="text-slate-500">-</span>}
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right font-bold text-emerald-400">
@@ -539,18 +438,18 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   {(p.matched_requests || 0).toLocaleString()}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono text-indigo-300">
-                                  {p.match_rate.toFixed(1)}%
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-indigo-300">
+                                  {(p.match_rate || 0).toFixed(1)}%
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right font-mono text-slate-300">
-                                  {p.ctr.toFixed(2)}%
+                                  {(p.ctr || 0).toFixed(2)}%
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right font-mono font-bold">
-                                  {hasSpend ? (
-                                    <span className={isProfitable ? 'text-emerald-400' : 'text-rose-400'}>
-                                      {p.roi > 0 ? `+${p.roi.toFixed(1)}%` : `${p.roi.toFixed(1)}%`}
+                                  {p.spend > 0 ? (
+                                    <span className={isPProfitable ? 'text-emerald-400' : 'text-rose-400'}>
+                                      {pRoi > 0 ? `+${pRoi.toFixed(1)}%` : `${pRoi.toFixed(1)}%`}
                                     </span>
                                   ) : (
                                     <span className="text-slate-500">N/A</span>
@@ -558,29 +457,22 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                 </td>
 
                                 <td className="px-4 py-3.5 text-right">
-                                  {hasSpend ? (
+                                  {p.spend > 0 ? (
                                     <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-bold border ${
-                                      isProfitable
+                                      isPProfitable
                                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                                         : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                                     }`}>
-                                      {isProfitable ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                      <span>{formatCurrency(p.net_profit)}</span>
+                                      {isPProfitable ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                      <span>{formatCurrency(pProfit)}</span>
                                     </span>
                                   ) : (
                                     <span className="text-emerald-400 font-bold">{formatCurrency(p.revenue)}</span>
                                   )}
                                 </td>
 
-                                <td className="px-4 py-3.5 text-right font-mono">
-                                  <div className="flex flex-col items-end">
-                                    <span className="text-amber-300 font-semibold text-[11px]">
-                                      {p.upr > 0 ? formatCurrency(p.upr) : '-'}
-                                    </span>
-                                    <span className="text-[10px] text-sky-400/80 font-normal mt-0.5">
-                                      RPM: {formatCurrency(p.rpm)}
-                                    </span>
-                                  </div>
+                                <td className="px-4 py-3.5 text-right font-mono font-semibold text-amber-300">
+                                  {formatCurrency(p.upr || 0)}
                                 </td>
                               </tr>
                             );
@@ -593,7 +485,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                     <tfoot className="bg-slate-950 text-slate-200 font-semibold border-t border-slate-700/80 text-[11px]">
                       <tr>
                         <td className="px-4 py-3 font-bold">
-                          {selectedCountry ? `Total Unit Iklan (${selectedCountry.country})` : 'Total / Rata-rata Semua Negara'}
+                          {selectedCountry ? `Total Ad Units (${selectedCountry.country})` : 'Total / Average All Countries'}
                         </td>
                         <td className="px-4 py-3 text-right font-bold text-rose-400">{formatCurrency(activeSpend)}</td>
                         <td className="px-4 py-3 text-right font-bold text-emerald-400">{formatCurrency(activeRev)}</td>
@@ -643,11 +535,11 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-white transition-all border border-slate-700 flex items-center space-x-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>← Kembali ke Daftar Negara</span>
+                <span>← Back to Country List</span>
               </button>
             ) : (
               <span className="text-xs text-slate-400">
-                💡 Petunjuk: Klik pada salah satu baris negara untuk melihat detail unit iklan (Ad Unit).
+                💡 Tip: Click on any country row to view ad unit breakdown.
               </span>
             )}
           </div>
@@ -656,7 +548,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
             onClick={onClose}
             className="px-5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white transition-all border border-slate-700 cursor-pointer"
           >
-            Tutup
+            Close
           </button>
         </div>
 

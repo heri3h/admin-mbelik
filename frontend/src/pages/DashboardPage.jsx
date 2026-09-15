@@ -84,7 +84,7 @@ export default function DashboardPage() {
             {summary?.last_synced_at && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800 text-emerald-400 border border-emerald-500/30 shadow-sm">
                 <Clock className="w-3 h-3 text-emerald-400" />
-                <span>Terakhir Sync: {summary.last_synced_at} (Auto 30m)</span>
+                <span>Last Synced: {summary.last_synced_at} (Auto 30m)</span>
               </span>
             )}
           </div>

@@ -16,7 +16,7 @@ export default function LoginPage({ onLoginSuccess }) {
       await authService.login(username, password);
       onLoginSuccess();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Gagal masuk. Periksa username dan password Anda.');
+      setError(err.response?.data?.detail || 'Login failed. Please check your username and password.');
     } finally {
       setLoading(false);
     }
@@ -28,7 +28,7 @@ export default function LoginPage({ onLoginSuccess }) {
         <div className="text-center mb-8">
           <img src="/logo.png" alt="Mbelik" className="h-12 w-auto mx-auto mb-4 object-contain" />
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Ad Profitability Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">Masuk untuk mengakses analitik iklan internal</p>
+          <p className="text-slate-400 text-sm mt-1">Sign in to access internal ad analytics</p>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl">
@@ -42,7 +42,7 @@ export default function LoginPage({ onLoginSuccess }) {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                Username Admin
+                Admin Username
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -53,7 +53,7 @@ export default function LoginPage({ onLoginSuccess }) {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Masukkan username"
+                  placeholder="Enter username"
                   className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
                 />
               </div>
@@ -72,7 +72,7 @@ export default function LoginPage({ onLoginSuccess }) {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan password"
+                  placeholder="Enter password"
                   className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
                 />
               </div>
@@ -83,7 +83,7 @@ export default function LoginPage({ onLoginSuccess }) {
               disabled={loading}
               className="w-full py-3.5 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-sky-500/25 transition-all disabled:opacity-50 mt-2"
             >
-              {loading ? 'Memproses Login...' : 'Masuk Dashboard'}
+              {loading ? 'Signing In...' : 'Sign In to Dashboard'}
             </button>
           </form>
         </div>

@@ -162,7 +162,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
             {sortedSites.map((site, idx) => {
               const hasSpend = site.total_spend > 0;
               const isProfitable = site.net_profit >= 0;
-              const compLabel = site.comparison_period_label || 'vs periode sebelumnya';
+              const compLabel = site.comparison_period_label || 'vs previous period';
 
               return (
                 <tr key={idx} className="hover:bg-slate-700/40 transition-colors group">
@@ -171,7 +171,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
                       <button
                         onClick={() => setSelectedDomain(site.domain)}
                         className="flex items-center space-x-2 text-left hover:text-emerald-400 transition-colors focus:outline-none cursor-pointer"
-                        title="Klik untuk melihat detail per negara"
+                        title="Click to view country breakdown"
                       >
                         <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform"></span>
                         <span className="text-sm font-bold hover:underline decoration-emerald-400 underline-offset-4">
@@ -188,7 +188,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
                         </div>
                       ) : (
                         <span className="text-[10px] text-slate-500 pl-4 italic">
-                          Belum dipasang Ads ID
+                          No Ads ID Assigned
                         </span>
                       )}
                     </div>

@@ -120,7 +120,7 @@ export default function AccountsTable({ accounts }) {
           </thead>
           <tbody className="divide-y divide-slate-700/50">
             {sortedAccounts.map((acc, idx) => {
-              const compLabel = acc.comparison_period_label || 'vs periode sebelumnya';
+              const compLabel = acc.comparison_period_label || 'vs previous period';
 
               return (
                 <tr key={idx} className="hover:bg-slate-700/30 transition-colors">

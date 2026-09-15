@@ -17,7 +17,7 @@ export default function SyncButton({ startDate, endDate, onSyncSuccess }) {
         onSyncSuccess();
       }
     } catch (err) {
-      setStatusMsg({ type: 'error', text: 'Gagal menyinkronkan data API.' });
+      setStatusMsg({ type: 'error', text: 'Failed to sync API data.' });
     } finally {
       setLoading(false);
       setTimeout(() => setStatusMsg(null), 5000);
@@ -29,12 +29,12 @@ export default function SyncButton({ startDate, endDate, onSyncSuccess }) {
     setStatusMsg(null);
     try {
       const res = await dashboardService.clearCache();
-      setStatusMsg({ type: res.status === 'error' ? 'error' : 'success', text: res.message || 'Cache Berhasil Dibersihkan' });
+      setStatusMsg({ type: res.status === 'error' ? 'error' : 'success', text: res.message || 'Cache Cleared Successfully' });
       if (onSyncSuccess) {
         onSyncSuccess();
       }
     } catch (err) {
-      setStatusMsg({ type: 'error', text: 'Gagal membersihkan cache.' });
+      setStatusMsg({ type: 'error', text: 'Failed to clear cache.' });
     } finally {
       setClearingCache(false);
       setTimeout(() => setStatusMsg(null), 5000);
@@ -68,7 +68,7 @@ export default function SyncButton({ startDate, endDate, onSyncSuccess }) {
       <button
         onClick={handleClearCache}
         disabled={loading || clearingCache}
-        title="Hapus seluruh cache database dan tarik ulang data segar dari API"
+        title="Clear database cache and re-fetch fresh API data"
         className="flex items-center space-x-2 bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 font-medium text-xs px-3 py-2 rounded-lg border border-slate-700 hover:border-rose-500/50 transition-all disabled:opacity-50"
       >
         <Trash2 className={`w-4 h-4 ${clearingCache ? 'animate-spin' : ''}`} />
