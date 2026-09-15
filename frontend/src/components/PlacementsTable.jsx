@@ -105,35 +105,35 @@ export default function PlacementsTable({ placements }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto w-full max-w-full rounded-b-2xl">
+      <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60">
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
           <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider select-none shadow-md">
             <tr>
-              <th onClick={() => handleSort('ad_unit')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('ad_unit')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Ad Unit / Placement Name {renderSortIndicator('ad_unit')}
               </th>
-              <th onClick={() => handleSort('domain')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('domain')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Site / Domain {renderSortIndicator('domain')}
               </th>
-              <th onClick={() => handleSort('total_revenue')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('total_revenue')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 AdX Revenue {renderSortIndicator('total_revenue')}
               </th>
-              <th onClick={() => handleSort('impressions')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('impressions')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 AdX Impressions {renderSortIndicator('impressions')}
               </th>
-              <th onClick={() => handleSort('clicks')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('clicks')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Clicks {renderSortIndicator('clicks')}
               </th>
-              <th onClick={() => handleSort('ad_requests')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Ad Requests {renderSortIndicator('ad_requests')}
               </th>
-              <th onClick={() => handleSort('matched_requests')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Matched Requests {renderSortIndicator('matched_requests')}
               </th>
-              <th onClick={() => handleSort('match_rate')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 Match Rate {renderSortIndicator('match_rate')}
               </th>
-              <th onClick={() => handleSort('ecpm')} className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
+              <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors whitespace-nowrap">
                 eCPM {renderSortIndicator('ecpm')}
               </th>
             </tr>

@@ -33,15 +33,15 @@ export default function DomainsTable({ domains }) {
         </span>
       </div>
 
-      <div className="overflow-x-auto w-full max-w-full rounded-b-2xl">
+      <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60">
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
           <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[11px] tracking-wider select-none shadow-md">
             <tr>
-              <th className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 whitespace-nowrap">Domain</th>
-              <th className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">AdX Revenue</th>
-              <th className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">AdX Impressions</th>
-              <th className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">Clicks</th>
-              <th className="sticky top-16 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">eCPM</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 whitespace-nowrap">Domain</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">AdX Revenue</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">AdX Impressions</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">Clicks</th>
+              <th className="sticky top-0 z-30 bg-slate-900 px-5 py-3.5 border-b border-slate-700/60 text-right whitespace-nowrap">eCPM</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
