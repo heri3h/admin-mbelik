@@ -20,11 +20,18 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 # WIB Timezone (GMT+7)
 WIB = timezone(timedelta(hours=7))
 
-HOURLY_WEIGHTS = [
-    0.02, 0.015, 0.01, 0.01, 0.01, 0.015,  # 00:00 - 05:00 (low night traffic)
-    0.025, 0.035, 0.045, 0.05, 0.055, 0.06, # 06:00 - 11:00 (morning ramp)
-    0.065, 0.065, 0.06, 0.06, 0.065, 0.07,  # 12:00 - 17:00 (afternoon peak)
-    0.075, 0.07, 0.06, 0.05, 0.035, 0.025   # 18:00 - 23:00 (evening peak & wind down)
+SPEND_HOURLY_WEIGHTS = [
+    0.020, 0.015, 0.010, 0.010, 0.010, 0.015,  # 00:00 - 05:00
+    0.025, 0.035, 0.045, 0.050, 0.055, 0.060,  # 06:00 - 11:00
+    0.065, 0.065, 0.060, 0.060, 0.065, 0.070,  # 12:00 - 17:00
+    0.075, 0.070, 0.060, 0.050, 0.035, 0.025   # 18:00 - 23:00
+]
+
+REVENUE_HOURLY_WEIGHTS = [
+    0.012, 0.008, 0.006, 0.006, 0.007, 0.011,  # 00:00 - 05:00 (lower night eCPM yield)
+    0.020, 0.032, 0.045, 0.052, 0.058, 0.064,  # 06:00 - 11:00
+    0.072, 0.074, 0.070, 0.068, 0.072, 0.078,  # 12:00 - 17:00 (higher afternoon eCPM yield)
+    0.082, 0.075, 0.062, 0.048, 0.030, 0.016   # 18:00 - 23:00 (peak evening yield)
 ]
 
 def get_wib_today() -> date:
@@ -107,12 +114,15 @@ def get_summary(
 
         if d_start == wib_today:
             curr_h = wib_now.hour
-            active_weight_sum = sum(HOURLY_WEIGHTS[:curr_h + 1]) if curr_h >= 0 else 1.0
-            if active_weight_sum <= 0:
-                active_weight_sum = 1.0
+            active_spend_sum = sum(SPEND_HOURLY_WEIGHTS[:curr_h + 1]) if curr_h >= 0 else 1.0
+            active_rev_sum = sum(REVENUE_HOURLY_WEIGHTS[:curr_h + 1]) if curr_h >= 0 else 1.0
+            if active_spend_sum <= 0:
+                active_spend_sum = 1.0
+            if active_rev_sum <= 0:
+                active_rev_sum = 1.0
 
-            prev_spend = prev_day_spend * active_weight_sum
-            prev_revenue = prev_day_revenue * active_weight_sum
+            prev_spend = prev_day_spend * active_spend_sum
+            prev_revenue = prev_day_revenue * active_rev_sum
             comp_label = "vs kemarin jam yang sama"
         else:
             prev_spend = prev_day_spend
@@ -202,17 +212,22 @@ def get_daily_trend(
         is_today = (d_start == wib_now.date())
         current_hour = wib_now.hour if is_today else 23
 
-        active_weight_sum = sum(HOURLY_WEIGHTS[:current_hour + 1]) if current_hour >= 0 else 1.0
-        if active_weight_sum <= 0:
-            active_weight_sum = 1.0
+        active_spend_sum = sum(SPEND_HOURLY_WEIGHTS[:current_hour + 1]) if current_hour >= 0 else 1.0
+        if active_spend_sum <= 0:
+            active_spend_sum = 1.0
+
+        active_rev_sum = sum(REVENUE_HOURLY_WEIGHTS[:current_hour + 1]) if current_hour >= 0 else 1.0
+        if active_rev_sum <= 0:
+            active_rev_sum = 1.0
 
         result = []
         for h in range(24):
             hour_str = f"{h:02d}:00"
             if h <= current_hour:
-                factor = HOURLY_WEIGHTS[h] / active_weight_sum
-                h_spend = round(tot_spend * factor, 2)
-                h_revenue = round(tot_revenue * factor, 2)
+                spend_factor = SPEND_HOURLY_WEIGHTS[h] / active_spend_sum
+                rev_factor = REVENUE_HOURLY_WEIGHTS[h] / active_rev_sum
+                h_spend = round(tot_spend * spend_factor, 2)
+                h_revenue = round(tot_revenue * rev_factor, 2)
                 h_profit = round(h_revenue - h_spend, 2)
                 h_roi = round((h_revenue / h_spend * 100.0), 2) if h_spend > 0 else 0.0
                 h_margin = round((h_profit / h_revenue * 100.0), 2) if h_revenue > 0 else 0.0
