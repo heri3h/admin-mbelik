@@ -119,7 +119,14 @@ class SyncService:
                 db.add(new_metric)
             records_synced += 1
 
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"GoogleAdsMetric commit notice: {e}")
+
         # 1b. Deduplicate & Upsert Google Ads Country metrics (Apply +11% tax adjustment)
+
         try:
             gads_country_data = google_ads_service.fetch_country_metrics(start_date, end_date, customer_ids=cids)
             db.query(GoogleAdsCountryMetric).filter(
