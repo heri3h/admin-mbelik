@@ -127,7 +127,7 @@ class CountryBreakdownItem(BaseModel):
     ctr: float
     impressions: int
     clicks: int
-    upr: float
+    upr: Optional[Any] = 0.0
     pricing_rule_name: Optional[str] = "All Rules"
     rpm: float = 0.0
 
