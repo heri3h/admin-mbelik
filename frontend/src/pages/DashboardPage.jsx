@@ -109,7 +109,7 @@ export default function DashboardPage() {
           <TrendChart data={trend} startDate={startDate} endDate={endDate} />
 
           {/* Breakdown Reports Section */}
-          <div className="space-y-4">
+          <div className="space-y-4 mt-6">
             {/* Report Selector Tabs */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-3 max-w-full">
               <h2 className="text-lg font-bold text-white tracking-tight">Detailed Breakdown Reports</h2>
