@@ -20,16 +20,32 @@ export default function PlacementsTable({ placements }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState('total_revenue');
   const [sortDirection, setSortDirection] = useState('desc');
-  const [visibleColumns, setVisibleColumns] = useState(
-    ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {})
-  );
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('col_vis_placements');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return ALL_COLUMNS.reduce((acc, col) => ({
+          ...acc,
+          [col.key]: parsed[col.key] !== undefined ? parsed[col.key] : true
+        }), {});
+      }
+    } catch (e) {}
+    return ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+  });
 
   const handleToggleColumn = (key) => {
-    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+    setVisibleColumns(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem('col_vis_placements', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
   };
 
   const handleResetColumns = () => {
-    setVisibleColumns(ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {}));
+    const initial = ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+    setVisibleColumns(initial);
+    try { localStorage.setItem('col_vis_placements', JSON.stringify(initial)); } catch (e) {}
   };
 
   if (!placements || placements.length === 0) {

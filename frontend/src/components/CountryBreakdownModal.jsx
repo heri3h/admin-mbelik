@@ -43,30 +43,63 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   const [sortColumn, setSortColumn] = useState('revenue');
   const [sortDirection, setSortDirection] = useState('desc');
 
-  // Column Visibility State
-  const [level1VisibleCols, setLevel1VisibleCols] = useState(
-    LEVEL1_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {})
-  );
-  const [level2VisibleCols, setLevel2VisibleCols] = useState(
-    LEVEL2_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {})
-  );
+  // Column Visibility State (Persisted in localStorage)
+  const [level1VisibleCols, setLevel1VisibleCols] = useState(() => {
+    try {
+      const saved = localStorage.getItem('col_vis_country_level1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return LEVEL1_COLUMNS.reduce((acc, col) => ({
+          ...acc,
+          [col.key]: parsed[col.key] !== undefined ? parsed[col.key] : true
+        }), {});
+      }
+    } catch (e) {}
+    return LEVEL1_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+  });
+
+  const [level2VisibleCols, setLevel2VisibleCols] = useState(() => {
+    try {
+      const saved = localStorage.getItem('col_vis_country_level2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return LEVEL2_COLUMNS.reduce((acc, col) => ({
+          ...acc,
+          [col.key]: parsed[col.key] !== undefined ? parsed[col.key] : true
+        }), {});
+      }
+    } catch (e) {}
+    return LEVEL2_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+  });
 
   const activeColumns = selectedCountry ? LEVEL2_COLUMNS : LEVEL1_COLUMNS;
   const activeVisibleCols = selectedCountry ? level2VisibleCols : level1VisibleCols;
 
   const handleToggleColumn = (key) => {
     if (selectedCountry) {
-      setLevel2VisibleCols(prev => ({ ...prev, [key]: !prev[key] }));
+      setLevel2VisibleCols(prev => {
+        const updated = { ...prev, [key]: !prev[key] };
+        try { localStorage.setItem('col_vis_country_level2', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
     } else {
-      setLevel1VisibleCols(prev => ({ ...prev, [key]: !prev[key] }));
+      setLevel1VisibleCols(prev => {
+        const updated = { ...prev, [key]: !prev[key] };
+        try { localStorage.setItem('col_vis_country_level1', JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
     }
   };
 
   const handleResetColumns = () => {
     if (selectedCountry) {
-      setLevel2VisibleCols(LEVEL2_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {}));
+      const initial = LEVEL2_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+      setLevel2VisibleCols(initial);
+      try { localStorage.setItem('col_vis_country_level2', JSON.stringify(initial)); } catch (e) {}
     } else {
-      setLevel1VisibleCols(LEVEL1_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {}));
+      const initial = LEVEL1_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+      setLevel1VisibleCols(initial);
+      try { localStorage.setItem('col_vis_country_level1', JSON.stringify(initial)); } catch (e) {}
     }
   };
 
@@ -466,13 +499,15 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                 title="Click to view ad unit details for this country"
                               >
                                 {activeVisibleCols.name && (
-                                  <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
-                                    <div className="flex items-center space-x-2">
+                                  <td
+                                    className="px-3 py-2.5 font-semibold text-white whitespace-nowrap"
+                                    title={`Country: ${c.country} (${c.country_code})`}
+                                  >
+                                    <div className="flex items-center space-x-1.5">
                                       <span className="text-base group-hover:scale-125 transition-transform">{c.flag_emoji}</span>
-                                      <span className="font-bold group-hover:text-emerald-400 group-hover:underline underline-offset-4 decoration-emerald-400 transition-colors">
-                                        {c.country}
+                                      <span className="font-bold font-mono text-slate-100 group-hover:text-emerald-400 group-hover:underline underline-offset-4 decoration-emerald-400 transition-colors">
+                                        {c.country_code}
                                       </span>
-                                      <span className="text-[10px] font-mono text-slate-400">({c.country_code})</span>
                                     </div>
                                   </td>
                                 )}

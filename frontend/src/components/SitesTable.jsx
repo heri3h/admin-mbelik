@@ -22,16 +22,32 @@ export default function SitesTable({ sites, startDate, endDate }) {
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [sortColumn, setSortColumn] = useState('total_revenue');
   const [sortDirection, setSortDirection] = useState('desc');
-  const [visibleColumns, setVisibleColumns] = useState(
-    ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {})
-  );
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('col_vis_sites');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return ALL_COLUMNS.reduce((acc, col) => ({
+          ...acc,
+          [col.key]: parsed[col.key] !== undefined ? parsed[col.key] : true
+        }), {});
+      }
+    } catch (e) {}
+    return ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+  });
 
   const handleToggleColumn = (key) => {
-    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+    setVisibleColumns(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem('col_vis_sites', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
   };
 
   const handleResetColumns = () => {
-    setVisibleColumns(ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {}));
+    const initial = ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+    setVisibleColumns(initial);
+    try { localStorage.setItem('col_vis_sites', JSON.stringify(initial)); } catch (e) {}
   };
 
   if (!sites || sites.length === 0) {
@@ -128,7 +144,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
             <span>Performance & Profitability Report by Site (Domain)</span>
           </h3>
           <p className="text-slate-400 text-xs mt-0.5">
-            Spend, Revenue, Ad Requests, Matched Requests, MR AdX, Net Profit, ROI, dan eCPM per domain.
+            Spend, Revenue, Ad Requests, Matched Requests, MR AdX, Net Profit, ROI, and eCPM per domain.
           </p>
         </div>
 
@@ -152,7 +168,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
           />
 
           <span
-            title={`${filteredSites.length} Active Sites (Situs Aktif)`}
+            title={`${filteredSites.length} Active Sites`}
             className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg shrink-0 cursor-help"
           >
             <Globe className="w-3.5 h-3.5 text-emerald-400" />

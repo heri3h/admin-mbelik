@@ -15,16 +15,32 @@ const ALL_COLUMNS = [
 export default function AccountsTable({ accounts }) {
   const [sortColumn, setSortColumn] = useState('total_spend');
   const [sortDirection, setSortDirection] = useState('desc');
-  const [visibleColumns, setVisibleColumns] = useState(
-    ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {})
-  );
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('col_vis_accounts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return ALL_COLUMNS.reduce((acc, col) => ({
+          ...acc,
+          [col.key]: parsed[col.key] !== undefined ? parsed[col.key] : true
+        }), {});
+      }
+    } catch (e) {}
+    return ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+  });
 
   const handleToggleColumn = (key) => {
-    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+    setVisibleColumns(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem('col_vis_accounts', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
   };
 
   const handleResetColumns = () => {
-    setVisibleColumns(ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {}));
+    const initial = ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+    setVisibleColumns(initial);
+    try { localStorage.setItem('col_vis_accounts', JSON.stringify(initial)); } catch (e) {}
   };
 
   if (!accounts || accounts.length === 0) {

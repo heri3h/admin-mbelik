@@ -11,16 +11,32 @@ const ALL_COLUMNS = [
 ];
 
 export default function DomainsTable({ domains }) {
-  const [visibleColumns, setVisibleColumns] = useState(
-    ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {})
-  );
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('col_vis_domains');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return ALL_COLUMNS.reduce((acc, col) => ({
+          ...acc,
+          [col.key]: parsed[col.key] !== undefined ? parsed[col.key] : true
+        }), {});
+      }
+    } catch (e) {}
+    return ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+  });
 
   const handleToggleColumn = (key) => {
-    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+    setVisibleColumns(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem('col_vis_domains', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
   };
 
   const handleResetColumns = () => {
-    setVisibleColumns(ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {}));
+    const initial = ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+    setVisibleColumns(initial);
+    try { localStorage.setItem('col_vis_domains', JSON.stringify(initial)); } catch (e) {}
   };
 
   if (!domains || domains.length === 0) {
