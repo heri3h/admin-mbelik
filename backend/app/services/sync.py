@@ -541,5 +541,98 @@ def export_site_today_json(
     except Exception as e:
         logger.warning(f"Failed to export JSON to {target_filepath}: {e}")
 
+DEFAULT_PRICING_CONFIG = {
+    "target_mr": 65.0,
+    "default_pricing": "google_optimize",
+    "rules": [
+        { "cpm": 5000,   "target_key": "5000",   "floor_key": "f4000" },
+        { "cpm": 7500,   "target_key": "7500",   "floor_key": "f7000" },
+        { "cpm": 10000,  "target_key": "10000",  "floor_key": "f9000" },
+        { "cpm": 12500,  "target_key": "12500",  "floor_key": "f12000" },
+        { "cpm": 15000,  "target_key": "15000",  "floor_key": "f15000" },
+        { "cpm": 17500,  "target_key": "17500",  "floor_key": "f17000" },
+        { "cpm": 20000,  "target_key": "20000",  "floor_key": "f20000" },
+        { "cpm": 22500,  "target_key": "22500",  "floor_key": "f23000" },
+        { "cpm": 25000,  "target_key": "25000",  "floor_key": "f25000" },
+        { "cpm": 30000,  "target_key": "30000",  "floor_key": "f27000" },
+        { "cpm": 35000,  "target_key": "35000",  "floor_key": "f30000" },
+        { "cpm": 40000,  "target_key": "40000",  "floor_key": "f35000" },
+        { "cpm": 45000,  "target_key": "45000",  "floor_key": "f40000" },
+        { "cpm": 50000,  "target_key": "50000",  "floor_key": "f45000" },
+        { "cpm": 55000,  "target_key": "55000",  "floor_key": "f50000" },
+        { "cpm": 60000,  "target_key": "60000",  "floor_key": "f55000" },
+        { "cpm": 65000,  "target_key": "65000",  "floor_key": "f60000" },
+        { "cpm": 70000,  "target_key": "70000",  "floor_key": "f60000" },
+        { "cpm": 75000,  "target_key": "75000",  "floor_key": "f60000" },
+        { "cpm": 80000,  "target_key": "80000",  "floor_key": "f60000" },
+        { "cpm": 100000, "target_key": "100000", "floor_key": "f60000" },
+        { "cpm": 130000, "target_key": "130000", "floor_key": "f60000" },
+        { "cpm": 155000, "target_key": "155000", "floor_key": "f60000" }
+    ]
+}
+
+def get_master_pricing_config_path() -> str:
+    vps_path = "/home/mbummm/web/admin.mbelik.com/public_html/pricing_config.json"
+    if os.path.exists(os.path.dirname(vps_path)):
+        return vps_path
+    
+    from app.config import BASE_DIR
+    local_path = os.path.abspath(os.path.join(BASE_DIR, "../public_html/pricing_config.json"))
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    return local_path
+
+def load_pricing_config() -> dict:
+    master_path = get_master_pricing_config_path()
+    if os.path.exists(master_path):
+        try:
+            with open(master_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and "rules" in data:
+                    return data
+        except Exception as e:
+            logger.warning(f"Error loading {master_path}: {e}")
+    
+    # Save default if file doesn't exist
+    save_pricing_config_and_sync(DEFAULT_PRICING_CONFIG, db=None)
+    return DEFAULT_PRICING_CONFIG
+
+def save_pricing_config_and_sync(config_dict: dict, db: Session = None) -> list:
+    import json
+    master_path = get_master_pricing_config_path()
+    os.makedirs(os.path.dirname(master_path), exist_ok=True)
+    with open(master_path, "w", encoding="utf-8") as f:
+        json.dump(config_dict, f, indent=2, ensure_ascii=False)
+    try:
+        os.chmod(master_path, 0o666)
+    except Exception:
+        pass
+
+    synced_paths = [master_path]
+
+    if db is not None:
+        try:
+            from app.models import JSONExportTarget
+            targets = db.query(JSONExportTarget).filter(JSONExportTarget.is_active == True).all()
+            for t in targets:
+                target_dir = os.path.dirname(t.target_filepath)
+                dest_path = os.path.join(target_dir, "pricing_config.json")
+                if dest_path != master_path and dest_path not in synced_paths:
+                    try:
+                        os.makedirs(target_dir, exist_ok=True)
+                        with open(dest_path, "w", encoding="utf-8") as f:
+                            json.dump(config_dict, f, indent=2, ensure_ascii=False)
+                        try:
+                            os.chmod(dest_path, 0o666)
+                        except Exception:
+                            pass
+                        synced_paths.append(dest_path)
+                    except Exception as e:
+                        logger.warning(f"Failed syncing pricing_config.json to {dest_path}: {e}")
+        except Exception as e:
+            logger.warning(f"Error querying export targets for pricing_config sync: {e}")
+
+    return synced_paths
+
 sync_service = SyncService()
+
 

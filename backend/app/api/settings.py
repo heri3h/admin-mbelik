@@ -6,8 +6,9 @@ from app.config import settings, BASE_DIR
 from app.database import get_db
 from app.schemas import (
     SettingsStatusResponse, GoogleAdsAccountCreate, GoogleAdsAccountUpdate, GoogleAdsAccountResponse,
-    JSONExportTargetCreate, JSONExportTargetUpdate, JSONExportTargetResponse
+    JSONExportTargetCreate, JSONExportTargetUpdate, JSONExportTargetResponse, PricingConfigSchema
 )
+
 from app.models import User, GoogleAdsAccount, JSONExportTarget
 from app.services.auth import get_current_user
 from app.services.google_ads import google_ads_service
@@ -295,6 +296,30 @@ def test_export_target(
         return {"status": "success", "message": f"Uji coba export JSON untuk {target.domain} berhasil disimpan ke {target.target_filepath}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal mengekspor JSON: {str(e)}")
+
+# GAM Auto Pricing Config Endpoints
+@router.get("/pricing-config", response_model=PricingConfigSchema)
+def get_pricing_config(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.services.sync import load_pricing_config
+    return load_pricing_config()
+
+@router.post("/pricing-config", response_model=dict)
+def save_pricing_config(
+    config_data: PricingConfigSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.services.sync import save_pricing_config_and_sync
+    synced = save_pricing_config_and_sync(config_data.model_dump() if hasattr(config_data, 'model_dump') else config_data.dict(), db=db)
+    return {
+        "status": "success",
+        "message": f"Pricing config successfully saved and synchronized across {len(synced)} site directories.",
+        "synced_paths": synced
+    }
+
 
 
 

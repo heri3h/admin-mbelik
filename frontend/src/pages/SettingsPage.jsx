@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, ShieldCheck, AlertCircle, Key, Layers, Globe, RefreshCw, XCircle, KeyRound, CheckCircle2, Lock, Trash2, Database, Plus, Edit2, Save, Link as LinkIcon, Building2 } from 'lucide-react';
+import { Settings, ShieldCheck, AlertCircle, Key, Layers, Globe, RefreshCw, XCircle, KeyRound, CheckCircle2, Lock, Trash2, Database, Plus, Edit2, Save, Link as LinkIcon, Building2, Sliders } from 'lucide-react';
 import { dashboardService, authService } from '../services/api';
 
-export default function SettingsPage() {
+export default function SettingsPage({ onOpenPricingModal }) {
+
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -622,15 +623,28 @@ export default function SettingsPage() {
 
       {/* JSON Auto-Export Targets Card */}
       <div className="bg-slate-800 border border-slate-700/60 p-6 rounded-2xl shadow-sm">
-        <div className="flex items-center space-x-3 pb-4 border-b border-slate-700/60 mb-4">
-          <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
-            <Globe className="w-5 h-5" />
+        <div className="flex flex-wrap items-center justify-between pb-4 border-b border-slate-700/60 mb-4 gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
+              <Globe className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-base">Site Auto-Export JSON Settings</h3>
+              <p className="text-slate-400 text-xs mt-0.5">Manage domains and VPS folder paths where current_pricing.json is generated during sync</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-white text-base">Site Auto-Export JSON Settings</h3>
-            <p className="text-slate-400 text-xs mt-0.5">Manage domains and VPS folder paths where current_pricing.json is generated during sync</p>
-          </div>
+
+          {onOpenPricingModal && (
+            <button
+              onClick={onOpenPricingModal}
+              className="px-3.5 py-2 bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/40 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 shadow-sm"
+            >
+              <Sliders className="w-4 h-4 text-sky-400" />
+              <span>Manage GAM Auto Pricing Rules</span>
+            </button>
+          )}
         </div>
+
 
         {exportError && (
           <div className="mb-4 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center space-x-2">

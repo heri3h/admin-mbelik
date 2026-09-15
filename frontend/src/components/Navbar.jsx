@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Menu, X, Settings, LogOut, ShieldAlert, LayoutDashboard } from 'lucide-react';
+import { Menu, X, Settings, LogOut, ShieldAlert, LayoutDashboard, Sliders } from 'lucide-react';
 import { authService } from '../services/api';
 
-export default function Navbar({ isMockData, activeTab, setActiveTab }) {
+export default function Navbar({ isMockData, activeTab, setActiveTab, onOpenPricingModal }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleTabClick = (tab) => {
@@ -21,11 +21,11 @@ export default function Navbar({ isMockData, activeTab, setActiveTab }) {
           </div>
 
           {/* Desktop Right Menu (Hidden on Mobile) */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
             {isMockData && (
               <div className="flex items-center space-x-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs px-3 py-1.5 rounded-lg font-medium">
                 <ShieldAlert className="w-4 h-4" />
-                <span>Mock Data Mode (Simulation)</span>
+                <span>Mock Data Mode</span>
               </div>
             )}
 
@@ -40,6 +40,16 @@ export default function Navbar({ isMockData, activeTab, setActiveTab }) {
               >
                 Dashboard
               </button>
+
+              <button
+                onClick={onOpenPricingModal}
+                className="px-3 py-2 bg-slate-700/70 hover:bg-slate-700 text-sky-300 border border-sky-500/30 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5"
+                title="GAM Auto Pricing Central Config"
+              >
+                <Sliders className="w-4 h-4 text-sky-400" />
+                <span>Pricing Config</span>
+              </button>
+
               <button
                 onClick={() => handleTabClick('settings')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
@@ -98,6 +108,17 @@ export default function Navbar({ isMockData, activeTab, setActiveTab }) {
           </button>
 
           <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              onOpenPricingModal();
+            }}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold text-sky-300 bg-slate-800/80 border border-sky-500/30 hover:bg-slate-800 hover:text-white transition-all"
+          >
+            <Sliders className="w-5 h-5 text-sky-400" />
+            <span>Auto Pricing Config</span>
+          </button>
+
+          <button
             onClick={() => handleTabClick('settings')}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'settings'
@@ -108,6 +129,7 @@ export default function Navbar({ isMockData, activeTab, setActiveTab }) {
             <Settings className="w-5 h-5" />
             <span>Settings</span>
           </button>
+
 
           <div className="pt-2 border-t border-slate-800">
             <button

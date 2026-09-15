@@ -172,6 +172,14 @@ export const dashboardService = {
   testExportTarget: async (id) => {
     const res = await api.post(`/api/settings/export-targets/${id}/test`);
     return res.data;
+  },
+  getPricingConfig: async () => {
+    const res = await api.get('/api/settings/pricing-config');
+    return res.data;
+  },
+  savePricingConfig: async (data) => {
+    const res = await api.post('/api/settings/pricing-config', data);
+    return res.data;
   }
 };
 

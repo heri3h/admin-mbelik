@@ -193,4 +193,16 @@ class JSONExportTargetResponse(JSONExportTargetBase):
     class Config:
         from_attributes = True
 
+# Pricing Config Schemas
+class PricingRuleSchema(BaseModel):
+    cpm: int
+    target_key: str
+    floor_key: str
+
+class PricingConfigSchema(BaseModel):
+    target_mr: float = 65.0
+    default_pricing: str = "google_optimize"
+    rules: List[PricingRuleSchema]
+
+
 
