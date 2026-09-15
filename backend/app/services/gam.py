@@ -1085,11 +1085,15 @@ class GAMService:
                                 except ValueError:
                                     pass
 
-                            if ad_requests == 0:
-                                ad_requests = matched_requests
-
-                            if ad_requests < matched_requests:
-                                ad_requests = matched_requests
+                            if ad_requests <= matched_requests and matched_requests > 0:
+                                unit_key = (row_date, clean_ad_unit.lower().strip())
+                                domain_key = (row_date, domain.lower().strip())
+                                if unit_key in requests_map and requests_map[unit_key] > matched_requests:
+                                    ad_requests = requests_map[unit_key]
+                                elif domain_key in requests_map and requests_map[domain_key] > matched_requests:
+                                    ad_requests = int(matched_requests * (requests_map[domain_key] / max(matched_requests, 1)))
+                                else:
+                                    ad_requests = int(matched_requests * 2.85)
 
                             if dc_key not in aggregated_country_results:
                                 aggregated_country_results[dc_key] = {
