@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Text, UniqueConstraint, Boolean
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Text, UniqueConstraint, Boolean, Index
 from datetime import datetime
 from app.database import Base
 
@@ -48,6 +48,7 @@ class GAMMetric(Base):
 
     __table_args__ = (
         UniqueConstraint('date', 'domain', 'ad_unit', 'pricing_rule_name', name='_date_domain_adunit_pricing_uc'),
+        Index('idx_gam_metrics_date_domain', 'date', 'domain'),
     )
 
 class DailyProfitSummary(Base):
@@ -103,6 +104,7 @@ class GAMCountryMetric(Base):
 
     __table_args__ = (
         UniqueConstraint('date', 'domain', 'country', 'ad_unit', 'pricing_rule_name', name='_date_domain_country_adunit_pricing_uc'),
+        Index('idx_gam_country_date_domain_country', 'date', 'domain', 'country'),
     )
 
 

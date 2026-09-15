@@ -441,21 +441,10 @@ def get_sites_breakdown(
     ).group_by(GAMMetric.domain).all()
 
     if not query_results:
-        with _sync_lock:
-            sync_service.sync_range(db, d_start, d_end)
-        query_results = db.query(
-            GAMMetric.domain,
-            func.sum(GAMMetric.revenue).label("total_revenue"),
-            func.sum(GAMMetric.impressions).label("total_impressions"),
-            func.sum(GAMMetric.clicks).label("total_clicks"),
-            func.sum(GAMMetric.ad_requests).label("total_ad_requests"),
-            func.sum(GAMMetric.matched_requests).label("total_matched_requests"),
-            func.avg(GAMMetric.match_rate).label("avg_match_rate"),
-            func.count(GAMMetric.ad_unit.distinct()).label("ad_unit_count")
-        ).filter(
-            GAMMetric.date >= d_start,
-            GAMMetric.date <= d_end
-        ).group_by(GAMMetric.domain).all()
+        try:
+            threading.Thread(target=_run_bg_sync, args=(d_start, d_end), daemon=True).start()
+        except Exception:
+            pass
 
     # Collect ALL distinct domains dynamically across GAMMetric, GAMCountryMetric, GoogleAdsAccount, SiteService, and SITE_MAPPING
     dynamic_domains = set()
