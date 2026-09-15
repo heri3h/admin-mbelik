@@ -20,20 +20,14 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     const fetchDomainDetails = async () => {
       setLoading(true);
       try {
-        const [countryData, allPlacements] = await Promise.all([
-          dashboardService.getSiteCountries(domain, startDate, endDate),
-          dashboardService.getPlacements(startDate, endDate)
-        ]);
+        const countryData = await dashboardService.getSiteCountries(domain, startDate, endDate);
 
         if (isMounted) {
           setCountries(countryData || []);
-          const domainPlacements = (allPlacements || []).filter(
-            p => p.domain && p.domain.toLowerCase() === domain.toLowerCase()
-          );
-          setPlacements(domainPlacements);
         }
       } catch (err) {
         console.error('Failed fetching site breakdown details:', err);
+        if (isMounted) setCountries([]);
       } finally {
         if (isMounted) setLoading(false);
       }
