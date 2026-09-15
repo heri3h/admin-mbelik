@@ -65,35 +65,14 @@ def _run_bg_sync(start_date: date, end_date: date):
 
 def ensure_data_synced(db: Session, start_date: date, end_date: date):
     try:
-        total_db_domains = db.query(GAMMetric.domain).distinct().count()
-
-        if total_db_domains < 40:
-            sync_service.sync_range(db, start_date, end_date)
-            return
-
-        if total_db_domains > 0:
-            today = get_wib_today()
-            yesterday = today - timedelta(days=1)
-            if end_date >= yesterday:
-                latest_sync = db.query(func.max(GAMMetric.synced_at)).filter(
-                    GAMMetric.date >= start_date,
-                    GAMMetric.date <= end_date
-                ).scalar()
-                if not latest_sync or (datetime.utcnow() - latest_sync).total_seconds() > 900:
-                    threading.Thread(target=_run_bg_sync, args=(start_date, end_date), daemon=True).start()
-            return
+        latest_sync = db.query(func.max(GAMMetric.synced_at)).filter(
+            GAMMetric.date >= start_date,
+            GAMMetric.date <= end_date
+        ).scalar()
+        if not latest_sync or (datetime.utcnow() - latest_sync).total_seconds() > 900:
+            threading.Thread(target=_run_bg_sync, args=(start_date, end_date), daemon=True).start()
     except Exception:
         db.rollback()
-
-    if not _sync_lock.acquire(blocking=False):
-        return  # Another parallel request is already syncing, return immediately to prevent hanging
-
-    try:
-        sync_service.sync_range(db, start_date, end_date)
-    except Exception:
-        db.rollback()
-    finally:
-        _sync_lock.release()
 
 @router.get("/summary", response_model=SummaryMetrics)
 def get_summary(
@@ -685,52 +664,9 @@ def get_site_countries_breakdown(
 
     if not country_rows:
         try:
-            live_country_data = gam_service.fetch_country_metrics(d_start, d_end)
-            db.query(GAMCountryMetric).filter(
-                GAMCountryMetric.date >= d_start,
-                GAMCountryMetric.date <= d_end
-            ).delete(synchronize_session=False)
-
-            for item in live_country_data:
-                raw_rev = item.get("revenue", 0.0)
-                adj_rev = round(raw_rev * 0.92, 2)
-                imps = item.get("impressions", 0)
-                clicks = item.get("clicks", 0)
-                adj_ecpm = round((adj_rev / imps) * 1000.0, 2) if imps > 0 else 0.0
-
-                new_c = GAMCountryMetric(
-                    date=item["date"],
-                    domain=item["domain"],
-                    country=item["country"],
-                    country_code=item.get("country_code", "ID"),
-                    ad_unit=item.get("ad_unit", ""),
-                    revenue=adj_rev,
-                    impressions=imps,
-                    ecpm=adj_ecpm,
-                    clicks=clicks,
-                    match_rate=item.get("match_rate", 0.0),
-                    ad_requests=item.get("ad_requests", 0),
-                    matched_requests=item.get("matched_requests", 0),
-                    synced_at=datetime.utcnow()
-                )
-                db.add(new_c)
-            db.commit()
-
-            country_rows = db.query(
-                GAMCountryMetric.country,
-                GAMCountryMetric.country_code,
-                func.sum(GAMCountryMetric.revenue).label("revenue"),
-                func.sum(GAMCountryMetric.impressions).label("impressions"),
-                func.sum(GAMCountryMetric.clicks).label("clicks"),
-                func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
-                func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
-            ).filter(
-                func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-                GAMCountryMetric.date >= d_start,
-                GAMCountryMetric.date <= d_end
-            ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code).all()
-        except Exception as e:
-            db.rollback()
+            threading.Thread(target=_run_bg_sync, args=(d_start, d_end), daemon=True).start()
+        except Exception:
+            pass
 
     tot_domain_rev = sum(r.revenue or 0.0 for r in country_rows)
 
@@ -847,55 +783,9 @@ def get_site_country_placements_breakdown(
 
     if not rows:
         try:
-            live_country_data = gam_service.fetch_country_metrics(d_start, d_end)
-            db.query(GAMCountryMetric).filter(
-                GAMCountryMetric.date >= d_start,
-                GAMCountryMetric.date <= d_end
-            ).delete(synchronize_session=False)
-
-            for item in live_country_data:
-                raw_rev = item.get("revenue", 0.0)
-                adj_rev = round(raw_rev * 0.92, 2)
-                imps = item.get("impressions", 0)
-                clicks = item.get("clicks", 0)
-                adj_ecpm = round((adj_rev / imps) * 1000.0, 2) if imps > 0 else 0.0
-                ad_reqs = item.get("ad_requests", 0)
-                matched_reqs = item.get("matched_requests", 0)
-                c_mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
-
-                new_c = GAMCountryMetric(
-                    date=item["date"],
-                    domain=item["domain"],
-                    country=item["country"],
-                    country_code=item.get("country_code", "ID"),
-                    ad_unit=item.get("ad_unit", "Standard Ad Unit"),
-                    revenue=adj_rev,
-                    impressions=imps,
-                    ecpm=adj_ecpm,
-                    clicks=clicks,
-                    match_rate=round(c_mr, 2),
-                    ad_requests=ad_reqs,
-                    matched_requests=matched_reqs,
-                    synced_at=datetime.utcnow()
-                )
-                db.add(new_c)
-            db.commit()
-
-            rows = db.query(
-                GAMCountryMetric.ad_unit,
-                func.sum(GAMCountryMetric.revenue).label("total_revenue"),
-                func.sum(GAMCountryMetric.impressions).label("total_impressions"),
-                func.sum(GAMCountryMetric.clicks).label("total_clicks"),
-                func.sum(GAMCountryMetric.ad_requests).label("total_ad_requests"),
-                func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
-            ).filter(
-                func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-                func.lower(GAMCountryMetric.country) == country_name.lower(),
-                GAMCountryMetric.date >= d_start,
-                GAMCountryMetric.date <= d_end
-            ).group_by(GAMCountryMetric.ad_unit).all()
-        except Exception as e:
-            db.rollback()
+            threading.Thread(target=_run_bg_sync, args=(d_start, d_end), daemon=True).start()
+        except Exception:
+            pass
 
     items = []
     for r in rows:
