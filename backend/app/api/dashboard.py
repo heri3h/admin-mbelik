@@ -34,6 +34,8 @@ REVENUE_HOURLY_WEIGHTS = [
     0.082, 0.075, 0.062, 0.048, 0.030, 0.016   # 18:00 - 23:00 (peak evening yield)
 ]
 
+HOURLY_WEIGHTS = SPEND_HOURLY_WEIGHTS
+
 def get_wib_today() -> date:
     return datetime.now(WIB).date()
 
