@@ -6,7 +6,8 @@ from typing import List, Optional
 
 from app.config import settings
 from app.database import get_db
-from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, User, GoogleAdsAccount
+from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, User, GoogleAdsAccount
+
 from app.schemas import (
     SummaryMetrics, DailyTrendItem, AccountBreakdownItem, CampaignBreakdownItem,
     SiteBreakdownItem, PlacementBreakdownItem, CountryBreakdownItem
@@ -819,12 +820,27 @@ def get_site_countries_breakdown(
     db_accounts = db.query(GoogleAdsAccount).filter(func.lower(GoogleAdsAccount.assigned_domain) == domain_name.lower()).all()
     cids = [a.customer_id for a in db_accounts]
     tot_spend = 0.0
+    gads_country_spend_map = {}
+
     if cids:
         tot_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
             GoogleAdsMetric.date >= d_start,
             GoogleAdsMetric.date <= d_end,
             GoogleAdsMetric.customer_id.in_(cids)
         ).scalar() or 0.0
+
+        gads_c_rows = db.query(
+            GoogleAdsCountryMetric.country,
+            func.sum(GoogleAdsCountryMetric.spend).label("spend")
+        ).filter(
+            GoogleAdsCountryMetric.customer_id.in_(cids),
+            GoogleAdsCountryMetric.date >= d_start,
+            GoogleAdsCountryMetric.date <= d_end
+        ).group_by(GoogleAdsCountryMetric.country).all()
+
+        for g_row in gads_c_rows:
+            c_key = (g_row.country or "Indonesia").strip().lower()
+            gads_country_spend_map[c_key] = (g_row.spend or 0.0)
 
     final_items = []
     for c_item in country_map.values():
@@ -839,10 +855,18 @@ def get_site_countries_breakdown(
         c_code = c_meta["code"] if (not c_item["country_code"] or c_item["country_code"] == "ID" and country_name.lower() not in ["indonesia", "id"]) else c_item["country_code"]
         c_flag = c_meta["flag"]
 
-        c_share = (c_rev / tot_domain_rev) if tot_domain_rev > 0 else (1.0 / len(country_map) if country_map else 0)
-        c_spend = tot_spend * c_share
+        # Real Google Ads Spend per country (includes +11% PPN tax)
+        c_key = country_name.lower()
+        if c_key in gads_country_spend_map:
+            c_spend = gads_country_spend_map[c_key]
+        elif tot_spend > 0 and tot_domain_rev > 0:
+            c_share = (c_rev / tot_domain_rev)
+            c_spend = tot_spend * c_share
+        else:
+            c_spend = 0.0
+
         c_profit = c_rev - c_spend
-        c_roi = (c_rev / c_spend * 100.0) if c_spend > 0 else 0.0
+        c_roi = (c_rev / c_spend * 100.0) if c_spend > 0 else (100.0 if c_rev > 0 else 0.0)
         c_ecpm = (c_rev / c_imps * 1000.0) if c_imps > 0 else 0.0
         c_ctr = (c_clicks / c_imps * 100.0) if c_imps > 0 else 0.0
 
@@ -873,6 +897,7 @@ def get_site_countries_breakdown(
             pricing_rule_name=c_item["pricing_rule_name"],
             rpm=round(c_ecpm, 2)
         ))
+
 
     final_items.sort(key=lambda x: x.revenue, reverse=True)
     return final_items

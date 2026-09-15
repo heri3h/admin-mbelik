@@ -8,7 +8,8 @@ from typing import Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.models import GoogleAdsMetric, GAMMetric, GAMCountryMetric, DailyProfitSummary, GoogleAdsAccount
+from app.models import GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, DailyProfitSummary, GoogleAdsAccount
+
 from app.services.google_ads import google_ads_service
 from app.services.gam import gam_service
 from app.config import settings
@@ -118,12 +119,59 @@ class SyncService:
                 db.add(new_metric)
             records_synced += 1
 
+        # 1b. Deduplicate & Upsert Google Ads Country metrics (Apply +11% tax adjustment)
+        try:
+            gads_country_data = google_ads_service.fetch_country_metrics(start_date, end_date, customer_ids=cids)
+            db.query(GoogleAdsCountryMetric).filter(
+                GoogleAdsCountryMetric.date >= start_date,
+                GoogleAdsCountryMetric.date <= end_date
+            ).delete(synchronize_session=False)
+            db.commit()
+
+            aggregated_gads_country = {}
+            for item in gads_country_data:
+                key = (item["date"], item["customer_id"], item["country"])
+                if key not in aggregated_gads_country:
+                    aggregated_gads_country[key] = {
+                        "date": item["date"],
+                        "customer_id": item["customer_id"],
+                        "country": item["country"],
+                        "country_code": item.get("country_code", "ID"),
+                        "spend": 0.0,
+                        "impressions": 0,
+                        "clicks": 0
+                    }
+                agg = aggregated_gads_country[key]
+                agg["spend"] += item.get("spend", 0.0)
+                agg["impressions"] += item.get("impressions", 0)
+                agg["clicks"] += item.get("clicks", 0)
+
+            for item in aggregated_gads_country.values():
+                raw_spend = item.get("spend", 0.0)
+                adj_spend = round(raw_spend * 1.11, 2)  # Adds 11% PPN tax
+                new_c_gads = GoogleAdsCountryMetric(
+                    date=item["date"],
+                    customer_id=item["customer_id"],
+                    country=item["country"],
+                    country_code=item["country_code"],
+                    spend=adj_spend,
+                    impressions=item["impressions"],
+                    clicks=item["clicks"],
+                    synced_at=datetime.utcnow()
+                )
+                db.add(new_c_gads)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"Sync Google Ads Country Metrics notice: {e}")
+
         # 2. Delete stale GAM metrics for target sync range and insert fresh live GAM API data
         db.query(GAMMetric).filter(
             GAMMetric.date >= gam_sync_start,
             GAMMetric.date <= end_date
         ).delete(synchronize_session=False)
         db.commit()
+
 
         aggregated_gam = {}
         for item in gam_data:

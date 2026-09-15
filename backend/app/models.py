@@ -107,5 +107,24 @@ class GAMCountryMetric(Base):
         Index('idx_gam_country_date_domain_country', 'date', 'domain', 'country'),
     )
 
+class GoogleAdsCountryMetric(Base):
+    __tablename__ = "google_ads_country_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, index=True, nullable=False)
+    customer_id = Column(String(50), index=True, nullable=False)
+    country = Column(String(100), index=True, nullable=False)
+    country_code = Column(String(10), nullable=True)
+    spend = Column(Float, default=0.0)
+    impressions = Column(Integer, default=0)
+    clicks = Column(Integer, default=0)
+    synced_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('date', 'customer_id', 'country', name='_date_customer_country_uc'),
+        Index('idx_gads_country_date_customer', 'date', 'customer_id', 'country'),
+    )
+
+
 
 
