@@ -155,25 +155,6 @@ class GoogleAdsService:
         from google.ads.googleads.errors import GoogleAdsException
         from app.services.gam import get_country_meta
 
-        GEO_CRITERION_MAP = {
-            2360: {"country": "Indonesia", "code": "ID"},
-            2840: {"country": "United States", "code": "US"},
-            2458: {"country": "Malaysia", "code": "MY"},
-            2702: {"country": "Singapore", "code": "SG"},
-            2392: {"country": "Japan", "code": "JP"},
-            2036: {"country": "Australia", "code": "AU"},
-            2826: {"country": "United Kingdom", "code": "GB"},
-            2276: {"country": "Germany", "code": "DE"},
-            2528: {"country": "Netherlands", "code": "NL"},
-            2410: {"country": "South Korea", "code": "KR"},
-            2608: {"country": "Philippines", "code": "PH"},
-            2704: {"country": "Vietnam", "code": "VN"},
-            2356: {"country": "India", "code": "IN"},
-            2764: {"country": "Thailand", "code": "TH"},
-            2124: {"country": "Canada", "code": "CA"},
-            2398: {"country": "Kazakhstan", "code": "KZ"}
-        }
-
         credentials = {
             "developer_token": settings.GOOGLE_ADS_DEVELOPER_TOKEN,
             "client_id": settings.GOOGLE_ADS_CLIENT_ID,
@@ -186,6 +167,35 @@ class GoogleAdsService:
 
         googleads_client = GoogleAdsClient.load_from_dict(credentials)
         ga_service = googleads_client.get_service("GoogleAdsService")
+
+        cids = customer_ids or settings.customer_ids_list
+        if not cids:
+            cids = ["default"]
+
+        # 1. Fetch official country mapping from geo_target_constant API for all 219+ countries
+        geo_map = getattr(self, '_geo_cache', None)
+        if not geo_map:
+            geo_map = {}
+            try:
+                sample_cid = cids[0].replace("-", "")
+                query_geo = """
+                    SELECT
+                        geo_target_constant.id,
+                        geo_target_constant.name,
+                        geo_target_constant.country_code
+                    FROM geo_target_constant
+                    WHERE geo_target_constant.target_type = 'Country'
+                """
+                stream_geo = ga_service.search_stream(customer_id=sample_cid, query=query_geo)
+                for batch in stream_geo:
+                    for row in batch.results:
+                        geo_map[row.geo_target_constant.id] = {
+                            "country": str(row.geo_target_constant.name),
+                            "code": str(row.geo_target_constant.country_code)
+                        }
+                self._geo_cache = geo_map
+            except Exception as e:
+                logger.warning(f"Failed loading geo_target_constant map: {e}")
 
         formatted_start = start_date.strftime("%Y-%m-%d")
         formatted_end = end_date.strftime("%Y-%m-%d")
@@ -203,10 +213,6 @@ class GoogleAdsService:
         """
 
         results = []
-        cids = customer_ids or settings.customer_ids_list
-        if not cids:
-            cids = ["default"]
-
         for cid in cids:
             clean_cid = cid.replace("-", "")
             try:
@@ -215,8 +221,12 @@ class GoogleAdsService:
                     for row in batch.results:
                         cost = row.metrics.cost_micros / 1000000.0 if row.metrics.cost_micros else 0.0
                         crit_id = getattr(row.user_location_view, 'country_criterion_id', None)
-                        meta = GEO_CRITERION_MAP.get(crit_id, {"country": "Indonesia", "code": "ID"})
                         
+                        meta = geo_map.get(crit_id)
+                        if not meta:
+                            c_meta = get_country_meta("Unknown")
+                            meta = {"country": f"Location #{crit_id}", "code": c_meta.get("code", "XX")}
+
                         row_date = datetime.strptime(row.segments.date, "%Y-%m-%d").date()
                         results.append({
                             "date": row_date,
@@ -232,6 +242,7 @@ class GoogleAdsService:
                 raise RuntimeError(f"Google Ads Customer ID {cid} Error: {ex.failure.errors[0].message if ex.failure.errors else ex}")
 
         return results
+
 
     def _generate_mock_country_data(self, start_date: date, end_date: date, customer_ids: List[str] = None) -> List[Dict[str, Any]]:
         results = []
