@@ -26,13 +26,17 @@ export default function DateFilter({ startDate, endDate, onFilterChange }) {
       const dateStr = formatLocalDate(yesterday);
       onFilterChange(dateStr, dateStr);
     } else if (selectedPreset === '7d') {
-      const start = new Date(today);
-      start.setDate(today.getDate() - 6);
-      onFilterChange(formatLocalDate(start), formatLocalDate(today));
+      const end = new Date(today);
+      end.setDate(today.getDate() - 1);
+      const start = new Date(end);
+      start.setDate(end.getDate() - 6);
+      onFilterChange(formatLocalDate(start), formatLocalDate(end));
     } else if (selectedPreset === '30d') {
-      const start = new Date(today);
-      start.setDate(today.getDate() - 29);
-      onFilterChange(formatLocalDate(start), formatLocalDate(today));
+      const end = new Date(today);
+      end.setDate(today.getDate() - 1);
+      const start = new Date(end);
+      start.setDate(end.getDate() - 29);
+      onFilterChange(formatLocalDate(start), formatLocalDate(end));
     } else if (selectedPreset === 'month') {
       const start = new Date(today.getFullYear(), today.getMonth(), 1);
       onFilterChange(formatLocalDate(start), formatLocalDate(today));
