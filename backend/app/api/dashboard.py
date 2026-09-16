@@ -75,14 +75,27 @@ def _run_bg_sync(start_date: date, end_date: date):
 
 def ensure_data_synced(db: Session, start_date: date, end_date: date):
     try:
-        latest_sync = db.query(func.max(GAMMetric.synced_at)).filter(
-            GAMMetric.date >= start_date,
-            GAMMetric.date <= end_date
+        min_c_date = db.query(func.min(GAMCountryMetric.date)).filter(
+            GAMCountryMetric.date >= start_date,
+            GAMCountryMetric.date <= end_date
         ).scalar()
-        if not latest_sync or (datetime.utcnow() - latest_sync).total_seconds() > 900:
-            threading.Thread(target=_run_bg_sync, args=(start_date, end_date), daemon=True).start()
-    except Exception:
+        max_c_date = db.query(func.max(GAMCountryMetric.date)).filter(
+            GAMCountryMetric.date >= start_date,
+            GAMCountryMetric.date <= end_date
+        ).scalar()
+        
+        if not min_c_date or min_c_date > start_date or max_c_date < end_date:
+            sync_service.sync_range(db, start_date, end_date)
+        else:
+            latest_sync = db.query(func.max(GAMMetric.synced_at)).filter(
+                GAMMetric.date >= start_date,
+                GAMMetric.date <= end_date
+            ).scalar()
+            if not latest_sync or (datetime.utcnow() - latest_sync).total_seconds() > 900:
+                threading.Thread(target=_run_bg_sync, args=(start_date, end_date), daemon=True).start()
+    except Exception as e:
         db.rollback()
+        logger.warning(f"ensure_data_synced notice: {e}")
 
 @router.get("/summary", response_model=SummaryMetrics)
 def get_summary(
