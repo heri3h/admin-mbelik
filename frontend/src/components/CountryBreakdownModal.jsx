@@ -715,8 +715,12 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                       ) : (
                         <tr>
                           {activeVisibleCols.name && (
-                            <td className="px-3 py-2.5 font-bold whitespace-nowrap">Total / Average All Countries</td>
+                            <td className="px-3 py-2 font-bold text-xs leading-tight">
+                              <div>Total / Average</div>
+                              <div className="text-[10px] text-slate-400 font-normal">All Countries</div>
+                            </td>
                           )}
+
                           {activeVisibleCols.spend && (
                             <td className="px-3 py-2.5 text-right font-bold text-rose-400 whitespace-nowrap">{formatCurrency(activeSpend)}</td>
                           )}
