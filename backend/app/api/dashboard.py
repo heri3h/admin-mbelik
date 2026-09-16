@@ -812,7 +812,9 @@ def get_site_countries_breakdown(
         c_item["matched_requests"] += (row.matched_requests or 0)
         
         p_rule = getattr(row, 'pricing_rule_name', None)
-        if p_rule and p_rule not in ["(No pricing rule applied)", "All Rules"]:
+        if p_rule in ["(No pricing rule applied)", "(No Pricing Rule Applied)", "No pricing rule applied"]:
+            p_rule = "No Rule"
+        if p_rule and p_rule not in ["No Rule", "(No Rule)", "All Rules"]:
             c_item["pricing_rule_name"] = p_rule
 
     tot_domain_rev = sum(item["revenue"] for item in country_map.values())
@@ -1000,7 +1002,9 @@ def get_site_country_placements_breakdown(
         item["total_ad_requests"] += int(r.total_ad_requests or 0)
         item["total_matched_requests"] += int(r.total_matched_requests or 0)
 
-        if p_rule and p_rule not in ["(No pricing rule applied)", "All Rules"]:
+        if p_rule in ["(No pricing rule applied)", "(No Pricing Rule Applied)", "No pricing rule applied"]:
+            p_rule = "No Rule"
+        if p_rule and p_rule not in ["No Rule", "(No Rule)", "All Rules"]:
             item["pricing_rule_name"] = p_rule
 
     items = []

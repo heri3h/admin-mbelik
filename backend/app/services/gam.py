@@ -875,6 +875,8 @@ class GAMService:
                             for k, v in row.items():
                                 if k and ('PRICING_RULE' in k.upper() or 'RULE_NAME' in k.upper()) and v:
                                     pricing_rule = v.strip()
+                                    if pricing_rule in ["(No pricing rule applied)", "(No Pricing Rule Applied)", "No pricing rule applied"]:
+                                        pricing_rule = "No Rule"
                                     break
 
                             match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
@@ -1155,6 +1157,8 @@ class GAMService:
                             for k, v in row.items():
                                 if k and ('PRICING_RULE' in k.upper() or 'RULE_NAME' in k.upper()) and v:
                                     pricing_rule = v.strip()
+                                    if pricing_rule in ["(No pricing rule applied)", "(No Pricing Rule Applied)", "No pricing rule applied"]:
+                                        pricing_rule = "No Rule"
                                     break
 
                             clean_ad_unit = ad_unit or "Standard Ad Unit"

@@ -16,6 +16,12 @@ const ALL_COLUMNS = [
   { key: 'pricing_rule_name', label: 'PRICING_RULE_NAME' },
 ];
 
+const formatPricingRuleName = (rule) => {
+  if (!rule || rule === 'All Rules') return 'All Rules';
+  if (rule === '(No pricing rule applied)' || rule === 'No pricing rule applied' || rule === '(No Rule)') return 'No Rule';
+  return rule;
+};
+
 export default function PlacementsTable({ placements }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState('total_revenue');
@@ -309,7 +315,7 @@ export default function PlacementsTable({ placements }) {
 
                   {visibleColumns.pricing_rule_name && (
                     <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
-                      {item.pricing_rule_name || 'All Rules'}
+                      {formatPricingRuleName(item.pricing_rule_name)}
                     </td>
                   )}
                 </tr>

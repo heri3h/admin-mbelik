@@ -495,7 +495,9 @@ def export_site_today_json(
         c_item["matched_requests"] += (crow.matched_requests or 0)
 
         p_rule = getattr(crow, 'pricing_rule_name', None)
-        if p_rule and p_rule not in ["(No pricing rule applied)", "All Rules"]:
+        if p_rule in ["(No pricing rule applied)", "(No Pricing Rule Applied)", "No pricing rule applied"]:
+            p_rule = "No Rule"
+        if p_rule and p_rule not in ["No Rule", "(No Rule)", "All Rules"]:
             c_item["pricing_rule_name"] = p_rule
 
     countries_list = []

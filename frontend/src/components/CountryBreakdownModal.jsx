@@ -28,6 +28,12 @@ const LEVEL2_COLUMNS = [
   { key: 'pricing_rule_name', label: 'PRICING_RULE_NAME' },
 ];
 
+const formatPricingRuleName = (rule) => {
+  if (!rule || rule === 'All Rules') return 'All Rules';
+  if (rule === '(No pricing rule applied)' || rule === 'No pricing rule applied' || rule === '(No Rule)') return 'No Rule';
+  return rule;
+};
+
 export default function CountryBreakdownModal({ domain, startDate, endDate, onClose }) {
   const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -585,7 +591,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
                                 {activeVisibleCols.pricing_rule_name && (
                                   <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
-                                    {c.pricing_rule_name || 'All Rules'}
+                                    {formatPricingRuleName(c.pricing_rule_name)}
                                   </td>
                                 )}
                               </tr>
@@ -661,7 +667,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
                                 {activeVisibleCols.pricing_rule_name && (
                                   <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
-                                    {p.pricing_rule_name || 'All Rules'}
+                                    {formatPricingRuleName(p.pricing_rule_name)}
                                   </td>
                                 )}
                               </tr>
