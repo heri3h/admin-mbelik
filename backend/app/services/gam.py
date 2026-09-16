@@ -4,6 +4,7 @@ import os
 import time
 from datetime import datetime, timedelta, date, timezone
 from typing import List, Dict, Any
+import unicodedata
 from app.config import settings, BASE_DIR
 
 logger = logging.getLogger(__name__)
@@ -364,6 +365,7 @@ COUNTRY_NAME_TO_CODE = {
     "tunisia": "TN",
     "turkey": "TR",
     "türkiye": "TR",
+    "turkiye": "TR",
     "turkmenistan": "TM",
     "turks and caicos islands": "TC",
     "tuvalu": "TV",
@@ -391,27 +393,39 @@ COUNTRY_NAME_TO_CODE = {
     "unknown region": "XX",
 }
 
+
+def _normalize_country_str(s: str) -> str:
+    if not s:
+        return ""
+    nfd = unicodedata.normalize("NFD", s)
+    stripped = "".join(c for c in nfd if unicodedata.category(c) != "Mn")
+    return stripped.lower().strip()
+
+
 def get_country_meta(country_name: str) -> dict:
     if not country_name:
         return {"code": "ID", "flag": "🇮🇩"}
     
     raw = country_name.strip()
-    key = raw.lower()
+    norm_key = _normalize_country_str(raw)
 
     if len(raw) == 2 and raw.isalpha() and raw.upper() != "XX":
         code = raw.upper()
         flag = chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
         return {"code": code, "flag": flag}
 
-    if key in COUNTRY_NAME_TO_CODE:
-        code = COUNTRY_NAME_TO_CODE[key]
-        if code == "XX":
-            return {"code": "XX", "flag": "🌐"}
-        flag = chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
-        return {"code": code, "flag": flag}
-
+    # 1. Exact match on normalized string
     for c_name, code in COUNTRY_NAME_TO_CODE.items():
-        if len(c_name) >= 3 and (c_name in key or key in c_name):
+        if _normalize_country_str(c_name) == norm_key:
+            if code == "XX":
+                return {"code": "XX", "flag": "🌐"}
+            flag = chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
+            return {"code": code, "flag": flag}
+
+    # 2. Substring match on normalized string
+    for c_name, code in COUNTRY_NAME_TO_CODE.items():
+        norm_c_name = _normalize_country_str(c_name)
+        if len(norm_c_name) >= 3 and (norm_c_name in norm_key or norm_key in norm_c_name):
             if code == "XX":
                 return {"code": "XX", "flag": "🌐"}
             flag = chr(127397 + ord(code[0])) + chr(127397 + ord(code[1]))
