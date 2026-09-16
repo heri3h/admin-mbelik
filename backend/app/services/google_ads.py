@@ -184,14 +184,17 @@ class GoogleAdsService:
                         geo_target_constant.name,
                         geo_target_constant.country_code
                     FROM geo_target_constant
-                    WHERE geo_target_constant.target_type = 'Country'
+                    WHERE geo_target_constant.status = 'ENABLED'
                 """
                 stream_geo = ga_service.search_stream(customer_id=sample_cid, query=query_geo)
                 for batch in stream_geo:
                     for row in batch.results:
-                        geo_map[row.geo_target_constant.id] = {
-                            "country": str(row.geo_target_constant.name),
-                            "code": str(row.geo_target_constant.country_code)
+                        g = row.geo_target_constant
+                        code = str(g.country_code).upper() if g.country_code else ""
+                        c_meta = get_country_meta(code or g.name)
+                        geo_map[g.id] = {
+                            "country": str(g.name),
+                            "code": c_meta.get("code") or code or "XX"
                         }
                 self._geo_cache = geo_map
             except Exception as e:
