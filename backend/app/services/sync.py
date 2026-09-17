@@ -471,7 +471,39 @@ def export_site_today_json(
 
     ecpm = round((tot_rev / tot_imps * 1000.0), 2) if tot_imps > 0 else 0.0
 
+    # Query per-device summary breakdown
+    summary_dev_rows = db.query(
+        GAMMetric.device_category,
+        func.sum(GAMMetric.revenue).label("revenue"),
+        func.sum(GAMMetric.impressions).label("impressions"),
+        func.sum(GAMMetric.clicks).label("clicks"),
+        func.sum(GAMMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMMetric.matched_requests).label("matched_requests")
+    ).filter(
+        GAMMetric.domain == domain,
+        GAMMetric.date == today_date
+    ).group_by(GAMMetric.device_category).all()
+
+    summary_devices = {}
+    for sdr in summary_dev_rows:
+        dev_cat = (sdr.device_category or "mobile").lower()
+        dev_rev = sdr.revenue or 0.0
+        dev_imps = sdr.impressions or 0
+        dev_ad_reqs = sdr.ad_requests or 0
+        dev_matched_reqs = sdr.matched_requests or 0
+        dev_mr = round((dev_matched_reqs / dev_ad_reqs * 100.0), 1) if dev_ad_reqs > 0 else 0.0
+        dev_ecpm = round((dev_rev / dev_imps * 1000.0), 2) if dev_imps > 0 else 0.0
+        summary_devices[dev_cat] = {
+            "revenue": round(dev_rev, 2),
+            "impressions": dev_imps,
+            "ad_requests": dev_ad_reqs,
+            "matched_requests": dev_matched_reqs,
+            "match_rate": dev_mr,
+            "ecpm": dev_ecpm
+        }
+
     # Query real GAM country metrics from DB for the specified domain
+    target_c_date = today_date
     db_country_rows = db.query(
         GAMCountryMetric.country,
         GAMCountryMetric.country_code,
@@ -491,6 +523,7 @@ def export_site_today_json(
             func.lower(GAMCountryMetric.domain) == domain.lower()
         ).scalar()
         if latest_c_date:
+            target_c_date = latest_c_date
             db_country_rows = db.query(
                 GAMCountryMetric.country,
                 GAMCountryMetric.country_code,
@@ -504,6 +537,41 @@ def export_site_today_json(
                 func.lower(GAMCountryMetric.domain) == domain.lower(),
                 GAMCountryMetric.date == latest_c_date
             ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code, GAMCountryMetric.pricing_rule_name).all()
+
+    # Query device breakdown per country
+    db_country_dev_rows = db.query(
+        GAMCountryMetric.country,
+        GAMCountryMetric.device_category,
+        func.sum(GAMCountryMetric.revenue).label("revenue"),
+        func.sum(GAMCountryMetric.impressions).label("impressions"),
+        func.sum(GAMCountryMetric.clicks).label("clicks"),
+        func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
+    ).filter(
+        func.lower(GAMCountryMetric.domain) == domain.lower(),
+        GAMCountryMetric.date == target_c_date
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.device_category).all()
+
+    country_device_map = {}
+    for cdr in db_country_dev_rows:
+        c_name = cdr.country or "Unknown Region"
+        dev_cat = (cdr.device_category or "mobile").lower()
+        if c_name not in country_device_map:
+            country_device_map[c_name] = {}
+        c_dev_rev = cdr.revenue or 0.0
+        c_dev_imps = cdr.impressions or 0
+        c_dev_ad_reqs = cdr.ad_requests or 0
+        c_dev_matched_reqs = cdr.matched_requests or 0
+        c_dev_mr = round((c_dev_matched_reqs / c_dev_ad_reqs * 100.0), 1) if c_dev_ad_reqs > 0 else 0.0
+        c_dev_ecpm = round((c_dev_rev / c_dev_imps * 1000.0), 2) if c_dev_imps > 0 else 0.0
+        country_device_map[c_name][dev_cat] = {
+            "revenue": round(c_dev_rev, 2),
+            "impressions": c_dev_imps,
+            "ad_requests": c_dev_ad_reqs,
+            "matched_requests": c_dev_matched_reqs,
+            "match_rate": c_dev_mr,
+            "ecpm": c_dev_ecpm
+        }
 
     country_map = {}
     for crow in db_country_rows:
@@ -557,6 +625,8 @@ def export_site_today_json(
             c_ecpm = round((c_rev / c_imps * 1000.0), 2) if c_imps > 0 else 0.0
             c_ctr = round((c_clks / c_imps * 100.0), 2) if c_imps > 0 else 0.0
 
+            c_dev_dict = country_device_map.get(c_name, {})
+
             countries_list.append({
                 "country": c_name,
                 "country_code": c_code,
@@ -568,10 +638,46 @@ def export_site_today_json(
                 "ecpm": c_ecpm,
                 "ctr": c_ctr,
                 "pricing": p_rule,
-                "rpm": c_ecpm
+                "rpm": c_ecpm,
+                "devices": c_dev_dict
             })
 
     countries_list.sort(key=lambda x: x["revenue"], reverse=True)
+
+    # Query device breakdown per placement
+    db_placement_dev_rows = db.query(
+        GAMMetric.ad_unit,
+        GAMMetric.device_category,
+        func.sum(GAMMetric.revenue).label("revenue"),
+        func.sum(GAMMetric.impressions).label("impressions"),
+        func.sum(GAMMetric.clicks).label("clicks"),
+        func.sum(GAMMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMMetric.matched_requests).label("matched_requests")
+    ).filter(
+        GAMMetric.domain == domain,
+        GAMMetric.date == today_date
+    ).group_by(GAMMetric.ad_unit, GAMMetric.device_category).all()
+
+    placement_device_map = {}
+    for pdr in db_placement_dev_rows:
+        unit = pdr.ad_unit
+        dev_cat = (pdr.device_category or "mobile").lower()
+        if unit not in placement_device_map:
+            placement_device_map[unit] = {}
+        p_dev_rev = pdr.revenue or 0.0
+        p_dev_imps = pdr.impressions or 0
+        p_dev_ad_reqs = pdr.ad_requests or 0
+        p_dev_matched_reqs = pdr.matched_requests or 0
+        p_dev_mr = round((p_dev_matched_reqs / p_dev_ad_reqs * 100.0), 1) if p_dev_ad_reqs > 0 else 0.0
+        p_dev_ecpm = round((p_dev_rev / p_dev_imps * 1000.0), 2) if p_dev_imps > 0 else 0.0
+        placement_device_map[unit][dev_cat] = {
+            "revenue": round(p_dev_rev, 2),
+            "impressions": p_dev_imps,
+            "ad_requests": p_dev_ad_reqs,
+            "matched_requests": p_dev_matched_reqs,
+            "match_rate": p_dev_mr,
+            "ecpm": p_dev_ecpm
+        }
 
     placements_rows = db.query(
         GAMMetric.ad_unit,
@@ -602,7 +708,8 @@ def export_site_today_json(
             "matched_requests": p_matched_reqs,
             "match_rate": p_mr,
             "ecpm": p_ecpm,
-            "clicks": p_clks
+            "clicks": p_clks,
+            "devices": placement_device_map.get(pr.ad_unit, {})
         })
 
     data_payload = {
@@ -616,7 +723,8 @@ def export_site_today_json(
             "ad_requests": tot_ad_reqs,
             "matched_requests": tot_matched_reqs,
             "match_rate": domain_mr,
-            "ecpm": ecpm
+            "ecpm": ecpm,
+            "devices": summary_devices
         },
         "countries": countries_list,
         "placements": placements_list
