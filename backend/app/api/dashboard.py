@@ -731,7 +731,7 @@ def get_placements_breakdown(
     curr_q = db.query(
         GAMMetric.domain,
         GAMMetric.ad_unit,
-        GAMMetric.pricing_rule_name,
+        func.max(GAMMetric.pricing_rule_name).label("pricing_rule_name"),
         func.sum(GAMMetric.revenue).label("total_revenue"),
         func.sum(GAMMetric.impressions).label("total_impressions"),
         func.sum(GAMMetric.clicks).label("total_clicks"),
@@ -743,7 +743,7 @@ def get_placements_breakdown(
     )
     if dev_filter:
         curr_q = curr_q.filter(GAMMetric.device_category == dev_filter)
-    query_results = curr_q.group_by(GAMMetric.domain, GAMMetric.ad_unit, GAMMetric.pricing_rule_name).all()
+    query_results = curr_q.group_by(GAMMetric.domain, GAMMetric.ad_unit).all()
 
     items = []
     for row in query_results:
