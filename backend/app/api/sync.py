@@ -101,32 +101,49 @@ def clear_cache_and_resync(
     d_start_7d = today - timedelta(days=6)
     d_start_30d = today - timedelta(days=30)
     
-    def _run_bg_clear_task():
-        with _sync_lock:
-            from app.database import SessionLocal
-            from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric
-            bg_db = SessionLocal()
-            try:
-                bg_db.query(DailyProfitSummary).delete(synchronize_session=False)
-                bg_db.query(GoogleAdsMetric).delete(synchronize_session=False)
-                bg_db.query(GAMMetric).delete(synchronize_session=False)
-                bg_db.query(GAMCountryMetric).delete(synchronize_session=False)
-                bg_db.commit()
-                
-                sync_service.sync_range(bg_db, d_start_30d, today)
-            except Exception as e:
-                logger.warning(f"Background clear/resync notice: {e}")
-                bg_db.rollback()
-            finally:
-                bg_db.close()
-
-    threading.Thread(target=_run_bg_clear_task, daemon=True).start()
-
-    return SyncResponse(
-        status="success",
-        message="Analytics data cache cleared! Live data re-syncing in background...",
-        records_synced=0,
-        sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
-        sync_date_end=today.strftime("%Y-%m-%d"),
-        is_mock_data=False
-    )
+    from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric
+    
+    with _sync_lock:
+        try:
+            logger.info("Clearing analytics data cache tables...")
+            db.query(DailyProfitSummary).delete(synchronize_session=False)
+            db.query(GoogleAdsMetric).delete(synchronize_session=False)
+            db.query(GAMMetric).delete(synchronize_session=False)
+            db.query(GAMCountryMetric).delete(synchronize_session=False)
+            db.commit()
+            
+            logger.info(f"Synchronously re-syncing live data from {d_start_7d} to {today}...")
+            res = sync_service.sync_range(db, d_start_7d, today)
+            records_count = res.get("records_synced", 0) if isinstance(res, dict) else 0
+            
+            # Background sync for older 30-day historical range
+            def _bg_historical_sync():
+                from app.database import SessionLocal
+                bg_db = SessionLocal()
+                try:
+                    sync_service.sync_range(bg_db, d_start_30d, d_start_7d - timedelta(days=1))
+                except Exception as e:
+                    logger.warning(f"Background 30d sync notice: {e}")
+                finally:
+                    bg_db.close()
+            threading.Thread(target=_bg_historical_sync, daemon=True).start()
+            
+            return SyncResponse(
+                status="success",
+                message=f"Cache berhasil dihapus! {records_count} data 7 hari terakhir telah selesai disinkron ulang dari GAM & Google Ads.",
+                records_synced=records_count,
+                sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
+                sync_date_end=today.strftime("%Y-%m-%d"),
+                is_mock_data=False
+            )
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error clearing cache and re-syncing: {e}")
+            return SyncResponse(
+                status="error",
+                message=f"Gagal menghapus cache & re-sync: {str(e)}",
+                records_synced=0,
+                sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
+                sync_date_end=today.strftime("%Y-%m-%d"),
+                is_mock_data=False
+            )
