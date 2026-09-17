@@ -86,8 +86,6 @@ def clear_cache_and_resync(
     d_start_30d = today - timedelta(days=30)
     
     def _run_bg_clear_task():
-        try_auto_git_pull_and_deploy()
-        
         with _sync_lock:
             from app.database import SessionLocal
             from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric
