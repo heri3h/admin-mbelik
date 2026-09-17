@@ -416,7 +416,7 @@ def export_site_today_json(
     db: Session,
     domain: str = "spotgames.top",
     target_filepath: str = "/home/mbummm/web/spotgames.top/public_html/current_pricing.json",
-    start_hour: int = 10,
+    start_hour: int = 0,
     end_hour: int = 23,
     force: bool = False
 ):
