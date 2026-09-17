@@ -12,7 +12,7 @@ class GoogleAdsService:
     def use_mock(self) -> bool:
         return bool(settings.USE_MOCK_DATA)
 
-    def _search_stream_with_retry(self, ga_service, customer_id: str, query: str, max_retries: int = 4):
+    def _search_stream_with_retry(self, ga_service, customer_id: str, query: str, max_retries: int = 2):
         for attempt in range(max_retries):
             try:
                 return ga_service.search_stream(customer_id=customer_id, query=query)
@@ -20,7 +20,7 @@ class GoogleAdsService:
                 err_str = str(ex)
                 is_rate_limit = any(k in err_str.lower() for k in ["429", "resource_exhausted", "too_many_requests", "too many requests"])
                 if is_rate_limit and attempt < max_retries - 1:
-                    sleep_time = (2 ** (attempt + 1)) + random.uniform(0.5, 1.5)
+                    sleep_time = 1.0 + random.uniform(0.1, 0.5)
                     logger.warning(f"Google Ads API 429 Rate Limit for CID {customer_id}. Retrying in {sleep_time:.1f}s (Attempt {attempt + 1}/{max_retries})...")
                     time.sleep(sleep_time)
                 else:
@@ -77,9 +77,11 @@ class GoogleAdsService:
 
         for cid in cids:
             clean_cid = cid.replace("-", "")
-            time.sleep(0.15)  # Throttling delay to prevent burst 429
+            time.sleep(0.05)
             try:
                 stream = self._search_stream_with_retry(ga_service, clean_cid, query)
+                if not stream:
+                    continue
                 for batch in stream:
                     for row in batch.results:
                         cost = row.metrics.cost_micros / 1000000.0 if row.metrics.cost_micros else 0.0
@@ -100,13 +102,10 @@ class GoogleAdsService:
                         })
             except Exception as ex:
                 err_str = str(ex)
-                logger.error(f"Google Ads API Error for Customer ID {cid}: {err_str}")
+                logger.warning(f"Google Ads API Notice for CID {cid}: {err_str}")
                 if "invalid_grant" in err_str.lower():
                     raise RuntimeError("Google Ads API Auth Error: Refresh Token is expired or revoked. Please update GOOGLE_ADS_REFRESH_TOKEN in .env.")
-                if any(k in err_str.lower() for k in ["429", "resource_exhausted", "too_many_requests"]):
-                    logger.warning(f"Skipping Customer ID {cid} due to persistent 429 Rate Limit quota exhaustion.")
-                    continue
-                raise RuntimeError(f"Google Ads Customer ID {cid} Error: {err_str}")
+                continue
 
         return results
 
@@ -201,16 +200,17 @@ class GoogleAdsService:
                     WHERE geo_target_constant.status = 'ENABLED'
                 """
                 stream_geo = self._search_stream_with_retry(ga_service, sample_cid, query_geo)
-                for batch in stream_geo:
-                    for row in batch.results:
-                        g = row.geo_target_constant
-                        code = str(g.country_code).upper() if g.country_code else ""
-                        c_meta = get_country_meta(code or g.name)
-                        geo_map[g.id] = {
-                            "country": str(g.name),
-                            "code": c_meta.get("code") or code or "XX"
-                        }
-                self._geo_cache = geo_map
+                if stream_geo:
+                    for batch in stream_geo:
+                        for row in batch.results:
+                            g = row.geo_target_constant
+                            code = str(g.country_code).upper() if g.country_code else ""
+                            c_meta = get_country_meta(code or g.name)
+                            geo_map[g.id] = {
+                                "country": str(g.name),
+                                "code": c_meta.get("code") or code or "XX"
+                            }
+                    self._geo_cache = geo_map
             except Exception as e:
                 logger.warning(f"Failed loading geo_target_constant map: {e}")
 
@@ -232,9 +232,11 @@ class GoogleAdsService:
         results = []
         for cid in cids:
             clean_cid = cid.replace("-", "")
-            time.sleep(0.15)  # Throttling delay to prevent burst 429
+            time.sleep(0.05)
             try:
                 stream = self._search_stream_with_retry(ga_service, clean_cid, query)
+                if not stream:
+                    continue
                 for batch in stream:
                     for row in batch.results:
                         cost = row.metrics.cost_micros / 1000000.0 if row.metrics.cost_micros else 0.0
@@ -257,13 +259,10 @@ class GoogleAdsService:
                         })
             except Exception as ex:
                 err_str = str(ex)
-                logger.error(f"Google Ads API Error for Customer ID {cid}: {err_str}")
+                logger.warning(f"Google Ads API Notice for CID {cid}: {err_str}")
                 if "invalid_grant" in err_str.lower():
                     raise RuntimeError("Google Ads API Auth Error: Refresh Token is expired or revoked. Please update GOOGLE_ADS_REFRESH_TOKEN in .env.")
-                if any(k in err_str.lower() for k in ["429", "resource_exhausted", "too_many_requests"]):
-                    logger.warning(f"Skipping Customer ID {cid} due to persistent 429 Rate Limit quota exhaustion.")
-                    continue
-                raise RuntimeError(f"Google Ads Customer ID {cid} Error: {err_str}")
+                continue
 
         return results
 
