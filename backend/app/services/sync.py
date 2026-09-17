@@ -213,6 +213,7 @@ class SyncService:
             agg["ad_requests"] += item.get("ad_requests", 0)
             agg["matched_requests"] += item.get("matched_requests", 0)
 
+        new_gam_metrics = []
         for item in aggregated_gam.values():
             raw_rev = item.get("revenue", 0.0)
             adj_rev = round(raw_rev * 0.92, 2)  # Deducts 8% fee
@@ -224,27 +225,31 @@ class SyncService:
             matched_reqs = item.get("matched_requests", 0)
             mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
 
+            new_metric = GAMMetric(
+                date=item["date"],
+                domain=item["domain"],
+                ad_unit=item["ad_unit"],
+                pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
+                device_category=item.get("device_category", "mobile"),
+                revenue=adj_rev,
+                impressions=imps,
+                ecpm=adj_ecpm,
+                clicks=clicks,
+                match_rate=round(mr, 2),
+                ad_requests=ad_reqs,
+                matched_requests=matched_reqs,
+                synced_at=datetime.utcnow()
+            )
+            new_gam_metrics.append(new_metric)
+            records_synced += 1
+
+        if new_gam_metrics:
             try:
-                new_metric = GAMMetric(
-                    date=item["date"],
-                    domain=item["domain"],
-                    ad_unit=item["ad_unit"],
-                    pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
-                    device_category=item.get("device_category", "mobile"),
-                    revenue=adj_rev,
-                    impressions=imps,
-                    ecpm=adj_ecpm,
-                    clicks=clicks,
-                    match_rate=round(mr, 2),
-                    ad_requests=ad_reqs,
-                    matched_requests=matched_reqs,
-                    synced_at=datetime.utcnow()
-                )
-                db.add(new_metric)
+                db.add_all(new_gam_metrics)
                 db.commit()
-                records_synced += 1
             except Exception as e:
                 db.rollback()
+                logger.warning(f"GAMMetric bulk commit notice: {e}")
 
         # 3. Delete stale GAM country metrics for target sync range and insert fresh live GAM country data
         try:
@@ -288,6 +293,7 @@ class SyncService:
                 agg["ad_requests"] += item.get("ad_requests", 0)
                 agg["matched_requests"] += item.get("matched_requests", 0)
 
+            new_country_metrics = []
             for item in aggregated_country.values():
                 raw_rev = item.get("revenue", 0.0)
                 adj_rev = round(raw_rev * 0.92, 2)  # Deducts 8% fee
@@ -300,28 +306,28 @@ class SyncService:
                 country_code = item.get("country_code", "ID")
                 c_mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
 
-                try:
-                    new_c_metric = GAMCountryMetric(
-                        date=item["date"],
-                        domain=item["domain"],
-                        country=item["country"],
-                        country_code=country_code,
-                        ad_unit=item["ad_unit"],
-                        pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
-                        device_category=item.get("device_category", "mobile"),
-                        revenue=adj_rev,
-                        impressions=imps,
-                        ecpm=adj_ecpm,
-                        clicks=clicks,
-                        match_rate=round(c_mr, 2),
-                        ad_requests=ad_reqs,
-                        matched_requests=matched_reqs,
-                        synced_at=datetime.utcnow()
-                    )
-                    db.add(new_c_metric)
-                    db.commit()
-                except Exception as e:
-                    db.rollback()
+                new_c_metric = GAMCountryMetric(
+                    date=item["date"],
+                    domain=item["domain"],
+                    country=item["country"],
+                    country_code=country_code,
+                    ad_unit=item["ad_unit"],
+                    pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
+                    device_category=item.get("device_category", "mobile"),
+                    revenue=adj_rev,
+                    impressions=imps,
+                    ecpm=adj_ecpm,
+                    clicks=clicks,
+                    match_rate=round(c_mr, 2),
+                    ad_requests=ad_reqs,
+                    matched_requests=matched_reqs,
+                    synced_at=datetime.utcnow()
+                )
+                new_country_metrics.append(new_c_metric)
+
+            if new_country_metrics:
+                db.add_all(new_country_metrics)
+                db.commit()
         except Exception as e:
             db.rollback()
             logger.warning(f"Sync GAM Country Metrics notice: {e}")
