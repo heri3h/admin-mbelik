@@ -977,11 +977,35 @@ def get_site_countries_breakdown(
     gads_country_orig_name_map = {}
 
     if cids:
-        tot_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
+        tot_spend_raw = db.query(func.sum(GoogleAdsMetric.spend)).filter(
             GoogleAdsMetric.date >= d_start,
             GoogleAdsMetric.date <= d_end,
             GoogleAdsMetric.customer_id.in_(cids)
         ).scalar() or 0.0
+
+        if dev_filter:
+            if domain_name.lower() not in ["all", "all sites", "global", ""]:
+                s_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                    GAMMetric.date >= d_start, GAMMetric.date <= d_end,
+                    func.lower(GAMMetric.domain) == domain_name.lower()
+                ).scalar() or 0
+                s_dev_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                    GAMMetric.date >= d_start, GAMMetric.date <= d_end,
+                    func.lower(GAMMetric.domain) == domain_name.lower(),
+                    GAMMetric.device_category == dev_filter
+                ).scalar() or 0
+            else:
+                s_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                    GAMMetric.date >= d_start, GAMMetric.date <= d_end
+                ).scalar() or 0
+                s_dev_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                    GAMMetric.date >= d_start, GAMMetric.date <= d_end,
+                    GAMMetric.device_category == dev_filter
+                ).scalar() or 0
+            s_ratio = (s_dev_imps / s_all_imps) if s_all_imps > 0 else 1.0
+            tot_spend = tot_spend_raw * s_ratio
+        else:
+            tot_spend = tot_spend_raw
 
         gads_c_rows = db.query(
             GoogleAdsCountryMetric.country,
