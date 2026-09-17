@@ -694,6 +694,8 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'SITE_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
@@ -1129,6 +1131,8 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
