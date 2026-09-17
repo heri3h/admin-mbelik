@@ -639,7 +639,25 @@ class GAMService:
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'DOMAIN_NAME'],
-                    ['DATE', 'DEVICE_CATEGORY_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME']
+                ],
+                'column_sets': [
+                    [
+                        'AD_EXCHANGE_REVENUE',
+                        'AD_EXCHANGE_IMPRESSIONS',
+                        'AD_EXCHANGE_CLICKS',
+                        'AD_EXCHANGE_AVERAGE_ECPM'
+                    ],
+                    [
+                        'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
+                        'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'TOTAL_LINE_ITEM_LEVEL_CLICKS',
+                        'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
+                    ]
+                ]
+            },
+            {
+                'dimension_sets': [
                     ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
@@ -659,18 +677,6 @@ class GAMService:
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
-                    ],
-                    [
-                        'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
-                        'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
-                        'TOTAL_LINE_ITEM_LEVEL_CLICKS',
-                        'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
-                    ],
-                    [
-                        'AD_EXCHANGE_REVENUE',
-                        'AD_EXCHANGE_IMPRESSIONS',
-                        'AD_EXCHANGE_CLICKS',
-                        'AD_EXCHANGE_AVERAGE_ECPM'
                     ]
                 ]
             }
@@ -1059,7 +1065,25 @@ class GAMService:
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'SITE_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME']
+                ],
+                'column_sets': [
+                    [
+                        'AD_EXCHANGE_REVENUE',
+                        'AD_EXCHANGE_IMPRESSIONS',
+                        'AD_EXCHANGE_CLICKS',
+                        'AD_EXCHANGE_AVERAGE_ECPM'
+                    ],
+                    [
+                        'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
+                        'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'TOTAL_LINE_ITEM_LEVEL_CLICKS',
+                        'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
+                    ]
+                ]
+            },
+            {
+                'dimension_sets': [
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME'],
@@ -1078,18 +1102,6 @@ class GAMService:
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
-                    ],
-                    [
-                        'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
-                        'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
-                        'TOTAL_LINE_ITEM_LEVEL_CLICKS',
-                        'TOTAL_LINE_ITEM_LEVEL_WITHOUT_CPD_AVERAGE_ECPM'
-                    ],
-                    [
-                        'AD_EXCHANGE_REVENUE',
-                        'AD_EXCHANGE_IMPRESSIONS',
-                        'AD_EXCHANGE_CLICKS',
-                        'AD_EXCHANGE_AVERAGE_ECPM'
                     ]
                 ]
             }

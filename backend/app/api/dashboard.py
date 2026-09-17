@@ -138,8 +138,19 @@ def get_summary(
 
     if d_start == d_end:
         prev_date = d_start - timedelta(days=1)
-        prev_day_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(GoogleAdsMetric.date == prev_date).scalar() or 0.0
-        prev_day_revenue = db.query(func.sum(GAMMetric.revenue)).filter(GAMMetric.date == prev_date).scalar() or 0.0
+        prev_day_spend_raw = db.query(func.sum(GoogleAdsMetric.spend)).filter(GoogleAdsMetric.date == prev_date).scalar() or 0.0
+        
+        prev_gam_q = db.query(func.sum(GAMMetric.revenue)).filter(GAMMetric.date == prev_date)
+        if dev_filter:
+            prev_gam_q = prev_gam_q.filter(GAMMetric.device_category == dev_filter)
+        prev_day_revenue = prev_gam_q.scalar() or 0.0
+
+        if dev_filter:
+            prev_all_rev = db.query(func.sum(GAMMetric.revenue)).filter(GAMMetric.date == prev_date).scalar() or 0.0
+            prev_ratio = (prev_day_revenue / prev_all_rev) if prev_all_rev > 0 else 0.5
+            prev_day_spend = prev_day_spend_raw * prev_ratio
+        else:
+            prev_day_spend = prev_day_spend_raw
 
         if d_start == wib_today:
             curr_h = wib_now.hour
@@ -162,13 +173,25 @@ def get_summary(
         prev_start = d_start - timedelta(days=days_count)
         prev_end = d_start - timedelta(days=1)
 
-        prev_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
+        prev_spend_raw = db.query(func.sum(GoogleAdsMetric.spend)).filter(
             GoogleAdsMetric.date >= prev_start, GoogleAdsMetric.date <= prev_end
         ).scalar() or 0.0
 
-        prev_revenue = db.query(func.sum(GAMMetric.revenue)).filter(
+        prev_gam_q = db.query(func.sum(GAMMetric.revenue)).filter(
             GAMMetric.date >= prev_start, GAMMetric.date <= prev_end
-        ).scalar() or 0.0
+        )
+        if dev_filter:
+            prev_gam_q = prev_gam_q.filter(GAMMetric.device_category == dev_filter)
+        prev_revenue = prev_gam_q.scalar() or 0.0
+
+        if dev_filter:
+            prev_all_rev = db.query(func.sum(GAMMetric.revenue)).filter(
+                GAMMetric.date >= prev_start, GAMMetric.date <= prev_end
+            ).scalar() or 0.0
+            prev_ratio = (prev_revenue / prev_all_rev) if prev_all_rev > 0 else 0.5
+            prev_spend = prev_spend_raw * prev_ratio
+        else:
+            prev_spend = prev_spend_raw
 
         comp_label = f"vs previous {days_count} days"
 
