@@ -56,6 +56,15 @@ def try_auto_git_pull_and_deploy():
         res = subprocess.run(["git", "pull", "origin", "main"], capture_output=True, text=True, timeout=15)
         logger.info(f"Auto git pull output: {res.stdout}")
         
+        # Copy compiled frontend assets to HestiaCP public_html directory if present
+        public_html = "/home/mbummm/web/admin.mbelik.com/public_html"
+        if os.path.exists(public_html):
+            if os.path.exists("frontend/dist"):
+                subprocess.run(f"cp -r frontend/dist/* '{public_html}/'", shell=True, timeout=10)
+            elif os.path.exists("dist"):
+                subprocess.run(f"cp -r dist/* '{public_html}/'", shell=True, timeout=10)
+            logger.info("Synced frontend assets to public_html")
+
         # If code was updated, restart the python process via systemd auto-restart
         if res.stdout and ("Updating " in res.stdout or "files changed" in res.stdout or "Fast-forward" in res.stdout):
             logger.info("New commits pulled on server. Triggering service auto-reload...")
@@ -69,12 +78,13 @@ def try_auto_git_pull_and_deploy():
 
 @router.post("/restart-backend")
 def restart_backend_service(current_user: User = Depends(get_current_user)):
+    try_auto_git_pull_and_deploy()
     def _restart():
         import time
         time.sleep(0.5)
         os._exit(0)
     threading.Thread(target=_restart, daemon=True).start()
-    return {"status": "success", "message": "Backend service restarting to apply latest updates..."}
+    return {"status": "success", "message": "Backend service deploying latest updates and restarting..."}
 
 @router.post("/clear-cache", response_model=SyncResponse)
 def clear_cache_and_resync(
