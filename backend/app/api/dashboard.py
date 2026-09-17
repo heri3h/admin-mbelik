@@ -223,21 +223,32 @@ def get_summary(
 def get_daily_trend(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     d_start, d_end = parse_date_range(start_date, end_date)
     ensure_data_synced(db, d_start, d_end)
 
+    dev_filter = device.lower().strip() if device and device.lower().strip() != "all" else None
+
     # Intraday Hourly Trend Breakdown for Single Day filters (Today or Yesterday) in WIB (GMT+7)
     if d_start == d_end:
-        tot_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
+        tot_spend_raw = db.query(func.sum(GoogleAdsMetric.spend)).filter(
             GoogleAdsMetric.date == d_start
         ).scalar() or 0.0
 
-        tot_revenue = db.query(func.sum(GAMMetric.revenue)).filter(
-            GAMMetric.date == d_start
-        ).scalar() or 0.0
+        gam_q = db.query(func.sum(GAMMetric.revenue)).filter(GAMMetric.date == d_start)
+        if dev_filter:
+            gam_q = gam_q.filter(GAMMetric.device_category == dev_filter)
+        tot_revenue = gam_q.scalar() or 0.0
+
+        if dev_filter:
+            tot_all_rev = db.query(func.sum(GAMMetric.revenue)).filter(GAMMetric.date == d_start).scalar() or 0.0
+            ratio = (tot_revenue / tot_all_rev) if tot_all_rev > 0 else 0.5
+            tot_spend = tot_spend_raw * ratio
+        else:
+            tot_spend = tot_spend_raw
 
         wib_now = datetime.now(WIB)
         is_today = (d_start == wib_now.date())
@@ -289,13 +300,16 @@ def get_daily_trend(
     ).group_by(GoogleAdsMetric.date).all()
     spend_map = {r.date: r.spend or 0.0 for r in ads_rows}
 
-    gam_rows = db.query(
+    gam_q = db.query(
         GAMMetric.date,
         func.sum(GAMMetric.revenue).label("revenue")
     ).filter(
         GAMMetric.date >= d_start,
         GAMMetric.date <= d_end
-    ).group_by(GAMMetric.date).all()
+    )
+    if dev_filter:
+        gam_q = gam_q.filter(GAMMetric.device_category == dev_filter)
+    gam_rows = gam_q.group_by(GAMMetric.date).all()
     rev_map = {r.date: r.revenue or 0.0 for r in gam_rows}
 
     result = []
@@ -985,6 +999,7 @@ def get_site_country_placements_breakdown(
     response: Response,
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -999,6 +1014,16 @@ def get_site_country_placements_breakdown(
     country_name = country.strip()
     c_meta = get_country_meta(country_name)
     c_code = c_meta["code"]
+    dev_filter = device.lower().strip() if device and device.lower().strip() != "all" else None
+
+    filters_c1 = [
+        func.lower(GAMCountryMetric.domain) == domain_name.lower(),
+        func.lower(GAMCountryMetric.country) == country_name.lower(),
+        GAMCountryMetric.date >= d_start,
+        GAMCountryMetric.date <= d_end
+    ]
+    if dev_filter:
+        filters_c1.append(GAMCountryMetric.device_category == dev_filter)
 
     rows = db.query(
         GAMCountryMetric.ad_unit,
@@ -1008,14 +1033,18 @@ def get_site_country_placements_breakdown(
         func.sum(GAMCountryMetric.clicks).label("total_clicks"),
         func.sum(GAMCountryMetric.ad_requests).label("total_ad_requests"),
         func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
-    ).filter(
-        func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-        func.lower(GAMCountryMetric.country) == country_name.lower(),
-        GAMCountryMetric.date >= d_start,
-        GAMCountryMetric.date <= d_end
-    ).group_by(GAMCountryMetric.ad_unit).all()
+    ).filter(*filters_c1).group_by(GAMCountryMetric.ad_unit).all()
 
     if not rows and c_code:
+        filters_c2 = [
+            func.lower(GAMCountryMetric.domain) == domain_name.lower(),
+            func.lower(GAMCountryMetric.country_code) == c_code.lower(),
+            GAMCountryMetric.date >= d_start,
+            GAMCountryMetric.date <= d_end
+        ]
+        if dev_filter:
+            filters_c2.append(GAMCountryMetric.device_category == dev_filter)
+
         rows = db.query(
             GAMCountryMetric.ad_unit,
             func.max(GAMCountryMetric.pricing_rule_name).label("pricing_rule_name"),
@@ -1024,14 +1053,17 @@ def get_site_country_placements_breakdown(
             func.sum(GAMCountryMetric.clicks).label("total_clicks"),
             func.sum(GAMCountryMetric.ad_requests).label("total_ad_requests"),
             func.sum(GAMCountryMetric.matched_requests).label("total_matched_requests")
-        ).filter(
-            func.lower(GAMCountryMetric.domain) == domain_name.lower(),
-            func.lower(GAMCountryMetric.country_code) == c_code.lower(),
-            GAMCountryMetric.date >= d_start,
-            GAMCountryMetric.date <= d_end
-        ).group_by(GAMCountryMetric.ad_unit).all()
+        ).filter(*filters_c2).group_by(GAMCountryMetric.ad_unit).all()
 
     if not rows:
+        filters_m = [
+            func.lower(GAMMetric.domain) == domain_name.lower(),
+            GAMMetric.date >= d_start,
+            GAMMetric.date <= d_end
+        ]
+        if dev_filter:
+            filters_m.append(GAMMetric.device_category == dev_filter)
+
         rows = db.query(
             GAMMetric.ad_unit,
             func.max(GAMMetric.pricing_rule_name).label("pricing_rule_name"),
@@ -1040,11 +1072,7 @@ def get_site_country_placements_breakdown(
             func.sum(GAMMetric.clicks).label("total_clicks"),
             func.sum(GAMMetric.ad_requests).label("total_ad_requests"),
             func.sum(GAMMetric.matched_requests).label("total_matched_requests")
-        ).filter(
-            func.lower(GAMMetric.domain) == domain_name.lower(),
-            GAMMetric.date >= d_start,
-            GAMMetric.date <= d_end
-        ).group_by(GAMMetric.ad_unit).all()
+        ).filter(*filters_m).group_by(GAMMetric.ad_unit).all()
 
     if not rows:
         try:

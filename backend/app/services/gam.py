@@ -635,11 +635,10 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME'],
-                    ['DATE', 'DEVICE_CATEGORY_NAME', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'DOMAIN_NAME'],
-                    ['DATE', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
@@ -1057,9 +1056,9 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'SITE_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
