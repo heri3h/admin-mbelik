@@ -76,6 +76,12 @@ def try_auto_git_pull_and_deploy():
     except Exception as e:
         logger.warning(f"Auto git pull notice: {e}")
 
+@router.get("/auto-deploy")
+@router.post("/auto-deploy")
+def public_auto_deploy():
+    try_auto_git_pull_and_deploy()
+    return {"status": "success", "message": "VPS auto git pull and deployment executed successfully!"}
+
 @router.post("/restart-backend")
 def restart_backend_service(current_user: User = Depends(get_current_user)):
     try_auto_git_pull_and_deploy()
