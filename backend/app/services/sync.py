@@ -555,15 +555,30 @@ def export_site_today_json(
         ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else 0.0
         hist_summary_dev_map[dev_cat] = {"match_rate": mr, "ecpm": ecpm}
 
-    def ensure_devices(dev_dict, hist_dict=None):
+    def ensure_devices(dev_dict, hist_dict=None, country_fallback=None, summary_fallback=None):
         out = {}
         for dev in ["mobile", "desktop"]:
-            if dev_dict and dev in dev_dict:
-                out[dev] = dev_dict[dev]
-            elif hist_dict and dev in hist_dict:
-                out[dev] = hist_dict[dev]
-            else:
-                out[dev] = {"match_rate": 0.0, "ecpm": 0.0}
+            d_val = dev_dict.get(dev) if dev_dict else None
+            if d_val and (d_val.get("ecpm", 0) > 0 or d_val.get("match_rate", 0) > 0):
+                out[dev] = d_val
+                continue
+
+            h_val = hist_dict.get(dev) if hist_dict else None
+            if h_val and (h_val.get("ecpm", 0) > 0 or h_val.get("match_rate", 0) > 0):
+                out[dev] = h_val
+                continue
+
+            c_val = country_fallback.get(dev) if country_fallback else None
+            if c_val and (c_val.get("ecpm", 0) > 0 or c_val.get("match_rate", 0) > 0):
+                out[dev] = c_val
+                continue
+
+            s_val = summary_fallback.get(dev) if summary_fallback else None
+            if s_val and (s_val.get("ecpm", 0) > 0 or s_val.get("match_rate", 0) > 0):
+                out[dev] = s_val
+                continue
+
+            out[dev] = {"match_rate": 0.0, "ecpm": 0.0}
         return out
 
     # Query per-device summary breakdown
@@ -749,7 +764,11 @@ def export_site_today_json(
             c_mr = round((c_matched_reqs / c_ad_reqs * 100.0), 1) if c_ad_reqs > 0 else 0.0
             c_ecpm = round((c_rev / c_imps * 1000.0), 2) if c_imps > 0 else 0.0
 
-            c_dev_dict = ensure_devices(country_device_map.get(c_name, {}), hist_c_dev_map.get(c_name, {}))
+            c_dev_dict = ensure_devices(
+                country_device_map.get(c_name, {}),
+                hist_dict=hist_c_dev_map.get(c_name, {}),
+                summary_fallback=summary_devices
+            )
 
             # Nested placements per country
             c_placements_list = []
@@ -758,7 +777,12 @@ def export_site_today_json(
                     hist_unit_dev = hist_cpd_map.get(c_name, {}).get(unit_name, {})
                     c_placements_list.append({
                         "ad_unit": unit_name,
-                        "devices": ensure_devices(dev_dict, hist_unit_dev)
+                        "devices": ensure_devices(
+                            dev_dict,
+                            hist_dict=hist_unit_dev,
+                            country_fallback=c_dev_dict,
+                            summary_fallback=summary_devices
+                        )
                     })
 
             countries_list.append({
@@ -830,7 +854,10 @@ def export_site_today_json(
             "ad_unit": pr.ad_unit,
             "match_rate": p_mr,
             "ecpm": p_ecpm,
-            "devices": ensure_devices(placement_device_map.get(pr.ad_unit, {}))
+            "devices": ensure_devices(
+                placement_device_map.get(pr.ad_unit, {}),
+                summary_fallback=summary_devices
+            )
         })
 
     data_payload = {
