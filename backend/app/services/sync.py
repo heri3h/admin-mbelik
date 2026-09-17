@@ -623,18 +623,13 @@ def export_site_today_json(
                 "country": c_name,
                 "country_code": c_code,
                 "flag_emoji": c_flag,
-                "revenue": round(c_rev, 2),
-                "ad_requests": int(c_ad_reqs),
-                "matched_requests": int(c_matched_reqs),
                 "match_rate": c_mr,
                 "ecpm": c_ecpm,
-                "ctr": c_ctr,
                 "pricing": p_rule,
-                "rpm": c_ecpm,
                 "devices": c_dev_dict
             })
 
-    countries_list.sort(key=lambda x: x["revenue"], reverse=True)
+    countries_list.sort(key=lambda x: x["ecpm"], reverse=True)
 
     # Query device breakdown per placement
     db_placement_dev_rows = db.query(
@@ -691,12 +686,8 @@ def export_site_today_json(
 
         placements_list.append({
             "ad_unit": pr.ad_unit,
-            "revenue": round(p_rev, 2),
-            "ad_requests": p_ad_reqs,
-            "matched_requests": p_matched_reqs,
             "match_rate": p_mr,
             "ecpm": p_ecpm,
-            "clicks": p_clks,
             "devices": placement_device_map.get(pr.ad_unit, {})
         })
 
@@ -705,11 +696,6 @@ def export_site_today_json(
         "date": today_str,
         "updated_at": wib_now.strftime("%Y-%m-%d %H:%M:%S WIB"),
         "summary": {
-            "total_revenue": round(tot_rev, 2),
-            "total_impressions": tot_imps,
-            "total_clicks": tot_clicks,
-            "ad_requests": tot_ad_reqs,
-            "matched_requests": tot_matched_reqs,
             "match_rate": domain_mr,
             "ecpm": ecpm,
             "devices": summary_devices
