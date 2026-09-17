@@ -132,7 +132,7 @@ app = FastAPI(
 
 async def auto_sync_background_task():
     """
-    Background worker that runs every 15 minutes in a separate thread (asyncio.to_thread)
+    Background worker that runs every 20 minutes in a separate thread (asyncio.to_thread)
     to automatically sync Yesterday & Today's Google Ads & GAM metrics into SQLite DB without blocking the API server!
     """
     await asyncio.sleep(10)  # Wait 10 seconds after server startup
@@ -154,8 +154,8 @@ async def auto_sync_background_task():
         except Exception as e:
             logger.error(f"Error in automatic background sync task: {e}")
 
-        # Repeat every 10 minutes (600 seconds)
-        await asyncio.sleep(600)
+        # Repeat every 20 minutes (1200 seconds)
+        await asyncio.sleep(1200)
 
 _auto_sync_task = None
 
