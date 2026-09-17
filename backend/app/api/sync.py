@@ -42,6 +42,9 @@ def trigger_sync(
             is_mock_data=False
         )
 
+import os
+import sys
+import threading
 import subprocess
 import logging
 
@@ -52,8 +55,26 @@ def try_auto_git_pull_and_deploy():
         # Attempt auto-pull from GitHub on the server
         res = subprocess.run(["git", "pull", "origin", "main"], capture_output=True, text=True, timeout=15)
         logger.info(f"Auto git pull output: {res.stdout}")
+        
+        # If code was updated, restart the python process via systemd auto-restart
+        if res.stdout and ("Updating " in res.stdout or "files changed" in res.stdout or "Fast-forward" in res.stdout):
+            logger.info("New commits pulled on server. Triggering service auto-reload...")
+            def _restart():
+                import time
+                time.sleep(1)
+                os._exit(0)  # systemd with Restart=always will instantly revive the service with new code
+            threading.Thread(target=_restart, daemon=True).start()
     except Exception as e:
         logger.warning(f"Auto git pull notice: {e}")
+
+@router.post("/restart-backend")
+def restart_backend_service(current_user: User = Depends(get_current_user)):
+    def _restart():
+        import time
+        time.sleep(0.5)
+        os._exit(0)
+    threading.Thread(target=_restart, daemon=True).start()
+    return {"status": "success", "message": "Backend service restarting to apply latest updates..."}
 
 @router.post("/clear-cache", response_model=SyncResponse)
 def clear_cache_and_resync(
@@ -81,7 +102,6 @@ def clear_cache_and_resync(
             if acquired:
                 _sync_lock.release()
 
-        import threading
         def _run_bg_resync():
             with _sync_lock:
                 from app.database import SessionLocal
