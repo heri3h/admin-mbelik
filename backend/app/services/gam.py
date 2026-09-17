@@ -642,12 +642,7 @@ class GAMService:
                     ['DATE', 'DEVICE_CATEGORY_NAME']
                 ],
                 'column_sets': [
-                    [
-                        'AD_EXCHANGE_REVENUE',
-                        'AD_EXCHANGE_IMPRESSIONS',
-                        'AD_EXCHANGE_CLICKS',
-                        'AD_EXCHANGE_AVERAGE_ECPM'
-                    ],
+                    LOCKED_PRIMARY_GAM_COLUMNS,
                     [
                         'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
                         'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
@@ -1068,12 +1063,7 @@ class GAMService:
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME']
                 ],
                 'column_sets': [
-                    [
-                        'AD_EXCHANGE_REVENUE',
-                        'AD_EXCHANGE_IMPRESSIONS',
-                        'AD_EXCHANGE_CLICKS',
-                        'AD_EXCHANGE_AVERAGE_ECPM'
-                    ],
+                    LOCKED_PRIMARY_GAM_COLUMNS,
                     [
                         'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
                         'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
