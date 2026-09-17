@@ -902,14 +902,14 @@ class GAMService:
                                     break
 
                             key = (row_date, domain, ad_unit, pricing_rule, device_cat)
-                            if is_new_domain or key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
+                            if key not in aggregated_results:
                                 aggregated_results[key] = {
                                     "date": row_date,
                                     "domain": domain,
                                     "ad_unit": ad_unit,
                                     "pricing_rule_name": pricing_rule,
                                     "device_category": device_cat,
-                                    "revenue": round(revenue, 2),
+                                    "revenue": revenue,
                                     "impressions": impressions,
                                     "ecpm": round(ecpm, 2),
                                     "clicks": clicks,
@@ -917,8 +917,17 @@ class GAMService:
                                     "matched_requests": matched_requests,
                                     "match_rate": round(match_rate, 2)
                                 }
-                                seen_domains_per_date.add(domain_date_key)
+                            else:
+                                curr = aggregated_results[key]
+                                curr["revenue"] += revenue
+                                curr["impressions"] += impressions
+                                curr["clicks"] += clicks
+                                curr["ad_requests"] += ad_requests
+                                curr["matched_requests"] += matched_requests
+                                curr["ecpm"] = round((curr["revenue"] / curr["impressions"]) * 1000.0, 2) if curr["impressions"] > 0 else 0.0
+                                curr["match_rate"] = round((curr["matched_requests"] / curr["ad_requests"]) * 100.0, 2) if curr["ad_requests"] > 0 else 0.0
 
+                            seen_domains_per_date.add(domain_date_key)
                             found_any_row = True
 
                         if found_any_row:
@@ -940,7 +949,10 @@ class GAMService:
 
         if aggregated_results:
             logger.info(f"Successfully fetched {len(aggregated_results)} aggregated rows covering {len(seen_domains_per_date)} date-domain pairs from GAM API")
-            return list(aggregated_results.values())
+            final_rows = list(aggregated_results.values())
+            for item in final_rows:
+                item["revenue"] = round(item["revenue"], 2)
+            return final_rows
 
         if last_error:
             raise last_error
