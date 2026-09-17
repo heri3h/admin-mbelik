@@ -117,6 +117,7 @@ def auto_seed_export_targets():
             ("henden.top", "/home/mbummm/web/henden.top/public_html/current_pricing.json"),
             ("play.gemol.me", "/home/mbummm/web/play.gemol.me/public_html/current_pricing.json"),
             ("skuy.me", "/home/mbummm/web/skuy.me/public_html/current_pricing.json"),
+            ("skuy.me/pastime", "/home/mbummm/web/skuy.me/public_html/pastime/current_pricing.json"),
             ("vinn.henden.top", "/home/mbummm/web/vinn.henden.top/public_html/current_pricing.json")
         ]
         for dom, path in default_targets:
