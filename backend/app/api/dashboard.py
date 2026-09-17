@@ -475,16 +475,13 @@ def get_sites_breakdown(
         except Exception:
             db.rollback()
 
-    from app.services.gam import normalize_canonical_domain
-
     domain_cids_map = {}
     for acc in db_accounts:
         if acc.assigned_domain and acc.assigned_domain != "All / Unassigned":
-            cdom = normalize_canonical_domain(acc.assigned_domain)
-            if cdom not in domain_cids_map:
-                domain_cids_map[cdom] = []
-            if acc.customer_id not in domain_cids_map[cdom]:
-                domain_cids_map[cdom].append(acc.customer_id)
+            if acc.assigned_domain not in domain_cids_map:
+                domain_cids_map[acc.assigned_domain] = []
+            if acc.customer_id not in domain_cids_map[acc.assigned_domain]:
+                domain_cids_map[acc.assigned_domain].append(acc.customer_id)
 
     # Previous period GAM revenue by domain
     prev_q = db.query(
@@ -498,49 +495,36 @@ def get_sites_breakdown(
         prev_q = prev_q.filter(GAMMetric.device_category == dev_filter)
     prev_gam_rows = prev_q.group_by(GAMMetric.domain).all()
 
-    prev_site_rev_map = {}
-    for r in prev_gam_rows:
-        cdom = normalize_canonical_domain(r.domain)
-        prev_site_rev_map[cdom] = prev_site_rev_map.get(cdom, 0.0) + (r.revenue or 0.0) * intraday_factor
+    prev_site_rev_map = {r.domain: (r.revenue or 0.0) * intraday_factor for r in prev_gam_rows}
 
     curr_q = db.query(
         GAMMetric.domain,
-        GAMMetric.ad_unit,
         func.sum(GAMMetric.revenue).label("total_revenue"),
         func.sum(GAMMetric.impressions).label("total_impressions"),
         func.sum(GAMMetric.clicks).label("total_clicks"),
         func.sum(GAMMetric.ad_requests).label("total_ad_requests"),
-        func.sum(GAMMetric.matched_requests).label("total_matched_requests")
+        func.sum(GAMMetric.matched_requests).label("total_matched_requests"),
+        func.avg(GAMMetric.match_rate).label("avg_match_rate"),
+        func.count(GAMMetric.ad_unit.distinct()).label("ad_unit_count")
     ).filter(
         GAMMetric.date >= d_start,
         GAMMetric.date <= d_end
     )
     if dev_filter:
         curr_q = curr_q.filter(GAMMetric.device_category == dev_filter)
-    query_results = curr_q.group_by(GAMMetric.domain, GAMMetric.ad_unit).all()
+    query_results = curr_q.group_by(GAMMetric.domain).all()
 
-    canonical_gam_map = {}
-    for row in query_results:
-        cdom = normalize_canonical_domain(row.domain)
-        if cdom not in canonical_gam_map:
-            canonical_gam_map[cdom] = {
-                "total_revenue": 0.0,
-                "total_impressions": 0,
-                "total_clicks": 0,
-                "total_ad_requests": 0,
-                "total_matched_requests": 0,
-                "ad_units": set()
-            }
-        c = canonical_gam_map[cdom]
-        c["total_revenue"] += (row.total_revenue or 0.0)
-        c["total_impressions"] += (row.total_impressions or 0)
-        c["total_clicks"] += (row.total_clicks or 0)
-        c["total_ad_requests"] += (row.total_ad_requests or 0)
-        c["total_matched_requests"] += (row.total_matched_requests or 0)
-        if row.ad_unit:
-            c["ad_units"].add(row.ad_unit)
+    query_dom_map = {row.domain: row for row in query_results if row.domain}
+    dynamic_domains = set(query_dom_map.keys())
+    dynamic_domains.update(domain_cids_map.keys())
 
-    all_domains_set = sorted(list(set(list(canonical_gam_map.keys()) + list(domain_cids_map.keys()))))
+    for d in db.query(GAMMetric.domain).distinct().all():
+        if d[0]: dynamic_domains.add(d[0])
+
+    for d in db.query(GAMCountryMetric.domain).distinct().all():
+        if d[0]: dynamic_domains.add(d[0])
+
+    all_domains_set = sorted(list(dynamic_domains))
 
     active_export_domains = set(
         d[0] for d in db.query(JSONExportTarget.domain).filter(JSONExportTarget.is_active == True).all()
@@ -548,13 +532,10 @@ def get_sites_breakdown(
 
     items = []
     for domain_name in all_domains_set:
-        c_gam = canonical_gam_map.get(domain_name, {
-            "total_revenue": 0.0, "total_impressions": 0, "total_clicks": 0,
-            "total_ad_requests": 0, "total_matched_requests": 0, "ad_units": set()
-        })
-        tot_rev = c_gam["total_revenue"]
-        tot_imps = c_gam["total_impressions"]
-        tot_clicks = c_gam["total_clicks"]
+        row = query_dom_map.get(domain_name)
+        tot_rev = (row.total_revenue or 0.0) if row else 0.0
+        tot_imps = (row.total_impressions or 0) if row else 0
+        tot_clicks = (row.total_clicks or 0) if row else 0
         ecpm = (tot_rev / tot_imps * 1000.0) if tot_imps > 0 else 0.0
 
         assigned_cids = domain_cids_map.get(domain_name, [])
@@ -587,8 +568,8 @@ def get_sites_breakdown(
         prof_change = round(((net_prof - prev_prof) / abs(prev_prof) * 100.0), 2) if prev_prof != 0 else (100.0 if net_prof > 0 else 0.0)
         roi_change = round(((site_roi - prev_roi) / prev_roi * 100.0), 2) if prev_roi > 0 else (100.0 if site_roi > 0 else 0.0)
 
-        tot_ad_reqs = c_gam["total_ad_requests"]
-        tot_matched_reqs = c_gam["total_matched_requests"]
+        tot_ad_reqs = (getattr(row, 'total_ad_requests', None) or 0) if row else 0
+        tot_matched_reqs = (getattr(row, 'total_matched_requests', None) or 0) if row else 0
 
         if tot_matched_reqs == 0 and tot_imps > 0:
             tot_matched_reqs = tot_imps
@@ -596,7 +577,12 @@ def get_sites_breakdown(
         if tot_ad_reqs < tot_matched_reqs and tot_matched_reqs > 0:
             tot_ad_reqs = tot_matched_reqs
 
-        domain_mr = (tot_matched_reqs / tot_ad_reqs * 100.0) if tot_ad_reqs > 0 else 0.0
+        if tot_ad_reqs > 0:
+            domain_mr = (tot_matched_reqs / tot_ad_reqs) * 100.0
+        elif row and (getattr(row, 'avg_match_rate', None) or 0.0) > 0:
+            domain_mr = row.avg_match_rate
+        else:
+            domain_mr = 0.0
 
         items.append(SiteBreakdownItem(
             domain=domain_name,
@@ -611,7 +597,7 @@ def get_sites_breakdown(
             impressions=tot_imps,
             clicks=tot_clicks,
             ecpm=round(ecpm, 2),
-            ad_unit_count=max(len(c_gam["ad_units"]), 1),
+            ad_unit_count=(row.ad_unit_count or 1) if row else 1,
             assigned_customer_ids=assigned_cids,
             revenue_change_pct=rev_change,
             spend_change_pct=sp_change,

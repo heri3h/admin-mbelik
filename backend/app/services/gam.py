@@ -62,10 +62,6 @@ def parse_gam_date(v_str: Any, default_date: date) -> date:
     return default_date
 
 def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
-    raw_domain = _raw_extract_domain_from_row(row, ad_unit)
-    return normalize_canonical_domain(raw_domain)
-
-def _raw_extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     """
     Extract site domain directly from GAM API response row:
     1. Dimension.SITE_NAME / AD_EXCHANGE_URL_NAME / DOMAIN_NAME / URL_NAME
@@ -116,23 +112,40 @@ def _raw_extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
 
     # Built-in tokenized prefix mappings
     DEFAULT_PREFIX_MAP = [
-        ('gemol', 'play.gemol.me'),
         ('gm', 'play.gemol.me'),
-        ('spotgames', 'spotgames.top'),
-        ('spot', 'spotgames.top'),
-        ('sg', 'spotgames.top'),
+        ('gemol', 'play.gemol.me'),
+        ('skuy', 'skuy.me'),
+        ('dpr', 'dpr.skuy.me'),
+        ('nub', 'nub.skuy.me'),
+        ('nmas', 'nub.skuy.me'),
+        ('xdr', 'xdr.nubmaster.com'),
         ('2b', '2b.nubmaster.com'),
         ('nubmaster', '2b.nubmaster.com'),
-        ('nub', '2b.nubmaster.com'),
-        ('nmas', '2b.nubmaster.com'),
-        ('baleq', 'baleq.me'),
-        ('blq', 'baleq.me'),
-        ('dpr', 'dpr.skuy.me'),
-        ('skuy', 'dpr.skuy.me'),
+        ('alt', 'alt.polpasulsa.com'),
         ('polpasulsa', 'polpasulsa.com'),
         ('polpa', 'polpasulsa.com'),
         ('pol', 'polpasulsa.com'),
         ('pas', 'polpasulsa.com'),
+        ('enew', 'enew.spotgames.top'),
+        ('yay', 'yay.spotgames.top'),
+        ('spotgames', 'spotgames.top'),
+        ('spot', 'spotgames.top'),
+        ('sg', 'spotgames.top'),
+        ('glee', 'glee.mbelik.com'),
+        ('baleq', 'baleq.me'),
+        ('blq', 'baleq.me'),
+        ('hndn', 'henden.top'),
+        ('henden', 'henden.top'),
+        ('zse', 'zse.ugames.top'),
+        ('vinn', 'mbelik.com'),
+        ('mko', 'mbelik.com'),
+        ('pow', 'mbelik.com'),
+        ('wew', 'mbelik.com'),
+        ('mvp', 'mbelik.com'),
+        ('ses', 'mbelik.com'),
+        ('gg', 'mbelik.com'),
+        ('dwnld', 'mbelik.com'),
+        ('mbelik', 'mbelik.com'),
     ]
 
     tokens = [t for t in re.split(r'[^a-z0-9.]+', unit_lower) if t]
