@@ -77,7 +77,7 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
         k_up = k.upper()
         v_str = str(v).strip()
 
-        if any(kw in k_up for kw in ['URL', 'DOMAIN', 'SITE', 'HOST']) and 'DATE' not in k_up and 'UNIT' not in k_up and 'ID' not in k_up and 'TYPE' not in k_up and 'STATUS' not in k_up and v_str:
+        if any(kw in k_up for kw in ['SITE_NAME', 'DOMAIN_NAME', 'URL_NAME', 'URL', 'DOMAIN', 'SITE', 'HOST']) and 'DATE' not in k_up and 'UNIT' not in k_up and 'ID' not in k_up and 'TYPE' not in k_up and 'STATUS' not in k_up and v_str:
             clean_val = v_str.replace('http://', '').replace('https://', '').replace('www.', '').split('/')[0].strip().lower()
             if clean_val and clean_val not in ["all domains", "-", "none", "null", "unknown", "standard ad unit"]:
                 return clean_val
@@ -525,8 +525,9 @@ class GAMService:
         """
         requests_map = {}
         req_dim_sets = [
-            ['DATE', 'AD_UNIT_NAME'],
-            ['DATE', 'SITE_NAME']
+            ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
+            ['DATE', 'SITE_NAME'],
+            ['DATE', 'AD_UNIT_NAME']
         ]
         req_col_sets = [
             ['AD_EXCHANGE_TOTAL_REQUESTS', 'AD_EXCHANGE_RESPONSES_SERVED', 'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS'],
@@ -693,9 +694,9 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'SITE_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME', 'DOMAIN_NAME'],
                     ['DATE', 'DEVICE_CATEGORY_NAME']
                 ],
@@ -712,6 +713,7 @@ class GAMService:
             {
                 'dimension_sets': [
                     ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME'],
                     ['DATE', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME'],
@@ -1127,9 +1129,9 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'SITE_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME']
                 ],
                 'column_sets': [
@@ -1144,15 +1146,12 @@ class GAMService:
             },
             {
                 'dimension_sets': [
-                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'SITE_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
                     ['DATE', 'COUNTRY_NAME']
                 ],
                 'column_sets': [
