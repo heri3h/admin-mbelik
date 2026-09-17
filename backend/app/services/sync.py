@@ -14,7 +14,11 @@ from app.services.google_ads import google_ads_service
 from app.services.gam import gam_service
 from app.config import settings
 
+import threading
+
 logger = logging.getLogger(__name__)
+
+_sync_lock = threading.Lock()
 
 class SyncService:
     def sync_range(self, db: Session, start_date: date, end_date: date) -> Dict[str, Any]:

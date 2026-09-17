@@ -7,7 +7,7 @@ from app.database import get_db
 from app.schemas import SyncResponse
 from app.models import User
 from app.services.auth import get_current_user
-from app.services.sync import sync_service
+from app.services.sync import sync_service, _sync_lock
 
 router = APIRouter(prefix="/api/sync", tags=["Sync"])
 
@@ -50,50 +50,48 @@ def clear_cache_and_resync(
     today = date.today()
     d_start_7d = today - timedelta(days=6)
     d_start_30d = today - timedelta(days=30)
-    try:
-        from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric
-        from app.api.dashboard import _sync_lock
-
-        acquired = _sync_lock.acquire(timeout=5)
+    
+    with _sync_lock:
         try:
+            from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric
             db.query(DailyProfitSummary).delete(synchronize_session=False)
             db.query(GoogleAdsMetric).delete(synchronize_session=False)
             db.query(GAMMetric).delete(synchronize_session=False)
             db.query(GAMCountryMetric).delete(synchronize_session=False)
             db.commit()
-        finally:
-            if acquired:
-                _sync_lock.release()
 
-        import threading
-        def _run_bg_clear_resync():
-            from app.database import SessionLocal
-            bg_db = SessionLocal()
-            try:
-                sync_service.sync_range(bg_db, d_start_30d, today)
-            except Exception as e:
-                print(f"Background clear cache resync notice: {e}")
-                bg_db.rollback()
-            finally:
-                bg_db.close()
+            # Perform 7-day sync directly so fresh GAM & Google Ads data is inserted immediately
+            result = sync_service.sync_range(db, d_start_7d, today)
 
-        threading.Thread(target=_run_bg_clear_resync, daemon=True).start()
+            import threading
+            def _run_bg_30d():
+                with _sync_lock:
+                    from app.database import SessionLocal
+                    bg_db = SessionLocal()
+                    try:
+                        sync_service.sync_range(bg_db, d_start_30d, today)
+                    except Exception as e:
+                        bg_db.rollback()
+                    finally:
+                        bg_db.close()
 
-        return SyncResponse(
-            status="success",
-            message="Analytics data cache cleared and re-sync started successfully!",
-            records_synced=0,
-            sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
-            sync_date_end=today.strftime("%Y-%m-%d"),
-            is_mock_data=False
-        )
-    except Exception as e:
-        db.rollback()
-        return SyncResponse(
-            status="error",
-            message=f"Gagal reset cache: {str(e)}",
-            records_synced=0,
-            sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
-            sync_date_end=today.strftime("%Y-%m-%d"),
-            is_mock_data=False
-        )
+            threading.Thread(target=_run_bg_30d, daemon=True).start()
+
+            return SyncResponse(
+                status="success",
+                message="Analytics data cache cleared and re-synced successfully!",
+                records_synced=result.get("records_synced", 0),
+                sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
+                sync_date_end=today.strftime("%Y-%m-%d"),
+                is_mock_data=False
+            )
+        except Exception as e:
+            db.rollback()
+            return SyncResponse(
+                status="error",
+                message=f"Gagal reset cache: {str(e)}",
+                records_synced=0,
+                sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
+                sync_date_end=today.strftime("%Y-%m-%d"),
+                is_mock_data=False
+            )

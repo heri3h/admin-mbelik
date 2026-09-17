@@ -13,7 +13,7 @@ from app.schemas import (
     SiteBreakdownItem, PlacementBreakdownItem, CountryBreakdownItem
 )
 from app.services.auth import get_current_user
-from app.services.sync import sync_service
+from app.services.sync import sync_service, _sync_lock
 from app.services.gam import gam_service, get_country_meta
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
@@ -55,8 +55,6 @@ def parse_date_range(start_date: Optional[str], end_date: Optional[str]):
     return d_start, d_end
 
 import threading
-
-_sync_lock = threading.Lock()
 
 def _run_bg_sync(start_date: date, end_date: date):
     if not _sync_lock.acquire(blocking=False):

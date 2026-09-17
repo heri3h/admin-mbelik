@@ -247,9 +247,13 @@ export default function SettingsPage({ onOpenPricingModal }) {
 
     try {
       const res = await dashboardService.clearCache();
-      setCacheSuccess(res.message || 'Analytics data cache cleared and re-synced successfully!');
+      if (res && res.status === 'error') {
+        setCacheError(res.message || 'Failed to clear cache.');
+      } else {
+        setCacheSuccess(res?.message || 'Analytics data cache cleared and re-synced successfully!');
+      }
     } catch (err) {
-      setCacheError(err.response?.data?.detail || 'Failed to clear cache.');
+      setCacheError(err.response?.data?.detail || err.message || 'Failed to clear cache.');
     } finally {
       setCacheLoading(false);
     }
