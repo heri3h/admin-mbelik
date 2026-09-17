@@ -39,6 +39,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deviceFilter, setDeviceFilter] = useState('all');
   
   // Level 1: Country list | Level 2: Selected Country (Shows Ad Units inside that country)
   const [selectedCountry, setSelectedCountry] = useState(null);
@@ -114,7 +115,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
       setLoading(true);
       setError(null);
       try {
-        const data = await dashboardService.getSiteCountries(domain, startDate, endDate);
+        const data = await dashboardService.getSiteCountries(domain, startDate, endDate, deviceFilter);
         setCountries(data || []);
       } catch (err) {
         console.error('Failed fetching site country metrics', err);
@@ -127,7 +128,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     if (domain) {
       fetchCountryData();
     }
-  }, [domain, startDate, endDate]);
+  }, [domain, startDate, endDate, deviceFilter]);
 
   useEffect(() => {
     const fetchAdUnits = async () => {
@@ -137,7 +138,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
       }
       setLoadingAdUnits(true);
       try {
-        const data = await dashboardService.getSiteCountryPlacements(domain, selectedCountry.country, startDate, endDate);
+        const data = await dashboardService.getSiteCountryPlacements(domain, selectedCountry.country, startDate, endDate, deviceFilter);
         setAdUnits(data || []);
       } catch (err) {
         console.error('Failed fetching ad unit placement data', err);
@@ -148,7 +149,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     };
 
     fetchAdUnits();
-  }, [selectedCountry, domain, startDate, endDate]);
+  }, [selectedCountry, domain, startDate, endDate, deviceFilter]);
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('id-ID', {
@@ -296,6 +297,39 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
           {/* Top Actions Header */}
           <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1 bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 text-xs">
+              <button
+                onClick={() => setDeviceFilter('all')}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center space-x-1 cursor-pointer ${
+                  deviceFilter === 'all'
+                    ? 'bg-sky-500 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <Globe className="w-3 h-3" />
+                <span>All</span>
+              </button>
+              <button
+                onClick={() => setDeviceFilter('mobile')}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center space-x-1 cursor-pointer ${
+                  deviceFilter === 'mobile'
+                    ? 'bg-sky-500 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <span>📱 Mobile</span>
+              </button>
+              <button
+                onClick={() => setDeviceFilter('desktop')}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center space-x-1 cursor-pointer ${
+                  deviceFilter === 'desktop'
+                    ? 'bg-sky-500 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <span>💻 Desktop</span>
+              </button>
+            </div>
             {selectedCountry && (
               <button
                 onClick={handleBackToCountries}

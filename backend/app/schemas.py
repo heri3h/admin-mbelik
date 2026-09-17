@@ -95,6 +95,7 @@ class SiteBreakdownItem(BaseModel):
     profit_change_pct: Optional[float] = None
     roi_change_pct: Optional[float] = None
     comparison_period_label: Optional[str] = None
+    has_auto_export: bool = False
 
 class PlacementBreakdownItem(BaseModel):
     domain: str
@@ -199,9 +200,18 @@ class PricingRuleSchema(BaseModel):
     target_key: str
     floor_key: str
 
+class PricingAdjustmentsSchema(BaseModel):
+    high_mr_threshold: Optional[float] = 85.0
+    high_mr_boost_pct: Optional[float] = 25.0
+    med_mr_threshold: Optional[float] = 70.0
+    med_mr_boost_pct: Optional[float] = 10.0
+    low_mr_threshold: Optional[float] = 50.0
+    low_mr_penalty_pct: Optional[float] = -15.0
+
 class PricingConfigSchema(BaseModel):
     target_mr: float = 65.0
     default_pricing: str = "google_optimize"
+    adjustments: Optional[PricingAdjustmentsSchema] = None
     rules: List[PricingRuleSchema]
 
 

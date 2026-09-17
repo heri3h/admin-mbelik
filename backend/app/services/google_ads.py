@@ -18,11 +18,7 @@ class GoogleAdsService:
         if self.use_mock:
             return self._generate_mock_data(start_date, end_date, customer_ids=customer_ids)
         
-        try:
-            return self._fetch_live_google_ads_data(start_date, end_date, customer_ids=customer_ids)
-        except Exception as e:
-            logger.error(f"Failed to fetch live Google Ads data ({e}). Falling back to mock data.")
-            return self._generate_mock_data(start_date, end_date, customer_ids=customer_ids)
+        return self._fetch_live_google_ads_data(start_date, end_date, customer_ids=customer_ids)
 
     def _fetch_live_google_ads_data(self, start_date: date, end_date: date, customer_ids: List[str] = None) -> List[Dict[str, Any]]:
         from google.ads.googleads.client import GoogleAdsClient
@@ -86,9 +82,12 @@ class GoogleAdsService:
                             "cpc": round(cpc, 2),
                             "ctr": round(ctr, 2)
                         })
-            except GoogleAdsException as ex:
-                logger.error(f"Google Ads API Error for Customer ID {cid}: {ex}")
-                raise RuntimeError(f"Google Ads Customer ID {cid} Error: {ex.failure.errors[0].message if ex.failure.errors else ex}")
+            except Exception as ex:
+                err_str = str(ex)
+                logger.error(f"Google Ads API Error for Customer ID {cid}: {err_str}")
+                if "invalid_grant" in err_str.lower():
+                    raise RuntimeError("Google Ads API Auth Error: Refresh Token is expired or revoked. Please update GOOGLE_ADS_REFRESH_TOKEN in .env.")
+                raise RuntimeError(f"Google Ads Customer ID {cid} Error: {err_str}")
 
         return results
 
@@ -144,11 +143,7 @@ class GoogleAdsService:
         if self.use_mock:
             return self._generate_mock_country_data(start_date, end_date, customer_ids=customer_ids)
         
-        try:
-            return self._fetch_live_google_ads_country_data(start_date, end_date, customer_ids=customer_ids)
-        except Exception as e:
-            logger.error(f"Failed to fetch live Google Ads country data ({e}). Falling back to mock country data.")
-            return self._generate_mock_country_data(start_date, end_date, customer_ids=customer_ids)
+        return self._fetch_live_google_ads_country_data(start_date, end_date, customer_ids=customer_ids)
 
     def _fetch_live_google_ads_country_data(self, start_date: date, end_date: date, customer_ids: List[str] = None) -> List[Dict[str, Any]]:
         from google.ads.googleads.client import GoogleAdsClient
@@ -240,9 +235,12 @@ class GoogleAdsService:
                             "impressions": int(row.metrics.impressions),
                             "clicks": int(row.metrics.clicks)
                         })
-            except GoogleAdsException as ex:
-                logger.error(f"Google Ads API Error for Customer ID {cid}: {ex}")
-                raise RuntimeError(f"Google Ads Customer ID {cid} Error: {ex.failure.errors[0].message if ex.failure.errors else ex}")
+            except Exception as ex:
+                err_str = str(ex)
+                logger.error(f"Google Ads API Error for Customer ID {cid}: {err_str}")
+                if "invalid_grant" in err_str.lower():
+                    raise RuntimeError("Google Ads API Auth Error: Refresh Token is expired or revoked. Please update GOOGLE_ADS_REFRESH_TOKEN in .env.")
+                raise RuntimeError(f"Google Ads Customer ID {cid} Error: {err_str}")
 
         return results
 

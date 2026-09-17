@@ -33,6 +33,16 @@ export default function PricingConfigModal({ isOpen, onClose }) {
   const [defaultPricing, setDefaultPricing] = useState('google_optimize');
   const [rules, setRules] = useState(DEFAULT_RULES);
 
+  // Dynamic adjustments state
+  const [adjustments, setAdjustments] = useState({
+    high_mr_threshold: 85.0,
+    high_mr_boost_pct: 25.0,
+    med_mr_threshold: 70.0,
+    med_mr_boost_pct: 10.0,
+    low_mr_threshold: 50.0,
+    low_mr_penalty_pct: -15.0
+  });
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -59,6 +69,16 @@ export default function PricingConfigModal({ isOpen, onClose }) {
       if (data) {
         if (data.target_mr !== undefined) setTargetMr(data.target_mr);
         if (data.default_pricing !== undefined) setDefaultPricing(data.default_pricing);
+        if (data.adjustments) {
+          setAdjustments({
+            high_mr_threshold: data.adjustments.high_mr_threshold ?? 85.0,
+            high_mr_boost_pct: data.adjustments.high_mr_boost_pct ?? 25.0,
+            med_mr_threshold: data.adjustments.med_mr_threshold ?? 70.0,
+            med_mr_boost_pct: data.adjustments.med_mr_boost_pct ?? 10.0,
+            low_mr_threshold: data.adjustments.low_mr_threshold ?? 50.0,
+            low_mr_penalty_pct: data.adjustments.low_mr_penalty_pct ?? -15.0
+          });
+        }
         if (Array.isArray(data.rules) && data.rules.length > 0) {
           const sorted = [...data.rules].sort((a, b) => a.cpm - b.cpm);
           setRules(sorted);
@@ -144,6 +164,14 @@ export default function PricingConfigModal({ isOpen, onClose }) {
     const payload = {
       target_mr: parseFloat(targetMr) || 65.0,
       default_pricing: defaultPricing.trim() || 'google_optimize',
+      adjustments: {
+        high_mr_threshold: parseFloat(adjustments.high_mr_threshold) || 85.0,
+        high_mr_boost_pct: parseFloat(adjustments.high_mr_boost_pct) || 25.0,
+        med_mr_threshold: parseFloat(adjustments.med_mr_threshold) || 70.0,
+        med_mr_boost_pct: parseFloat(adjustments.med_mr_boost_pct) || 10.0,
+        low_mr_threshold: parseFloat(adjustments.low_mr_threshold) || 50.0,
+        low_mr_penalty_pct: parseFloat(adjustments.low_mr_penalty_pct) || -15.0
+      },
       rules: rules.map(r => ({
         cpm: parseInt(r.cpm, 10),
         target_key: String(r.target_key).trim(),
@@ -257,6 +285,91 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white font-mono font-semibold focus:outline-none focus:border-sky-500"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">Fallback rule name when pricing match fails or falls back to Google GAM default</p>
+                </div>
+              </div>
+
+              {/* Dynamic CPM Adjustments Section */}
+              <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sliders className="w-4 h-4" />
+                    <span>Dynamic CPM Auto-Adjustments (%)</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400">Read by Client Adsheader Engine</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50 space-y-2">
+                    <span className="text-[11px] font-bold text-emerald-400 block">High Demand Tier</span>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-0.5">MR Threshold (≥ %)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={adjustments.high_mr_threshold}
+                        onChange={(e) => setAdjustments({ ...adjustments, high_mr_threshold: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-0.5">CPM Boost (+ %)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={adjustments.high_mr_boost_pct}
+                        onChange={(e) => setAdjustments({ ...adjustments, high_mr_boost_pct: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50 space-y-2">
+                    <span className="text-[11px] font-bold text-sky-400 block">Medium Demand Tier</span>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-0.5">MR Threshold (≥ %)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={adjustments.med_mr_threshold}
+                        onChange={(e) => setAdjustments({ ...adjustments, med_mr_threshold: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-white font-mono font-bold focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-0.5">CPM Boost (+ %)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={adjustments.med_mr_boost_pct}
+                        onChange={(e) => setAdjustments({ ...adjustments, med_mr_boost_pct: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-sky-400 font-mono font-bold focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50 space-y-2">
+                    <span className="text-[11px] font-bold text-amber-400 block">Low Demand Tier</span>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-0.5">MR Threshold (&lt; %)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={adjustments.low_mr_threshold}
+                        onChange={(e) => setAdjustments({ ...adjustments, low_mr_threshold: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-0.5">CPM Penalty (- %)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={adjustments.low_mr_penalty_pct}
+                        onChange={(e) => setAdjustments({ ...adjustments, low_mr_penalty_pct: parseFloat(e.target.value) || 0 })}
+                        className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

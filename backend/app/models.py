@@ -44,10 +44,11 @@ class GAMMetric(Base):
     ad_requests = Column(Integer, default=0)
     matched_requests = Column(Integer, default=0)
     pricing_rule_name = Column(String(150), nullable=True, default="All Rules")
+    device_category = Column(String(20), nullable=True, default="all")
     synced_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint('date', 'domain', 'ad_unit', 'pricing_rule_name', name='_date_domain_adunit_pricing_uc'),
+        UniqueConstraint('date', 'domain', 'ad_unit', 'pricing_rule_name', 'device_category', name='_date_domain_adunit_pricing_dev_uc'),
         Index('idx_gam_metrics_date_domain', 'date', 'domain'),
     )
 
@@ -100,10 +101,11 @@ class GAMCountryMetric(Base):
     ad_requests = Column(Integer, default=0)
     matched_requests = Column(Integer, default=0)
     pricing_rule_name = Column(String(150), nullable=True, default="All Rules")
+    device_category = Column(String(20), nullable=True, default="all")
     synced_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint('date', 'domain', 'country', 'ad_unit', 'pricing_rule_name', name='_date_domain_country_adunit_pricing_uc'),
+        UniqueConstraint('date', 'domain', 'country', 'ad_unit', 'pricing_rule_name', 'device_category', name='_date_domain_country_adunit_pricing_dev_uc'),
         Index('idx_gam_country_date_domain_country', 'date', 'domain', 'country'),
     )
 

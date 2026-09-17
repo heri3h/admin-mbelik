@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from app.config import settings
 from app.database import get_db
-from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, User, GoogleAdsAccount
+from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, User, GoogleAdsAccount, JSONExportTarget
 
 from app.schemas import (
     SummaryMetrics, DailyTrendItem, AccountBreakdownItem, CampaignBreakdownItem,
@@ -85,13 +85,13 @@ def ensure_data_synced(db: Session, start_date: date, end_date: date):
         ).scalar()
         
         if not min_c_date or min_c_date > start_date or max_c_date < end_date:
-            sync_service.sync_range(db, start_date, end_date)
+            threading.Thread(target=_run_bg_sync, args=(start_date, end_date), daemon=True).start()
         else:
             latest_sync = db.query(func.max(GAMMetric.synced_at)).filter(
                 GAMMetric.date >= start_date,
                 GAMMetric.date <= end_date
             ).scalar()
-            if not latest_sync or (datetime.utcnow() - latest_sync).total_seconds() > 900:
+            if not latest_sync or (datetime.utcnow() - latest_sync).total_seconds() > 600:
                 threading.Thread(target=_run_bg_sync, args=(start_date, end_date), daemon=True).start()
     except Exception as e:
         db.rollback()
@@ -101,19 +101,34 @@ def ensure_data_synced(db: Session, start_date: date, end_date: date):
 def get_summary(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     d_start, d_end = parse_date_range(start_date, end_date)
     ensure_data_synced(db, d_start, d_end)
 
-    tot_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
+    dev_filter = device.lower().strip() if device and device.lower().strip() != "all" else None
+
+    tot_spend_raw = db.query(func.sum(GoogleAdsMetric.spend)).filter(
         GoogleAdsMetric.date >= d_start, GoogleAdsMetric.date <= d_end
     ).scalar() or 0.0
 
-    tot_revenue = db.query(func.sum(GAMMetric.revenue)).filter(
+    gam_q = db.query(func.sum(GAMMetric.revenue)).filter(
         GAMMetric.date >= d_start, GAMMetric.date <= d_end
-    ).scalar() or 0.0
+    )
+    if dev_filter:
+        gam_q = gam_q.filter(GAMMetric.device_category == dev_filter)
+    tot_revenue = gam_q.scalar() or 0.0
+
+    if dev_filter:
+        tot_all_rev = db.query(func.sum(GAMMetric.revenue)).filter(
+            GAMMetric.date >= d_start, GAMMetric.date <= d_end
+        ).scalar() or 0.0
+        ratio = (tot_revenue / tot_all_rev) if tot_all_rev > 0 else 0.5
+        tot_spend = tot_spend_raw * ratio
+    else:
+        tot_spend = tot_spend_raw
 
     net_profit = tot_revenue - tot_spend
     roi = (tot_revenue / tot_spend * 100.0) if tot_spend > 0 else 0.0
@@ -379,11 +394,14 @@ def get_accounts_breakdown(
 def get_sites_breakdown(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     d_start, d_end = parse_date_range(start_date, end_date)
     ensure_data_synced(db, d_start, d_end)
+
+    dev_filter = device.lower().strip() if device and device.lower().strip() != "all" else None
 
     num_days = (d_end - d_start).days + 1
     prev_end = d_start - timedelta(days=1)
@@ -430,17 +448,20 @@ def get_sites_breakdown(
             domain_cids_map[acc.assigned_domain].append(acc.customer_id)
 
     # Previous period GAM revenue by domain
-    prev_gam_rows = db.query(
+    prev_q = db.query(
         GAMMetric.domain,
         func.sum(GAMMetric.revenue).label("revenue")
     ).filter(
         GAMMetric.date >= prev_start,
         GAMMetric.date <= prev_end
-    ).group_by(GAMMetric.domain).all()
+    )
+    if dev_filter:
+        prev_q = prev_q.filter(GAMMetric.device_category == dev_filter)
+    prev_gam_rows = prev_q.group_by(GAMMetric.domain).all()
 
     prev_site_rev_map = {r.domain: (r.revenue or 0.0) * intraday_factor for r in prev_gam_rows}
 
-    query_results = db.query(
+    curr_q = db.query(
         GAMMetric.domain,
         func.sum(GAMMetric.revenue).label("total_revenue"),
         func.sum(GAMMetric.impressions).label("total_impressions"),
@@ -452,7 +473,10 @@ def get_sites_breakdown(
     ).filter(
         GAMMetric.date >= d_start,
         GAMMetric.date <= d_end
-    ).group_by(GAMMetric.domain).all()
+    )
+    if dev_filter:
+        curr_q = curr_q.filter(GAMMetric.device_category == dev_filter)
+    query_results = curr_q.group_by(GAMMetric.domain).all()
 
     if not query_results:
         try:
@@ -483,6 +507,10 @@ def get_sites_breakdown(
         pass
 
     all_domains_set = sorted(list(dynamic_domains))
+
+    active_export_domains = set(
+        d[0] for d in db.query(JSONExportTarget.domain).filter(JSONExportTarget.is_active == True).all()
+    )
 
     items = []
     for domain_name in all_domains_set:
@@ -558,7 +586,8 @@ def get_sites_breakdown(
             spend_change_pct=sp_change,
             profit_change_pct=prof_change,
             roi_change_pct=roi_change,
-            comparison_period_label=comp_label
+            comparison_period_label=comp_label,
+            has_auto_export=(domain_name in active_export_domains)
         ))
 
     items.sort(key=lambda x: x.total_revenue, reverse=True)
@@ -672,6 +701,7 @@ def get_site_countries_breakdown(
     response: Response,
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -683,8 +713,9 @@ def get_site_countries_breakdown(
     ensure_data_synced(db, d_start, d_end)
 
     domain_name = domain.strip()
+    dev_filter = device.lower().strip() if device and device.lower().strip() != "all" else None
 
-    country_rows = db.query(
+    q = db.query(
         GAMCountryMetric.country,
         GAMCountryMetric.country_code,
         GAMCountryMetric.pricing_rule_name,
@@ -697,7 +728,11 @@ def get_site_countries_breakdown(
         func.lower(GAMCountryMetric.domain) == domain_name.lower(),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
-    ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code, GAMCountryMetric.pricing_rule_name).all()
+    )
+    if dev_filter:
+        q = q.filter(GAMCountryMetric.device_category == dev_filter)
+
+    country_rows = q.group_by(GAMCountryMetric.country, GAMCountryMetric.country_code, GAMCountryMetric.pricing_rule_name).all()
 
     if not country_rows:
         try:
@@ -830,12 +865,11 @@ def get_site_countries_breakdown(
         if p_rule and p_rule not in ["No Rule", "(No Rule)", "All Rules"]:
             c_item["pricing_rule_name"] = p_rule
 
-    tot_domain_rev = sum(item["revenue"] for item in country_map.values())
-
     db_accounts = db.query(GoogleAdsAccount).filter(func.lower(GoogleAdsAccount.assigned_domain) == domain_name.lower()).all()
     cids = [a.customer_id for a in db_accounts]
     tot_spend = 0.0
     gads_country_spend_map = {}
+    gads_country_orig_name_map = {}
 
     if cids:
         tot_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
@@ -854,8 +888,30 @@ def get_site_countries_breakdown(
         ).group_by(GoogleAdsCountryMetric.country).all()
 
         for g_row in gads_c_rows:
-            c_key = (g_row.country or "Indonesia").strip().lower()
+            raw_c_name = g_row.country or "Indonesia"
+            c_key = raw_c_name.strip().lower()
             gads_country_spend_map[c_key] = (g_row.spend or 0.0)
+            gads_country_orig_name_map[c_key] = raw_c_name
+
+    # Include countries that had Google Ads spend but zero GAM revenue
+    for c_key, c_sp in gads_country_spend_map.items():
+        if c_sp > 0:
+            c_orig_name = gads_country_orig_name_map.get(c_key, c_key.title())
+            if c_orig_name not in country_map:
+                c_meta = get_country_meta(c_orig_name)
+                country_map[c_orig_name] = {
+                    "country": c_orig_name,
+                    "country_code": c_meta.get("code", "XX"),
+                    "revenue": 0.0,
+                    "impressions": 0,
+                    "clicks": 0,
+                    "ad_requests": 0,
+                    "matched_requests": 0,
+                    "pricing_rule_name": "No Rule"
+                }
+
+    tot_domain_rev = sum(item["revenue"] for item in country_map.values())
+    tot_gads_country_spend_sum = sum(gads_country_spend_map.values())
 
     final_items = []
     for c_item in country_map.values():
@@ -870,18 +926,24 @@ def get_site_countries_breakdown(
         c_code = c_meta["code"] if (not c_item["country_code"] or c_item["country_code"] == "ID" and country_name.lower() not in ["indonesia", "id"]) else c_item["country_code"]
         c_flag = c_meta["flag"]
 
-        # Real Google Ads Spend per country (includes +11% PPN tax)
+        # Proportional Allocation of Total Site Spend (tot_spend)
         c_key = country_name.lower()
-        if c_key in gads_country_spend_map:
-            c_spend = gads_country_spend_map[c_key]
-        elif tot_spend > 0 and tot_domain_rev > 0:
-            c_share = (c_rev / tot_domain_rev)
-            c_spend = tot_spend * c_share
+        tot_domain_imps = sum(item["impressions"] for item in country_map.values())
+        if tot_spend > 0:
+            if tot_gads_country_spend_sum > 0:
+                raw_c_sp = gads_country_spend_map.get(c_key, 0.0)
+                c_spend = tot_spend * (raw_c_sp / tot_gads_country_spend_sum)
+            elif tot_domain_imps > 0:
+                c_spend = tot_spend * (c_imps / tot_domain_imps)
+            elif tot_domain_rev > 0:
+                c_spend = tot_spend * (c_rev / tot_domain_rev)
+            else:
+                c_spend = 0.0
         else:
             c_spend = 0.0
 
         c_profit = c_rev - c_spend
-        c_roi = (c_rev / c_spend * 100.0) if c_spend > 0 else (100.0 if c_rev > 0 else 0.0)
+        c_roi = (c_rev / c_spend * 100.0) if c_spend > 0 else 0.0
         c_ecpm = (c_rev / c_imps * 1000.0) if c_imps > 0 else 0.0
         c_ctr = (c_clicks / c_imps * 100.0) if c_imps > 0 else 0.0
 
@@ -912,7 +974,6 @@ def get_site_countries_breakdown(
             pricing_rule_name=c_item["pricing_rule_name"],
             rpm=round(c_ecpm, 2)
         ))
-
 
     final_items.sort(key=lambda x: x.revenue, reverse=True)
     return final_items

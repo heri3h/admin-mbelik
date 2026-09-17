@@ -141,6 +141,14 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
 
     return "mbelik.com"
 
+def parse_device_category(raw_val: str) -> str:
+    if not raw_val:
+        return "mobile"
+    val = raw_val.strip().lower()
+    if "desktop" in val or "computer" in val:
+        return "desktop"
+    return "mobile"
+
 COUNTRY_NAME_TO_CODE = {
     "afghanistan": "AF",
     "albania": "AL",
@@ -627,6 +635,17 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'SITE_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'DOMAIN_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'PLATFORM_NAME', 'SITE_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
@@ -881,13 +900,20 @@ class GAMService:
 
                             match_rate = (matched_requests / ad_requests * 100.0) if ad_requests > 0 else 0.0
 
-                            key = (row_date, domain, ad_unit, pricing_rule)
+                            device_cat = "mobile"
+                            for k, v in row.items():
+                                if k and ('DEVICE' in k.upper() or 'CATEGORY' in k.upper() or 'PLATFORM' in k.upper()) and v:
+                                    device_cat = parse_device_category(v)
+                                    break
+
+                            key = (row_date, domain, ad_unit, pricing_rule, device_cat)
                             if is_new_domain or key not in aggregated_results or revenue > aggregated_results[key]["revenue"]:
                                 aggregated_results[key] = {
                                     "date": row_date,
                                     "domain": domain,
                                     "ad_unit": ad_unit,
                                     "pricing_rule_name": pricing_rule,
+                                    "device_category": device_cat,
                                     "revenue": round(revenue, 2),
                                     "impressions": impressions,
                                     "ecpm": round(ecpm, 2),
@@ -1036,6 +1062,16 @@ class GAMService:
         query_configs = [
             {
                 'dimension_sets': [
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'SITE_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'UNIFIED_PRICING_RULE_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'CUSTOM_TARGETING_VALUE_PAIR'],
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'SITE_NAME'],
@@ -1165,7 +1201,13 @@ class GAMService:
                             domain = extract_domain_from_row(row, clean_ad_unit)
                             c_meta = get_country_meta(country)
 
-                            dc_key = (row_date, domain, country, clean_ad_unit, pricing_rule)
+                            device_cat = "mobile"
+                            for k, v in row.items():
+                                if k and ('DEVICE' in k.upper() or 'CATEGORY' in k.upper() or 'PLATFORM' in k.upper()) and v:
+                                    device_cat = parse_device_category(v)
+                                    break
+
+                            dc_key = (row_date, domain, country, clean_ad_unit, pricing_rule, device_cat)
 
                             impressions = 0
                             for k, v in row.items():
@@ -1238,6 +1280,7 @@ class GAMService:
                                     "country_code": c_meta["code"],
                                     "ad_unit": clean_ad_unit,
                                     "pricing_rule_name": pricing_rule,
+                                    "device_category": device_cat,
                                     "revenue": revenue,
                                     "impressions": impressions,
                                     "clicks": clicks,

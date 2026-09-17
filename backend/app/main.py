@@ -51,13 +51,15 @@ def auto_migrate_db():
                     conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN ad_requests INTEGER DEFAULT 0;"))
                 if "matched_requests" not in columns:
                     conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN matched_requests INTEGER DEFAULT 0;"))
-                if "pricing_rule_name" not in columns:
-                    conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
+                if "device_category" not in columns:
+                    conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN device_category VARCHAR(20) DEFAULT 'all';"))
 
                 res_c = conn.execute(text("PRAGMA table_info(gam_country_metrics);"))
                 c_columns = [row[1] for row in res_c.fetchall()]
                 if "pricing_rule_name" not in c_columns:
                     conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
+                if "device_category" not in c_columns:
+                    conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN device_category VARCHAR(20) DEFAULT 'all';"))
 
                 conn.commit()
             else:
@@ -65,7 +67,9 @@ def auto_migrate_db():
                 conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS ad_requests INTEGER DEFAULT 0;"))
                 conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS matched_requests INTEGER DEFAULT 0;"))
                 conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
+                conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS device_category VARCHAR(20) DEFAULT 'all';"))
                 conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN IF NOT EXISTS pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
+                conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN IF NOT EXISTS device_category VARCHAR(20) DEFAULT 'all';"))
                 conn.commit()
     except Exception as e:
         print(f"Auto DB migration notice: {e}")
@@ -148,8 +152,8 @@ async def auto_sync_background_task():
         except Exception as e:
             logger.error(f"Error in automatic background sync task: {e}")
 
-        # Repeat every 15 minutes (900 seconds)
-        await asyncio.sleep(900)
+        # Repeat every 10 minutes (600 seconds)
+        await asyncio.sleep(600)
 
 _auto_sync_task = None
 

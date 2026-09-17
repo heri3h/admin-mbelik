@@ -275,6 +275,14 @@ export default function SitesTable({ sites, startDate, endDate }) {
                           <span className="text-sm font-bold hover:underline decoration-emerald-400 underline-offset-4">
                             {site.domain}
                           </span>
+                          {site.has_auto_export && (
+                            <span
+                              title="Auto Export JSON Active"
+                              className="text-amber-400 text-xs shrink-0 select-none"
+                            >
+                              ⚡
+                            </span>
+                          )}
                         </button>
 
                         {site.assigned_customer_ids && site.assigned_customer_ids.length > 0 ? (

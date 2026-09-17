@@ -24,6 +24,7 @@ export default function DashboardPage() {
 
   const [startDate, setStartDate] = useState(yesterdayStr);
   const [endDate, setEndDate] = useState(yesterdayStr);
+  const [deviceFilter, setDeviceFilter] = useState('all');
 
   const [summary, setSummary] = useState(null);
   const [trend, setTrend] = useState([]);
@@ -41,11 +42,11 @@ export default function DashboardPage() {
     setIsRefreshing(true);
     try {
       const [sumData, trendData, accData, siteData, placementData] = await Promise.all([
-        dashboardService.getSummary(startDate, endDate),
-        dashboardService.getTrend(startDate, endDate),
-        dashboardService.getAccounts(startDate, endDate),
-        dashboardService.getSites(startDate, endDate),
-        dashboardService.getPlacements(startDate, endDate)
+        dashboardService.getSummary(startDate, endDate, deviceFilter),
+        dashboardService.getTrend(startDate, endDate, deviceFilter),
+        dashboardService.getAccounts(startDate, endDate, deviceFilter),
+        dashboardService.getSites(startDate, endDate, deviceFilter),
+        dashboardService.getPlacements(startDate, endDate, deviceFilter)
       ]);
 
       setSummary(sumData);
@@ -63,7 +64,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadDashboardData();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, deviceFilter]);
 
   const handleFilterChange = (newStart, newEnd) => {
     setStartDate(newStart);
@@ -84,7 +85,7 @@ export default function DashboardPage() {
             {summary?.last_synced_at && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800 text-emerald-400 border border-emerald-500/30 shadow-sm">
                 <Clock className="w-3 h-3 text-emerald-400" />
-                <span>Last Synced: {summary.last_synced_at} (Auto 30m)</span>
+                <span>Last Synced: {summary.last_synced_at} (Auto 10m)</span>
               </span>
             )}
           </div>
@@ -92,8 +93,45 @@ export default function DashboardPage() {
         <SyncButton startDate={startDate} endDate={endDate} onSyncSuccess={loadDashboardData} />
       </div>
 
-      {/* Date Filter Bar */}
-      <DateFilter startDate={startDate} endDate={endDate} onFilterChange={handleFilterChange} />
+      {/* Date & Device Filter Bar */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <DateFilter startDate={startDate} endDate={endDate} onFilterChange={handleFilterChange} />
+        
+        {/* Device Selector Pills (Opsi 1) */}
+        <div className="flex items-center space-x-1 bg-slate-800 p-1.5 rounded-2xl border border-slate-700/60 shadow-sm self-start md:self-auto">
+          <button
+            onClick={() => setDeviceFilter('all')}
+            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer ${
+              deviceFilter === 'all'
+                ? 'bg-sky-500 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>All Devices</span>
+          </button>
+          <button
+            onClick={() => setDeviceFilter('mobile')}
+            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer ${
+              deviceFilter === 'mobile'
+                ? 'bg-sky-500 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            <span>📱 Mobile</span>
+          </button>
+          <button
+            onClick={() => setDeviceFilter('desktop')}
+            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer ${
+              deviceFilter === 'desktop'
+                ? 'bg-sky-500 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            <span>💻 Desktop</span>
+          </button>
+        </div>
+      </div>
 
       {loading && !summary ? (
         <div className="min-h-[400px] flex flex-col items-center justify-center space-y-3 text-slate-400">

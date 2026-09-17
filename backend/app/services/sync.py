@@ -185,15 +185,17 @@ class SyncService:
             dom = (item.get("domain") or "").strip().lower()
             unit = (item.get("ad_unit") or "Standard Ad Unit").strip()
             p_rule = (item.get("pricing_rule_name") or "All Rules").strip()
+            dev_cat = (item.get("device_category") or "mobile").strip().lower()
             if not dom:
                 continue
-            norm_key = (item["date"], dom, unit.lower(), p_rule.lower())
+            norm_key = (item["date"], dom, unit.lower(), p_rule.lower(), dev_cat)
             if norm_key not in aggregated_gam:
                 aggregated_gam[norm_key] = {
                     "date": item["date"],
                     "domain": dom,
                     "ad_unit": unit,
                     "pricing_rule_name": p_rule,
+                    "device_category": dev_cat,
                     "revenue": 0.0,
                     "impressions": 0,
                     "clicks": 0,
@@ -224,6 +226,7 @@ class SyncService:
                     domain=item["domain"],
                     ad_unit=item["ad_unit"],
                     pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
+                    device_category=item.get("device_category", "mobile"),
                     revenue=adj_rev,
                     impressions=imps,
                     ecpm=adj_ecpm,
@@ -255,9 +258,10 @@ class SyncService:
                 c_name = (item.get("country") or "Indonesia").strip()
                 unit = (item.get("ad_unit") or "Standard Ad Unit").strip()
                 p_rule = (item.get("pricing_rule_name") or "All Rules").strip()
+                dev_cat = (item.get("device_category") or "mobile").strip().lower()
                 if not dom:
                     continue
-                norm_c_key = (item["date"], dom, c_name.lower(), unit.lower(), p_rule.lower())
+                norm_c_key = (item["date"], dom, c_name.lower(), unit.lower(), p_rule.lower(), dev_cat)
                 if norm_c_key not in aggregated_country:
                     aggregated_country[norm_c_key] = {
                         "date": item["date"],
@@ -266,6 +270,7 @@ class SyncService:
                         "country_code": item.get("country_code", "ID"),
                         "ad_unit": unit,
                         "pricing_rule_name": p_rule,
+                        "device_category": dev_cat,
                         "revenue": 0.0,
                         "impressions": 0,
                         "clicks": 0,
@@ -299,6 +304,7 @@ class SyncService:
                         country_code=country_code,
                         ad_unit=item["ad_unit"],
                         pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
+                        device_category=item.get("device_category", "mobile"),
                         revenue=adj_rev,
                         impressions=imps,
                         ecpm=adj_ecpm,
@@ -605,6 +611,14 @@ def export_site_today_json(
 DEFAULT_PRICING_CONFIG = {
     "target_mr": 65.0,
     "default_pricing": "google_optimize",
+    "adjustments": {
+        "high_mr_threshold": 85.0,
+        "high_mr_boost_pct": 25.0,
+        "med_mr_threshold": 70.0,
+        "med_mr_boost_pct": 10.0,
+        "low_mr_threshold": 50.0,
+        "low_mr_penalty_pct": -15.0
+    },
     "rules": [
         { "cpm": 5000,   "target_key": "5000",   "floor_key": "f4000" },
         { "cpm": 7500,   "target_key": "7500",   "floor_key": "f7000" },
