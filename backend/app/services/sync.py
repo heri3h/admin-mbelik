@@ -534,6 +534,43 @@ def export_site_today_json(
                 GAMCountryMetric.date == latest_c_date
             ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code, GAMCountryMetric.pricing_rule_name).all()
 
+    # Query per-device breakdown per country & ad_unit
+    db_c_p_d_rows = db.query(
+        GAMCountryMetric.country,
+        GAMCountryMetric.ad_unit,
+        GAMCountryMetric.device_category,
+        func.sum(GAMCountryMetric.revenue).label("revenue"),
+        func.sum(GAMCountryMetric.impressions).label("impressions"),
+        func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
+    ).filter(
+        func.lower(GAMCountryMetric.domain) == domain.lower(),
+        GAMCountryMetric.date == target_c_date
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.ad_unit, GAMCountryMetric.device_category).all()
+
+    cpd_map = {}
+    for r in db_c_p_d_rows:
+        c_name = r.country or "Unknown Region"
+        unit = r.ad_unit or "Standard Ad Unit"
+        dev_cat = (r.device_category or "mobile").lower()
+
+        if c_name not in cpd_map:
+            cpd_map[c_name] = {}
+        if unit not in cpd_map[c_name]:
+            cpd_map[c_name][unit] = {}
+
+        rev = r.revenue or 0.0
+        imps = r.impressions or 0
+        ad_reqs = r.ad_requests or 0
+        matched_reqs = r.matched_requests or 0
+        mr = round((matched_reqs / ad_reqs * 100.0), 1) if ad_reqs > 0 else 0.0
+        ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else 0.0
+
+        cpd_map[c_name][unit][dev_cat] = {
+            "match_rate": mr,
+            "ecpm": ecpm
+        }
+
     # Query device breakdown per country
     db_country_dev_rows = db.query(
         GAMCountryMetric.country,
@@ -615,9 +652,17 @@ def export_site_today_json(
 
             c_mr = round((c_matched_reqs / c_ad_reqs * 100.0), 1) if c_ad_reqs > 0 else 0.0
             c_ecpm = round((c_rev / c_imps * 1000.0), 2) if c_imps > 0 else 0.0
-            c_ctr = round((c_clks / c_imps * 100.0), 2) if c_imps > 0 else 0.0
 
             c_dev_dict = country_device_map.get(c_name, {})
+
+            # Nested placements per country
+            c_placements_list = []
+            if c_name in cpd_map:
+                for unit_name, dev_dict in cpd_map[c_name].items():
+                    c_placements_list.append({
+                        "ad_unit": unit_name,
+                        "devices": dev_dict
+                    })
 
             countries_list.append({
                 "country": c_name,
@@ -626,7 +671,8 @@ def export_site_today_json(
                 "match_rate": c_mr,
                 "ecpm": c_ecpm,
                 "pricing": p_rule,
-                "devices": c_dev_dict
+                "devices": c_dev_dict,
+                "placements": c_placements_list
             })
 
     countries_list.sort(key=lambda x: x["ecpm"], reverse=True)
