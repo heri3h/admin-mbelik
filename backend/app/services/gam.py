@@ -99,6 +99,17 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     unit_str = ad_unit.strip() if ad_unit else ""
     unit_lower = unit_str.lower()
 
+    # Exact full ad unit exceptions
+    EXACT_MAP = {
+        "gm feed": "gemol.me",
+        "gm side": "gemol.me",
+        "gm side 2": "gemol.me",
+        "gm-side-v2": "gemol.me",
+        "gm-side-2-v2": "gemol.me",
+    }
+    if unit_lower in EXACT_MAP:
+        return EXACT_MAP[unit_lower]
+
     # Check known domain names directly in ad_unit string
     for known_dom in ["spotgames.top", "2b.nubmaster.com", "baleq.me", "dpr.skuy.me", "polpasulsa.com", "play.gemol.me", "gemol.me"]:
         if known_dom in unit_lower:
@@ -112,13 +123,18 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
 
     # Built-in tokenized prefix mappings
     DEFAULT_PREFIX_MAP = [
+        ('gml', 'gemol.me'),
+        ('play', 'play.gemol.me'),
         ('gm', 'play.gemol.me'),
-        ('gemol', 'play.gemol.me'),
+        ('gemol', 'gemol.me'),
         ('skuy', 'skuy.me'),
         ('dpr', 'dpr.skuy.me'),
         ('nub', 'nub.skuy.me'),
         ('nmas', 'nub.skuy.me'),
         ('xdr', 'xdr.nubmaster.com'),
+        ('spotgames', 'spotgames.top'),
+        ('spot', 'spotgames.top'),
+        ('sg', 'spotgames.top'),
         ('2b', '2b.nubmaster.com'),
         ('nubmaster', '2b.nubmaster.com'),
         ('alt', 'alt.polpasulsa.com'),
@@ -128,15 +144,13 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
         ('pas', 'polpasulsa.com'),
         ('enew', 'enew.spotgames.top'),
         ('yay', 'yay.spotgames.top'),
-        ('spotgames', 'spotgames.top'),
-        ('spot', 'spotgames.top'),
-        ('sg', 'spotgames.top'),
         ('glee', 'glee.mbelik.com'),
         ('baleq', 'baleq.me'),
         ('blq', 'baleq.me'),
         ('hndn', 'henden.top'),
         ('henden', 'henden.top'),
         ('zse', 'zse.ugames.top'),
+        ('ugames', 'zse.ugames.top'),
         ('vinn', 'mbelik.com'),
         ('mko', 'mbelik.com'),
         ('pow', 'mbelik.com'),
