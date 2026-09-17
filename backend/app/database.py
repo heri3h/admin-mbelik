@@ -30,27 +30,24 @@ from sqlalchemy import text
 
 def auto_migrate_db():
     try:
+        from app.models import Base
         with engine.connect() as conn:
             if settings.REAL_DATABASE_URL.startswith("sqlite"):
-                res = conn.execute(text("PRAGMA table_info(gam_metrics);"))
-                cols = [row[1] for row in res.fetchall()]
-                if cols and "device_category" not in cols:
-                    conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN device_category VARCHAR(20) DEFAULT 'mobile';"))
-                if cols and "match_rate" not in cols:
-                    conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN match_rate FLOAT DEFAULT 0.0;"))
-                if cols and "ad_requests" not in cols:
-                    conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN ad_requests INTEGER DEFAULT 0;"))
-                if cols and "matched_requests" not in cols:
-                    conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN matched_requests INTEGER DEFAULT 0;"))
+                # Recreate gam_metrics if sqlite_master schema lacks device_category in UNIQUE constraint
+                res_m = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='gam_metrics';")).fetchone()
+                if res_m and res_m[0] and ("_date_domain_adunit_pricing_dev_uc" not in res_m[0] or "device_category" not in res_m[0]):
+                    print("Migrating gam_metrics table to add device_category unique constraint...")
+                    conn.execute(text("DROP TABLE IF EXISTS gam_metrics;"))
+                    conn.commit()
 
-                res_c = conn.execute(text("PRAGMA table_info(gam_country_metrics);"))
-                c_cols = [row[1] for row in res_c.fetchall()]
-                if c_cols and "device_category" not in c_cols:
-                    conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN device_category VARCHAR(20) DEFAULT 'mobile';"))
-                if c_cols and "pricing_rule_name" not in c_cols:
-                    conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
+                # Recreate gam_country_metrics if sqlite_master schema lacks device_category in UNIQUE constraint
+                res_c = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='gam_country_metrics';")).fetchone()
+                if res_c and res_c[0] and ("_date_domain_country_adunit_pricing_dev_uc" not in res_c[0] or "device_category" not in res_c[0]):
+                    print("Migrating gam_country_metrics table to add device_category unique constraint...")
+                    conn.execute(text("DROP TABLE IF EXISTS gam_country_metrics;"))
+                    conn.commit()
 
-                conn.commit()
+        Base.metadata.create_all(bind=engine)
     except Exception as e:
         print(f"Auto DB migration notice: {e}")
 

@@ -249,7 +249,13 @@ class SyncService:
                 db.commit()
             except Exception as e:
                 db.rollback()
-                logger.warning(f"GAMMetric bulk commit notice: {e}")
+                logger.warning(f"GAMMetric bulk commit notice: {e}, falling back to individual inserts...")
+                for metric in new_gam_metrics:
+                    try:
+                        db.add(metric)
+                        db.commit()
+                    except Exception:
+                        db.rollback()
 
         # 3. Delete stale GAM country metrics for target sync range and insert fresh live GAM country data
         try:
@@ -326,8 +332,18 @@ class SyncService:
                 new_country_metrics.append(new_c_metric)
 
             if new_country_metrics:
-                db.add_all(new_country_metrics)
-                db.commit()
+                try:
+                    db.add_all(new_country_metrics)
+                    db.commit()
+                except Exception as e:
+                    db.rollback()
+                    logger.warning(f"Sync GAM Country Metrics notice: {e}, falling back to individual inserts...")
+                    for c_metric in new_country_metrics:
+                        try:
+                            db.add(c_metric)
+                            db.commit()
+                        except Exception:
+                            db.rollback()
         except Exception as e:
             db.rollback()
             logger.warning(f"Sync GAM Country Metrics notice: {e}")
