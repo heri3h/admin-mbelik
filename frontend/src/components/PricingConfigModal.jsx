@@ -34,6 +34,11 @@ export default function PricingConfigModal({ isOpen, onClose }) {
   const [rules, setRules] = useState(DEFAULT_RULES);
 
   // Dynamic adjustments state
+  const [deviceSettings, setDeviceSettings] = useState({
+    desktop: { cpm_multiplier: 1.25 },
+    mobile: { cpm_multiplier: 1.0 }
+  });
+
   const [adjustments, setAdjustments] = useState({
     high_mr_threshold: 85.0,
     high_mr_boost_pct: 25.0,
@@ -69,6 +74,12 @@ export default function PricingConfigModal({ isOpen, onClose }) {
       if (data) {
         if (data.target_mr !== undefined) setTargetMr(data.target_mr);
         if (data.default_pricing !== undefined) setDefaultPricing(data.default_pricing);
+        if (data.device_settings) {
+          setDeviceSettings({
+            desktop: { cpm_multiplier: data.device_settings.desktop?.cpm_multiplier ?? 1.25 },
+            mobile: { cpm_multiplier: data.device_settings.mobile?.cpm_multiplier ?? 1.0 }
+          });
+        }
         if (data.adjustments) {
           setAdjustments({
             high_mr_threshold: data.adjustments.high_mr_threshold ?? 85.0,
@@ -164,6 +175,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
     const payload = {
       target_mr: parseFloat(targetMr) || 65.0,
       default_pricing: defaultPricing.trim() || 'google_optimize',
+      device_settings: deviceSettings,
       adjustments: {
         high_mr_threshold: parseFloat(adjustments.high_mr_threshold) || 85.0,
         high_mr_boost_pct: parseFloat(adjustments.high_mr_boost_pct) || 25.0,
@@ -206,7 +218,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-white tracking-tight">GAM Auto Pricing Rules & Central Config</h2>
-              <p className="text-slate-400 text-xs mt-0.5">Edit CPM threshold rules, target match rate, and default fallback pricing across all sites</p>
+              <p className="text-slate-400 text-xs mt-0.5">Edit CPM threshold rules, target match rate, device multipliers, and fallback pricing across all sites</p>
             </div>
           </div>
           <button
@@ -285,6 +297,51 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white font-mono font-semibold focus:outline-none focus:border-sky-500"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">Fallback rule name when pricing match fails or falls back to Google GAM default</p>
+                </div>
+              </div>
+
+              {/* Device Multipliers Section */}
+              <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sliders className="w-4 h-4" />
+                    <span>Device CPM Multipliers (Mobile vs Desktop)</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400">Used by Client Adsheader Engine</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">💻 Desktop CPM Multiplier</label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      min="0.5"
+                      max="3.0"
+                      value={deviceSettings.desktop?.cpm_multiplier ?? 1.25}
+                      onChange={(e) => setDeviceSettings({
+                        ...deviceSettings,
+                        desktop: { ...deviceSettings.desktop, cpm_multiplier: parseFloat(e.target.value) || 1.0 }
+                      })}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-sky-400 font-mono font-bold focus:outline-none focus:border-sky-500"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Default 1.25x (Boost Desktop CPM +25%)</p>
+                  </div>
+                  <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">📱 Mobile CPM Multiplier</label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      min="0.5"
+                      max="3.0"
+                      value={deviceSettings.mobile?.cpm_multiplier ?? 1.0}
+                      onChange={(e) => setDeviceSettings({
+                        ...deviceSettings,
+                        mobile: { ...deviceSettings.mobile, cpm_multiplier: parseFloat(e.target.value) || 1.0 }
+                      })}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-sky-500"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Default 1.0x (Standard Mobile CPM)</p>
+                  </div>
                 </div>
               </div>
 
