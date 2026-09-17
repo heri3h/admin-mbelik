@@ -471,6 +471,101 @@ def export_site_today_json(
 
     ecpm = round((tot_rev / tot_imps * 1000.0), 2) if tot_imps > 0 else 0.0
 
+    d_start_7d = today_date - timedelta(days=7)
+
+    # Pre-query 7-day historical device stats for fallback
+    hist_c_p_d_rows = db.query(
+        GAMCountryMetric.country,
+        GAMCountryMetric.ad_unit,
+        GAMCountryMetric.device_category,
+        func.sum(GAMCountryMetric.revenue).label("revenue"),
+        func.sum(GAMCountryMetric.impressions).label("impressions"),
+        func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
+    ).filter(
+        func.lower(GAMCountryMetric.domain) == domain.lower(),
+        GAMCountryMetric.date >= d_start_7d,
+        GAMCountryMetric.date <= today_date
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.ad_unit, GAMCountryMetric.device_category).all()
+
+    hist_cpd_map = {}
+    for r in hist_c_p_d_rows:
+        c_name = r.country or "Unknown Region"
+        unit = r.ad_unit or "Standard Ad Unit"
+        dev_cat = (r.device_category or "mobile").lower()
+        if c_name not in hist_cpd_map:
+            hist_cpd_map[c_name] = {}
+        if unit not in hist_cpd_map[c_name]:
+            hist_cpd_map[c_name][unit] = {}
+        rev = r.revenue or 0.0
+        imps = r.impressions or 0
+        ad_reqs = r.ad_requests or 0
+        matched_reqs = r.matched_requests or 0
+        mr = round((matched_reqs / ad_reqs * 100.0), 1) if ad_reqs > 0 else 0.0
+        ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else 0.0
+        hist_cpd_map[c_name][unit][dev_cat] = {"match_rate": mr, "ecpm": ecpm}
+
+    hist_c_dev_rows = db.query(
+        GAMCountryMetric.country,
+        GAMCountryMetric.device_category,
+        func.sum(GAMCountryMetric.revenue).label("revenue"),
+        func.sum(GAMCountryMetric.impressions).label("impressions"),
+        func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
+    ).filter(
+        func.lower(GAMCountryMetric.domain) == domain.lower(),
+        GAMCountryMetric.date >= d_start_7d,
+        GAMCountryMetric.date <= today_date
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.device_category).all()
+
+    hist_c_dev_map = {}
+    for r in hist_c_dev_rows:
+        c_name = r.country or "Unknown Region"
+        dev_cat = (r.device_category or "mobile").lower()
+        if c_name not in hist_c_dev_map:
+            hist_c_dev_map[c_name] = {}
+        rev = r.revenue or 0.0
+        imps = r.impressions or 0
+        ad_reqs = r.ad_requests or 0
+        matched_reqs = r.matched_requests or 0
+        mr = round((matched_reqs / ad_reqs * 100.0), 1) if ad_reqs > 0 else 0.0
+        ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else 0.0
+        hist_c_dev_map[c_name][dev_cat] = {"match_rate": mr, "ecpm": ecpm}
+
+    hist_summary_rows = db.query(
+        GAMMetric.device_category,
+        func.sum(GAMMetric.revenue).label("revenue"),
+        func.sum(GAMMetric.impressions).label("impressions"),
+        func.sum(GAMMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMMetric.matched_requests).label("matched_requests")
+    ).filter(
+        GAMMetric.domain == domain,
+        GAMMetric.date >= d_start_7d,
+        GAMMetric.date <= today_date
+    ).group_by(GAMMetric.device_category).all()
+
+    hist_summary_dev_map = {}
+    for r in hist_summary_rows:
+        dev_cat = (r.device_category or "mobile").lower()
+        rev = r.revenue or 0.0
+        imps = r.impressions or 0
+        ad_reqs = r.ad_requests or 0
+        matched_reqs = r.matched_requests or 0
+        mr = round((matched_reqs / ad_reqs * 100.0), 1) if ad_reqs > 0 else 0.0
+        ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else 0.0
+        hist_summary_dev_map[dev_cat] = {"match_rate": mr, "ecpm": ecpm}
+
+    def ensure_devices(dev_dict, hist_dict=None):
+        out = {}
+        for dev in ["mobile", "desktop"]:
+            if dev_dict and dev in dev_dict:
+                out[dev] = dev_dict[dev]
+            elif hist_dict and dev in hist_dict:
+                out[dev] = hist_dict[dev]
+            else:
+                out[dev] = {"match_rate": 0.0, "ecpm": 0.0}
+        return out
+
     # Query per-device summary breakdown
     summary_dev_rows = db.query(
         GAMMetric.device_category,
@@ -484,7 +579,7 @@ def export_site_today_json(
         GAMMetric.date == today_date
     ).group_by(GAMMetric.device_category).all()
 
-    summary_devices = {}
+    summary_devices_raw = {}
     for sdr in summary_dev_rows:
         dev_cat = (sdr.device_category or "mobile").lower()
         dev_rev = sdr.revenue or 0.0
@@ -493,10 +588,11 @@ def export_site_today_json(
         dev_matched_reqs = sdr.matched_requests or 0
         dev_mr = round((dev_matched_reqs / dev_ad_reqs * 100.0), 1) if dev_ad_reqs > 0 else 0.0
         dev_ecpm = round((dev_rev / dev_imps * 1000.0), 2) if dev_imps > 0 else 0.0
-        summary_devices[dev_cat] = {
+        summary_devices_raw[dev_cat] = {
             "match_rate": dev_mr,
             "ecpm": dev_ecpm
         }
+    summary_devices = ensure_devices(summary_devices_raw, hist_summary_dev_map)
 
     # Query real GAM country metrics from DB for the specified domain
     target_c_date = today_date
@@ -653,15 +749,16 @@ def export_site_today_json(
             c_mr = round((c_matched_reqs / c_ad_reqs * 100.0), 1) if c_ad_reqs > 0 else 0.0
             c_ecpm = round((c_rev / c_imps * 1000.0), 2) if c_imps > 0 else 0.0
 
-            c_dev_dict = country_device_map.get(c_name, {})
+            c_dev_dict = ensure_devices(country_device_map.get(c_name, {}), hist_c_dev_map.get(c_name, {}))
 
             # Nested placements per country
             c_placements_list = []
             if c_name in cpd_map:
                 for unit_name, dev_dict in cpd_map[c_name].items():
+                    hist_unit_dev = hist_cpd_map.get(c_name, {}).get(unit_name, {})
                     c_placements_list.append({
                         "ad_unit": unit_name,
-                        "devices": dev_dict
+                        "devices": ensure_devices(dev_dict, hist_unit_dev)
                     })
 
             countries_list.append({
@@ -677,7 +774,7 @@ def export_site_today_json(
 
     countries_list.sort(key=lambda x: x["ecpm"], reverse=True)
 
-    # Query device breakdown per placement
+    # Query global device breakdown per placement for site-wide fallback
     db_placement_dev_rows = db.query(
         GAMMetric.ad_unit,
         GAMMetric.device_category,
@@ -724,7 +821,6 @@ def export_site_today_json(
     for pr in placements_rows:
         p_rev = pr.revenue or 0.0
         p_imps = pr.impressions or 0
-        p_clks = pr.clicks or 0
         p_ad_reqs = pr.ad_requests or 0
         p_matched_reqs = pr.matched_requests or 0
         p_ecpm = round((p_rev / p_imps * 1000.0), 2) if p_imps > 0 else 0.0
@@ -734,7 +830,7 @@ def export_site_today_json(
             "ad_unit": pr.ad_unit,
             "match_rate": p_mr,
             "ecpm": p_ecpm,
-            "devices": placement_device_map.get(pr.ad_unit, {})
+            "devices": ensure_devices(placement_device_map.get(pr.ad_unit, {}))
         })
 
     data_payload = {
