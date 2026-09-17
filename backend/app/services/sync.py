@@ -494,10 +494,6 @@ def export_site_today_json(
         dev_mr = round((dev_matched_reqs / dev_ad_reqs * 100.0), 1) if dev_ad_reqs > 0 else 0.0
         dev_ecpm = round((dev_rev / dev_imps * 1000.0), 2) if dev_imps > 0 else 0.0
         summary_devices[dev_cat] = {
-            "revenue": round(dev_rev, 2),
-            "impressions": dev_imps,
-            "ad_requests": dev_ad_reqs,
-            "matched_requests": dev_matched_reqs,
             "match_rate": dev_mr,
             "ecpm": dev_ecpm
         }
@@ -565,10 +561,6 @@ def export_site_today_json(
         c_dev_mr = round((c_dev_matched_reqs / c_dev_ad_reqs * 100.0), 1) if c_dev_ad_reqs > 0 else 0.0
         c_dev_ecpm = round((c_dev_rev / c_dev_imps * 1000.0), 2) if c_dev_imps > 0 else 0.0
         country_device_map[c_name][dev_cat] = {
-            "revenue": round(c_dev_rev, 2),
-            "impressions": c_dev_imps,
-            "ad_requests": c_dev_ad_reqs,
-            "matched_requests": c_dev_matched_reqs,
             "match_rate": c_dev_mr,
             "ecpm": c_dev_ecpm
         }
@@ -671,10 +663,6 @@ def export_site_today_json(
         p_dev_mr = round((p_dev_matched_reqs / p_dev_ad_reqs * 100.0), 1) if p_dev_ad_reqs > 0 else 0.0
         p_dev_ecpm = round((p_dev_rev / p_dev_imps * 1000.0), 2) if p_dev_imps > 0 else 0.0
         placement_device_map[unit][dev_cat] = {
-            "revenue": round(p_dev_rev, 2),
-            "impressions": p_dev_imps,
-            "ad_requests": p_dev_ad_reqs,
-            "matched_requests": p_dev_matched_reqs,
             "match_rate": p_dev_mr,
             "ecpm": p_dev_ecpm
         }
