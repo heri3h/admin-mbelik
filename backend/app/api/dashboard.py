@@ -952,11 +952,15 @@ def get_site_countries_breakdown(
                 "clicks": 0,
                 "ad_requests": 0,
                 "matched_requests": 0,
-                "pricing_rule_name": getattr(row, 'pricing_rule_name', None) or "All Rules"
+                "pricing_rule_name": getattr(row, 'pricing_rule_name', None) or "All Rules",
+                "_max_rule_rev": -1.0,
+                "_max_rule_imps": -1
             }
         c_item = country_map[country_name]
-        c_item["revenue"] += (row.revenue or 0.0)
-        c_item["impressions"] += (row.impressions or 0)
+        c_rev = (row.revenue or 0.0)
+        c_imps = (row.impressions or 0)
+        c_item["revenue"] += c_rev
+        c_item["impressions"] += c_imps
         c_item["clicks"] += (row.clicks or 0)
         c_item["ad_requests"] += (row.ad_requests or 0)
         c_item["matched_requests"] += (row.matched_requests or 0)
@@ -965,6 +969,11 @@ def get_site_countries_breakdown(
         if p_rule in ["(No pricing rule applied)", "(No Pricing Rule Applied)", "No pricing rule applied"]:
             p_rule = "No Rule"
         if p_rule and p_rule not in ["No Rule", "(No Rule)", "All Rules"]:
+            if c_rev > c_item["_max_rule_rev"] or (c_rev == c_item["_max_rule_rev"] and c_imps > c_item["_max_rule_imps"]):
+                c_item["_max_rule_rev"] = c_rev
+                c_item["_max_rule_imps"] = c_imps
+                c_item["pricing_rule_name"] = p_rule
+        elif c_item["_max_rule_rev"] < 0 and p_rule:
             c_item["pricing_rule_name"] = p_rule
 
     if domain_name.lower() not in ["all", "all sites", "global", ""]:
@@ -1202,6 +1211,8 @@ def get_site_country_placements_breakdown(
     for r in rows:
         unit = r.ad_unit or "Standard Ad Unit"
         p_rule = r.pricing_rule_name or "All Rules"
+        r_rev = (r.total_revenue or 0.0)
+        r_imps = (r.total_impressions or 0)
 
         if unit not in unit_map:
             unit_map[unit] = {
@@ -1212,12 +1223,14 @@ def get_site_country_placements_breakdown(
                 "clicks": 0,
                 "total_ad_requests": 0,
                 "total_matched_requests": 0,
-                "pricing_rule_name": p_rule
+                "pricing_rule_name": p_rule,
+                "_max_rule_rev": -1.0,
+                "_max_rule_imps": -1
             }
 
         item = unit_map[unit]
-        item["total_revenue"] += (r.total_revenue or 0.0)
-        item["impressions"] += (r.total_impressions or 0)
+        item["total_revenue"] += r_rev
+        item["impressions"] += r_imps
         item["clicks"] += (r.total_clicks or 0)
         item["total_ad_requests"] += int(r.total_ad_requests or 0)
         item["total_matched_requests"] += int(r.total_matched_requests or 0)
@@ -1225,6 +1238,11 @@ def get_site_country_placements_breakdown(
         if p_rule in ["(No pricing rule applied)", "(No Pricing Rule Applied)", "No pricing rule applied"]:
             p_rule = "No Rule"
         if p_rule and p_rule not in ["No Rule", "(No Rule)", "All Rules"]:
+            if r_rev > item["_max_rule_rev"] or (r_rev == item["_max_rule_rev"] and r_imps > item["_max_rule_imps"]):
+                item["_max_rule_rev"] = r_rev
+                item["_max_rule_imps"] = r_imps
+                item["pricing_rule_name"] = p_rule
+        elif item["_max_rule_rev"] < 0 and p_rule:
             item["pricing_rule_name"] = p_rule
 
     items = []
