@@ -205,3 +205,16 @@ else:
             "docs": "/docs",
             "mock_mode": settings.USE_MOCK_DATA
         }
+
+# Periodic background thread: Auto-pull from GitHub every 60 seconds
+def _auto_pull_loop():
+    time.sleep(15)
+    while True:
+        try:
+            from app.api.sync import try_auto_git_pull_and_deploy
+            try_auto_git_pull_and_deploy()
+        except Exception as e:
+            logger.warning(f"Auto pull loop notice: {e}")
+        time.sleep(60)
+
+threading.Thread(target=_auto_pull_loop, daemon=True).start()
