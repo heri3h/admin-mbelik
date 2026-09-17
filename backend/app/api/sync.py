@@ -42,6 +42,19 @@ def trigger_sync(
             is_mock_data=False
         )
 
+import subprocess
+import logging
+
+logger = logging.getLogger(__name__)
+
+def try_auto_git_pull_and_deploy():
+    try:
+        # Attempt auto-pull from GitHub on the server
+        res = subprocess.run(["git", "pull", "origin", "main"], capture_output=True, text=True, timeout=15)
+        logger.info(f"Auto git pull output: {res.stdout}")
+    except Exception as e:
+        logger.warning(f"Auto git pull notice: {e}")
+
 @router.post("/clear-cache", response_model=SyncResponse)
 def clear_cache_and_resync(
     db: Session = Depends(get_db),
@@ -50,6 +63,9 @@ def clear_cache_and_resync(
     today = date.today()
     d_start_7d = today - timedelta(days=6)
     d_start_30d = today - timedelta(days=30)
+    
+    # Auto pull latest code from GitHub if running on server
+    try_auto_git_pull_and_deploy()
     
     try:
         from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric
