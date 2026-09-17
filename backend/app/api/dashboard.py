@@ -120,10 +120,14 @@ def get_summary(
     tot_revenue = gam_q.scalar() or 0.0
 
     if dev_filter:
-        tot_all_rev = db.query(func.sum(GAMMetric.revenue)).filter(
+        tot_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
             GAMMetric.date >= d_start, GAMMetric.date <= d_end
-        ).scalar() or 0.0
-        ratio = (tot_revenue / tot_all_rev) if tot_all_rev > 0 else 0.5
+        ).scalar() or 0
+        tot_dev_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+            GAMMetric.date >= d_start, GAMMetric.date <= d_end,
+            GAMMetric.device_category == dev_filter
+        ).scalar() or 0
+        ratio = (tot_dev_imps / tot_all_imps) if tot_all_imps > 0 else 0.5
         tot_spend = tot_spend_raw * ratio
     else:
         tot_spend = tot_spend_raw
@@ -146,8 +150,11 @@ def get_summary(
         prev_day_revenue = prev_gam_q.scalar() or 0.0
 
         if dev_filter:
-            prev_all_rev = db.query(func.sum(GAMMetric.revenue)).filter(GAMMetric.date == prev_date).scalar() or 0.0
-            prev_ratio = (prev_day_revenue / prev_all_rev) if prev_all_rev > 0 else 0.5
+            prev_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(GAMMetric.date == prev_date).scalar() or 0
+            prev_dev_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                GAMMetric.date == prev_date, GAMMetric.device_category == dev_filter
+            ).scalar() or 0
+            prev_ratio = (prev_dev_imps / prev_all_imps) if prev_all_imps > 0 else 0.5
             prev_day_spend = prev_day_spend_raw * prev_ratio
         else:
             prev_day_spend = prev_day_spend_raw
@@ -185,10 +192,14 @@ def get_summary(
         prev_revenue = prev_gam_q.scalar() or 0.0
 
         if dev_filter:
-            prev_all_rev = db.query(func.sum(GAMMetric.revenue)).filter(
+            prev_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
                 GAMMetric.date >= prev_start, GAMMetric.date <= prev_end
-            ).scalar() or 0.0
-            prev_ratio = (prev_revenue / prev_all_rev) if prev_all_rev > 0 else 0.5
+            ).scalar() or 0
+            prev_dev_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                GAMMetric.date >= prev_start, GAMMetric.date <= prev_end,
+                GAMMetric.device_category == dev_filter
+            ).scalar() or 0
+            prev_ratio = (prev_dev_imps / prev_all_imps) if prev_all_imps > 0 else 0.5
             prev_spend = prev_spend_raw * prev_ratio
         else:
             prev_spend = prev_spend_raw
@@ -358,11 +369,14 @@ def get_daily_trend(
 def get_accounts_breakdown(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     d_start, d_end = parse_date_range(start_date, end_date)
     ensure_data_synced(db, d_start, d_end)
+
+    dev_filter = device.lower().strip() if device and device.lower().strip() != "all" else None
 
     num_days = (d_end - d_start).days + 1
     prev_end = d_start - timedelta(days=1)
@@ -375,6 +389,11 @@ def get_accounts_breakdown(
 
     comp_label = "vs yesterday same time" if is_today_only else ("vs yesterday" if num_days == 1 else f"vs previous {num_days} days")
 
+    cid_to_domain_map = {
+        acc.customer_id: acc.assigned_domain
+        for acc in db.query(GoogleAdsAccount).all() if acc.assigned_domain
+    }
+
     prev_spend_rows = db.query(
         GoogleAdsMetric.customer_id,
         func.sum(GoogleAdsMetric.spend).label("spend")
@@ -383,7 +402,21 @@ def get_accounts_breakdown(
         GoogleAdsMetric.date <= prev_end
     ).group_by(GoogleAdsMetric.customer_id).all()
 
-    prev_spend_map = {r.customer_id: (r.spend or 0.0) * intraday_factor for r in prev_spend_rows}
+    prev_spend_map = {}
+    for r in prev_spend_rows:
+        raw_sp = (r.spend or 0.0) * intraday_factor
+        if dev_filter and r.customer_id in cid_to_domain_map:
+            dom = cid_to_domain_map[r.customer_id]
+            p_all = db.query(func.sum(GAMMetric.impressions)).filter(
+                GAMMetric.date >= prev_start, GAMMetric.date <= prev_end, GAMMetric.domain == dom
+            ).scalar() or 0
+            p_dev = db.query(func.sum(GAMMetric.impressions)).filter(
+                GAMMetric.date >= prev_start, GAMMetric.date <= prev_end, GAMMetric.domain == dom, GAMMetric.device_category == dev_filter
+            ).scalar() or 0
+            p_ratio = (p_dev / p_all) if p_all > 0 else 0.5
+            prev_spend_map[r.customer_id] = raw_sp * p_ratio
+        else:
+            prev_spend_map[r.customer_id] = raw_sp
 
     query_results = db.query(
         GoogleAdsMetric.customer_id,
@@ -399,9 +432,26 @@ def get_accounts_breakdown(
 
     items = []
     for row in query_results:
-        tot_spend = row.total_spend or 0.0
-        tot_clicks = row.total_clicks or 0
-        tot_imps = row.total_impressions or 0
+        tot_spend_raw = row.total_spend or 0.0
+        tot_clicks_raw = row.total_clicks or 0
+        tot_imps_raw = row.total_impressions or 0
+
+        if dev_filter and row.customer_id in cid_to_domain_map:
+            dom = cid_to_domain_map[row.customer_id]
+            s_all = db.query(func.sum(GAMMetric.impressions)).filter(
+                GAMMetric.date >= d_start, GAMMetric.date <= d_end, GAMMetric.domain == dom
+            ).scalar() or 0
+            s_dev = db.query(func.sum(GAMMetric.impressions)).filter(
+                GAMMetric.date >= d_start, GAMMetric.date <= d_end, GAMMetric.domain == dom, GAMMetric.device_category == dev_filter
+            ).scalar() or 0
+            s_ratio = (s_dev / s_all) if s_all > 0 else 0.5
+            tot_spend = tot_spend_raw * s_ratio
+            tot_imps = int(tot_imps_raw * s_ratio)
+            tot_clicks = int(tot_clicks_raw * s_ratio)
+        else:
+            tot_spend = tot_spend_raw
+            tot_imps = tot_imps_raw
+            tot_clicks = tot_clicks_raw
         
         cpc = (tot_spend / tot_clicks) if tot_clicks > 0 else 0.0
         ctr = (tot_clicks / tot_imps * 100.0) if tot_imps > 0 else 0.0
@@ -542,7 +592,7 @@ def get_sites_breakdown(
         site_spend = 0.0
         prev_sp = 0.0
         if assigned_cids:
-            site_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
+            site_spend_raw = db.query(func.sum(GoogleAdsMetric.spend)).filter(
                 GoogleAdsMetric.date >= d_start,
                 GoogleAdsMetric.date <= d_end,
                 GoogleAdsMetric.customer_id.in_(assigned_cids)
@@ -553,7 +603,30 @@ def get_sites_breakdown(
                 GoogleAdsMetric.date <= prev_end,
                 GoogleAdsMetric.customer_id.in_(assigned_cids)
             ).scalar() or 0.0
-            prev_sp = prev_sp_raw * intraday_factor
+
+            if dev_filter:
+                s_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                    GAMMetric.date >= d_start, GAMMetric.date <= d_end,
+                    GAMMetric.domain == domain_name
+                ).scalar() or 0
+                s_dev_imps = tot_imps
+                s_ratio = (s_dev_imps / s_all_imps) if s_all_imps > 0 else 1.0
+                site_spend = site_spend_raw * s_ratio
+
+                p_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                    GAMMetric.date >= prev_start, GAMMetric.date <= prev_end,
+                    GAMMetric.domain == domain_name
+                ).scalar() or 0
+                p_dev_imps = db.query(func.sum(GAMMetric.impressions)).filter(
+                    GAMMetric.date >= prev_start, GAMMetric.date <= prev_end,
+                    GAMMetric.domain == domain_name,
+                    GAMMetric.device_category == dev_filter
+                ).scalar() or 0
+                p_ratio = (p_dev_imps / p_all_imps) if p_all_imps > 0 else 1.0
+                prev_sp = prev_sp_raw * intraday_factor * p_ratio
+            else:
+                site_spend = site_spend_raw
+                prev_sp = prev_sp_raw * intraday_factor
 
         net_prof = tot_rev - site_spend
         site_roi = (tot_rev / site_spend * 100.0) if site_spend > 0 else 0.0
@@ -614,11 +687,14 @@ def get_sites_breakdown(
 def get_placements_breakdown(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
+    device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     d_start, d_end = parse_date_range(start_date, end_date)
     ensure_data_synced(db, d_start, d_end)
+
+    dev_filter = device.lower().strip() if device and device.lower().strip() != "all" else None
 
     num_days = (d_end - d_start).days + 1
     prev_end = d_start - timedelta(days=1)
@@ -631,7 +707,7 @@ def get_placements_breakdown(
 
     comp_label = "vs yesterday same time" if is_today_only else ("vs yesterday" if num_days == 1 else f"vs previous {num_days} days")
 
-    prev_gam_rows = db.query(
+    prev_q = db.query(
         GAMMetric.domain,
         GAMMetric.ad_unit,
         func.sum(GAMMetric.revenue).label("revenue"),
@@ -639,7 +715,10 @@ def get_placements_breakdown(
     ).filter(
         GAMMetric.date >= prev_start,
         GAMMetric.date <= prev_end
-    ).group_by(GAMMetric.domain, GAMMetric.ad_unit).all()
+    )
+    if dev_filter:
+        prev_q = prev_q.filter(GAMMetric.device_category == dev_filter)
+    prev_gam_rows = prev_q.group_by(GAMMetric.domain, GAMMetric.ad_unit).all()
 
     prev_placement_map = {}
     for r in prev_gam_rows:
@@ -649,7 +728,7 @@ def get_placements_breakdown(
             "impressions": int((r.impressions or 0) * intraday_factor)
         }
 
-    query_results = db.query(
+    curr_q = db.query(
         GAMMetric.domain,
         GAMMetric.ad_unit,
         GAMMetric.pricing_rule_name,
@@ -661,7 +740,10 @@ def get_placements_breakdown(
     ).filter(
         GAMMetric.date >= d_start,
         GAMMetric.date <= d_end
-    ).group_by(GAMMetric.domain, GAMMetric.ad_unit, GAMMetric.pricing_rule_name).all()
+    )
+    if dev_filter:
+        curr_q = curr_q.filter(GAMMetric.device_category == dev_filter)
+    query_results = curr_q.group_by(GAMMetric.domain, GAMMetric.ad_unit, GAMMetric.pricing_rule_name).all()
 
     items = []
     for row in query_results:
