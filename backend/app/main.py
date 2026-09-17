@@ -106,17 +106,31 @@ def auto_seed_export_targets():
     from app.models import JSONExportTarget
     db = SessionLocal()
     try:
-        count = db.query(JSONExportTarget).count()
-        if count == 0:
-            default_target = JSONExportTarget(
-                domain="spotgames.top",
-                target_filepath="/home/mbummm/web/spotgames.top/public_html/current_pricing.json",
-                start_hour=10,
-                end_hour=23,
-                is_active=True
-            )
-            db.add(default_target)
-            db.commit()
+        default_targets = [
+            ("spotgames.top", "/home/mbummm/web/spotgames.top/public_html/current_pricing.json"),
+            ("mbelik.com", "/home/mbummm/web/mbelik.com/public_html/current_pricing.json"),
+            ("baleq.me", "/home/mbummm/web/baleq.me/public_html/current_pricing.json"),
+            ("nub.skuy.me", "/home/mbummm/web/nub.skuy.me/public_html/current_pricing.json"),
+            ("xdr.nubmaster.com", "/home/mbummm/web/xdr.nubmaster.com/public_html/current_pricing.json"),
+            ("alt.polpasulsa.com", "/home/mbummm/web/alt.polpasulsa.com/public_html/current_pricing.json"),
+            ("enew.spotgames.top", "/home/mbummm/web/enew.spotgames.top/public_html/current_pricing.json"),
+            ("henden.top", "/home/mbummm/web/henden.top/public_html/current_pricing.json"),
+            ("play.gemol.me", "/home/mbummm/web/play.gemol.me/public_html/current_pricing.json"),
+            ("skuy.me", "/home/mbummm/web/skuy.me/public_html/current_pricing.json"),
+            ("vinn.henden.top", "/home/mbummm/web/vinn.henden.top/public_html/current_pricing.json")
+        ]
+        for dom, path in default_targets:
+            existing = db.query(JSONExportTarget).filter(JSONExportTarget.domain == dom).first()
+            if not existing:
+                t = JSONExportTarget(
+                    domain=dom,
+                    target_filepath=path,
+                    start_hour=0,
+                    end_hour=23,
+                    is_active=True
+                )
+                db.add(t)
+        db.commit()
     except Exception as e:
         db.rollback()
     finally:

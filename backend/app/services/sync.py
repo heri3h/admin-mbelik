@@ -860,17 +860,18 @@ def export_site_today_json(
             )
         })
 
+    countries_compressed = {}
+    for c_item in countries_list:
+        code = c_item.get("country_code")
+        if code:
+            countries_compressed[code] = c_item.get("devices", {})
+
     data_payload = {
         "domain": domain,
         "date": today_str,
         "updated_at": wib_now.strftime("%Y-%m-%d %H:%M:%S WIB"),
-        "summary": {
-            "match_rate": domain_mr,
-            "ecpm": ecpm,
-            "devices": summary_devices
-        },
-        "countries": countries_list,
-        "placements": placements_list
+        "summary": summary_devices,
+        "countries": countries_compressed
     }
 
     try:
