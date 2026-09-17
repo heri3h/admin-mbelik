@@ -26,6 +26,30 @@ LOCKED_PRIMARY_GAM_COLUMNS = [
 
 import re
 
+def normalize_canonical_domain(raw_domain: str) -> str:
+    if not raw_domain:
+        return "mbelik.com"
+    d = raw_domain.strip().lower()
+    if "gemol" in d:
+        return "play.gemol.me"
+    if "skuy" in d:
+        return "dpr.skuy.me"
+    if "nubmaster" in d:
+        return "2b.nubmaster.com"
+    if "spotgames" in d:
+        return "spotgames.top"
+    if "polpasulsa" in d:
+        return "polpasulsa.com"
+    if "baleq" in d:
+        return "baleq.me"
+    if "henden" in d:
+        return "henden.top"
+    if "ugames" in d or "zse" in d:
+        return "zse.ugames.top"
+    if "mbelik" in d:
+        return "mbelik.com"
+    return d
+
 def parse_gam_date(v_str: Any, default_date: date) -> date:
     if not v_str:
         return default_date
@@ -38,6 +62,10 @@ def parse_gam_date(v_str: Any, default_date: date) -> date:
     return default_date
 
 def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
+    raw_domain = _raw_extract_domain_from_row(row, ad_unit)
+    return normalize_canonical_domain(raw_domain)
+
+def _raw_extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     """
     Extract site domain directly from GAM API response row:
     1. Dimension.SITE_NAME / AD_EXCHANGE_URL_NAME / DOMAIN_NAME / URL_NAME
