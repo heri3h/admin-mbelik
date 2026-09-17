@@ -760,10 +760,11 @@ def get_site_countries_breakdown(
         func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
         func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
     ).filter(
-        func.lower(GAMCountryMetric.domain) == domain_name.lower(),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
     )
+    if domain_name.lower() not in ["all", "all sites", "global", ""]:
+        q = q.filter(func.lower(GAMCountryMetric.domain) == domain_name.lower())
     if dev_filter:
         q = q.filter(GAMCountryMetric.device_category == dev_filter)
 
@@ -775,17 +776,19 @@ def get_site_countries_breakdown(
         except Exception:
             pass
 
-        gam_summary = db.query(
+        gam_summary_q = db.query(
             func.sum(GAMMetric.revenue).label("revenue"),
             func.sum(GAMMetric.impressions).label("impressions"),
             func.sum(GAMMetric.clicks).label("clicks"),
             func.sum(GAMMetric.ad_requests).label("ad_requests"),
             func.sum(GAMMetric.matched_requests).label("matched_requests")
         ).filter(
-            func.lower(GAMMetric.domain) == domain_name.lower(),
             GAMMetric.date >= d_start,
             GAMMetric.date <= d_end
-        ).first()
+        )
+        if domain_name.lower() not in ["all", "all sites", "global", ""]:
+            gam_summary_q = gam_summary_q.filter(func.lower(GAMMetric.domain) == domain_name.lower())
+        gam_summary = gam_summary_q.first()
 
         tot_rev = (gam_summary.revenue or 0.0) if gam_summary else 0.0
         tot_imps = (gam_summary.impressions or 0) if gam_summary else 0
@@ -900,7 +903,10 @@ def get_site_countries_breakdown(
         if p_rule and p_rule not in ["No Rule", "(No Rule)", "All Rules"]:
             c_item["pricing_rule_name"] = p_rule
 
-    db_accounts = db.query(GoogleAdsAccount).filter(func.lower(GoogleAdsAccount.assigned_domain) == domain_name.lower()).all()
+    if domain_name.lower() not in ["all", "all sites", "global", ""]:
+        db_accounts = db.query(GoogleAdsAccount).filter(func.lower(GoogleAdsAccount.assigned_domain) == domain_name.lower()).all()
+    else:
+        db_accounts = db.query(GoogleAdsAccount).all()
     cids = [a.customer_id for a in db_accounts]
     tot_spend = 0.0
     gads_country_spend_map = {}
@@ -1038,11 +1044,12 @@ def get_site_country_placements_breakdown(
     dev_filter = device.lower().strip() if device and device.lower().strip() != "all" else None
 
     filters_c1 = [
-        func.lower(GAMCountryMetric.domain) == domain_name.lower(),
         func.lower(GAMCountryMetric.country) == country_name.lower(),
         GAMCountryMetric.date >= d_start,
         GAMCountryMetric.date <= d_end
     ]
+    if domain_name.lower() not in ["all", "all sites", "global", ""]:
+        filters_c1.append(func.lower(GAMCountryMetric.domain) == domain_name.lower())
     if dev_filter:
         filters_c1.append(GAMCountryMetric.device_category == dev_filter)
 
@@ -1058,11 +1065,12 @@ def get_site_country_placements_breakdown(
 
     if not rows and c_code:
         filters_c2 = [
-            func.lower(GAMCountryMetric.domain) == domain_name.lower(),
             func.lower(GAMCountryMetric.country_code) == c_code.lower(),
             GAMCountryMetric.date >= d_start,
             GAMCountryMetric.date <= d_end
         ]
+        if domain_name.lower() not in ["all", "all sites", "global", ""]:
+            filters_c2.append(func.lower(GAMCountryMetric.domain) == domain_name.lower())
         if dev_filter:
             filters_c2.append(GAMCountryMetric.device_category == dev_filter)
 
@@ -1078,10 +1086,11 @@ def get_site_country_placements_breakdown(
 
     if not rows:
         filters_m = [
-            func.lower(GAMMetric.domain) == domain_name.lower(),
             GAMMetric.date >= d_start,
             GAMMetric.date <= d_end
         ]
+        if domain_name.lower() not in ["all", "all sites", "global", ""]:
+            filters_m.append(func.lower(GAMMetric.domain) == domain_name.lower())
         if dev_filter:
             filters_m.append(GAMMetric.device_category == dev_filter)
 
