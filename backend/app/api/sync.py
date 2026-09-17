@@ -52,29 +52,41 @@ def clear_cache_and_resync(
     d_start_30d = today - timedelta(days=30)
     try:
         from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric
-        db.query(DailyProfitSummary).delete()
-        db.query(GoogleAdsMetric).delete()
-        db.query(GAMMetric).delete()
-        db.query(GAMCountryMetric).delete()
-        db.commit()
+        from app.api.dashboard import _sync_lock
 
-        # Fast 7-day sync for instant response (< 2s)
-        result = sync_service.sync_range(db, d_start_7d, today)
+        acquired = _sync_lock.acquire(timeout=5)
+        try:
+            db.query(DailyProfitSummary).delete(synchronize_session=False)
+            db.query(GoogleAdsMetric).delete(synchronize_session=False)
+            db.query(GAMMetric).delete(synchronize_session=False)
+            db.query(GAMCountryMetric).delete(synchronize_session=False)
+            db.commit()
+        finally:
+            if acquired:
+                _sync_lock.release()
 
-        # Background thread for 30-day sync so UI returns instantly
         import threading
-        def _run_bg_30d():
+        def _run_bg_clear_resync():
             from app.database import SessionLocal
             bg_db = SessionLocal()
             try:
                 sync_service.sync_range(bg_db, d_start_30d, today)
-            except Exception:
+            except Exception as e:
+                print(f"Background clear cache resync notice: {e}")
                 bg_db.rollback()
             finally:
                 bg_db.close()
 
-        threading.Thread(target=_run_bg_30d, daemon=True).start()
-        return SyncResponse(**result)
+        threading.Thread(target=_run_bg_clear_resync, daemon=True).start()
+
+        return SyncResponse(
+            status="success",
+            message="Analytics data cache cleared and re-sync started successfully!",
+            records_synced=0,
+            sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
+            sync_date_end=today.strftime("%Y-%m-%d"),
+            is_mock_data=False
+        )
     except Exception as e:
         db.rollback()
         return SyncResponse(
