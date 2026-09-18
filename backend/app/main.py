@@ -106,6 +106,58 @@ def auto_seed_export_targets():
     from app.models import JSONExportTarget
     db = SessionLocal()
     try:
+        # Schema migration check for SQLite
+        try:
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN conversion_enabled BOOLEAN DEFAULT 1;"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN conversion_send_to VARCHAR(255);"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN conversion_currency VARCHAR(10) DEFAULT 'IDR';"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN pv1_value FLOAT DEFAULT 0.0;"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN pv2_value FLOAT DEFAULT 1000.0;"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN pv3_value FLOAT DEFAULT 3000.0;"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN pv4_value FLOAT DEFAULT 6000.0;"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN slot_header VARCHAR(255);"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN slot_feed VARCHAR(255);"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN slot_side1 VARCHAR(255);"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN slot_side2 VARCHAR(255);"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN slot_interstitial VARCHAR(255);"))
+                conn.execute(text("ALTER TABLE json_export_targets ADD COLUMN slot_anchor VARCHAR(255);"))
+                conn.commit()
+        except Exception:
+            pass
+
+        domain_meta = {
+            "play.gemol.me": {
+                "send_to": "AW-16785269892/nNVJCMe5mowaEITJ68M-",
+                "header": "/22806125615/play-1",
+                "feed": "/22806125615/play-2",
+                "side1": "/22806125615/play-3",
+                "side2": "/22806125615/play-4"
+            },
+            "skuy.me/pastime": {
+                "send_to": "AW-11112849736/1g6LCPDi2JUYEMjCgrMp",
+                "header": "/22806125615/skuy-header",
+                "feed": "/22806125615/skuy-feed",
+                "side1": "/22806125615/skuy-side",
+                "side2": "/22806125615/skuy-side-2",
+                "interstitial": "/22806125615/skuy-int",
+                "anchor": "/22806125615/skuy-sticky"
+            },
+            "hits.spotgames.top": {
+                "send_to": "AW-16530351013/g5yyCJiOzqgcEKXHpMo9"
+            },
+            "hot.mbelik.com": {
+                "send_to": "AW-16478951650/2v_RCLr_p5sZEOKx47E9"
+            },
+            "kedung.net": {
+                "send_to": "AW-16528567544/xUeRCOXd8aUZEPjZt8k9"
+            },
+            "sleepwell.henden.top": {
+                "send_to": "AW-17820503102/ckbfCJ3089QbEL6YvbFC"
+            }
+        }
+
         default_targets = [
             ("spotgames.top", "/home/mbummm/web/spotgames.top/public_html/current_pricing.json"),
             ("mbelik.com", "/home/mbummm/web/mbelik.com/public_html/current_pricing.json"),
@@ -121,6 +173,7 @@ def auto_seed_export_targets():
             ("vinn.henden.top", "/home/mbummm/web/vinn.henden.top/public_html/current_pricing.json")
         ]
         for dom, path in default_targets:
+            meta = domain_meta.get(dom, {})
             existing = db.query(JSONExportTarget).filter(JSONExportTarget.domain == dom).first()
             if not existing:
                 t = JSONExportTarget(
@@ -128,12 +181,45 @@ def auto_seed_export_targets():
                     target_filepath=path,
                     start_hour=10,
                     end_hour=23,
-                    is_active=True
+                    is_active=True,
+                    conversion_enabled=True,
+                    conversion_send_to=meta.get("send_to"),
+                    conversion_currency="IDR",
+                    pv1_value=0.0,
+                    pv2_value=1000.0,
+                    pv3_value=3000.0,
+                    pv4_value=6000.0,
+                    slot_header=meta.get("header"),
+                    slot_feed=meta.get("feed"),
+                    slot_side1=meta.get("side1"),
+                    slot_side2=meta.get("side2"),
+                    slot_interstitial=meta.get("interstitial"),
+                    slot_anchor=meta.get("anchor")
                 )
                 db.add(t)
+            else:
+                if meta.get("send_to") and not existing.conversion_send_to:
+                    existing.conversion_send_to = meta.get("send_to")
+                if meta.get("header") and not existing.slot_header:
+                    existing.slot_header = meta.get("header")
+                if meta.get("feed") and not existing.slot_feed:
+                    existing.slot_feed = meta.get("feed")
+                if meta.get("side1") and not existing.slot_side1:
+                    existing.slot_side1 = meta.get("side1")
+                if meta.get("side2") and not existing.slot_side2:
+                    existing.slot_side2 = meta.get("side2")
+                if meta.get("interstitial") and not existing.slot_interstitial:
+                    existing.slot_interstitial = meta.get("interstitial")
+                if meta.get("anchor") and not existing.slot_anchor:
+                    existing.slot_anchor = meta.get("anchor")
         db.commit()
+
+        from app.services.sync import load_pricing_config, save_pricing_config_and_sync
+        cfg = load_pricing_config()
+        save_pricing_config_and_sync(cfg, db=db)
     except Exception as e:
         db.rollback()
+        logger.warning(f"Error seeding export target meta: {e}")
     finally:
         db.close()
 

@@ -177,6 +177,23 @@ class JSONExportTargetBase(BaseModel):
     end_hour: int = 23
     is_active: bool = True
 
+    # Conversion Tracking Settings
+    conversion_enabled: bool = True
+    conversion_send_to: Optional[str] = None
+    conversion_currency: str = "IDR"
+    pv1_value: float = 0.0
+    pv2_value: float = 1000.0
+    pv3_value: float = 3000.0
+    pv4_value: float = 6000.0
+
+    # GAM Ad Unit Slot Paths
+    slot_header: Optional[str] = None
+    slot_feed: Optional[str] = None
+    slot_side1: Optional[str] = None
+    slot_side2: Optional[str] = None
+    slot_interstitial: Optional[str] = None
+    slot_anchor: Optional[str] = None
+
 class JSONExportTargetCreate(JSONExportTargetBase):
     pass
 
@@ -186,6 +203,21 @@ class JSONExportTargetUpdate(BaseModel):
     start_hour: Optional[int] = None
     end_hour: Optional[int] = None
     is_active: Optional[bool] = None
+
+    conversion_enabled: Optional[bool] = None
+    conversion_send_to: Optional[str] = None
+    conversion_currency: Optional[str] = None
+    pv1_value: Optional[float] = None
+    pv2_value: Optional[float] = None
+    pv3_value: Optional[float] = None
+    pv4_value: Optional[float] = None
+
+    slot_header: Optional[str] = None
+    slot_feed: Optional[str] = None
+    slot_side1: Optional[str] = None
+    slot_side2: Optional[str] = None
+    slot_interstitial: Optional[str] = None
+    slot_anchor: Optional[str] = None
 
 class JSONExportTargetResponse(JSONExportTargetBase):
     id: int

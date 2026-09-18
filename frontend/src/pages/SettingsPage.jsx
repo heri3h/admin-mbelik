@@ -49,6 +49,90 @@ export default function SettingsPage({ onOpenPricingModal }) {
   const [targetStartHour, setTargetStartHour] = useState(10);
   const [targetEndHour, setTargetEndHour] = useState(23);
 
+  // Edit Target Modal State
+  const [editTargetModal, setEditTargetModal] = useState(false);
+  const [editTargetId, setEditTargetId] = useState(null);
+  const [editDomainTarget, setEditDomainTarget] = useState('');
+  const [editFilepath, setEditFilepath] = useState('');
+  const [editStartHour, setEditStartHour] = useState(10);
+  const [editEndHour, setEditEndHour] = useState(23);
+  const [editIsActive, setEditIsActive] = useState(true);
+
+  const [editConversionEnabled, setEditConversionEnabled] = useState(true);
+  const [editConversionSendTo, setEditConversionSendTo] = useState('');
+  const [editConversionCurrency, setEditConversionCurrency] = useState('IDR');
+  const [editPv1Value, setEditPv1Value] = useState(0);
+  const [editPv2Value, setEditPv2Value] = useState(1000);
+  const [editPv3Value, setEditPv3Value] = useState(3000);
+  const [editPv4Value, setEditPv4Value] = useState(6000);
+
+  const [editSlotHeader, setEditSlotHeader] = useState('');
+  const [editSlotFeed, setEditSlotFeed] = useState('');
+  const [editSlotSide1, setEditSlotSide1] = useState('');
+  const [editSlotSide2, setEditSlotSide2] = useState('');
+  const [editSlotInterstitial, setEditSlotInterstitial] = useState('');
+  const [editSlotAnchor, setEditSlotAnchor] = useState('');
+
+  const handleOpenEditTargetModal = (target) => {
+    setEditTargetId(target.id);
+    setEditDomainTarget(target.domain || '');
+    setEditFilepath(target.target_filepath || '');
+    setEditStartHour(target.start_hour !== undefined ? target.start_hour : 10);
+    setEditEndHour(target.end_hour !== undefined ? target.end_hour : 23);
+    setEditIsActive(target.is_active !== undefined ? target.is_active : true);
+
+    setEditConversionEnabled(target.conversion_enabled !== undefined ? target.conversion_enabled : true);
+    setEditConversionSendTo(target.conversion_send_to || '');
+    setEditConversionCurrency(target.conversion_currency || 'IDR');
+    setEditPv1Value(target.pv1_value !== undefined ? target.pv1_value : 0);
+    setEditPv2Value(target.pv2_value !== undefined ? target.pv2_value : 1000);
+    setEditPv3Value(target.pv3_value !== undefined ? target.pv3_value : 3000);
+    setEditPv4Value(target.pv4_value !== undefined ? target.pv4_value : 6000);
+
+    setEditSlotHeader(target.slot_header || '');
+    setEditSlotFeed(target.slot_feed || '');
+    setEditSlotSide1(target.slot_side1 || '');
+    setEditSlotSide2(target.slot_side2 || '');
+    setEditSlotInterstitial(target.slot_interstitial || '');
+    setEditSlotAnchor(target.slot_anchor || '');
+
+    setEditTargetModal(true);
+  };
+
+  const handleSaveEditTarget = async (e) => {
+    e.preventDefault();
+    setExportError('');
+    setExportSuccess('');
+
+    try {
+      await dashboardService.updateExportTarget(editTargetId, {
+        domain: editDomainTarget.trim(),
+        target_filepath: editFilepath.trim(),
+        start_hour: parseInt(editStartHour),
+        end_hour: parseInt(editEndHour),
+        is_active: editIsActive,
+        conversion_enabled: editConversionEnabled,
+        conversion_send_to: editConversionSendTo.trim() || null,
+        conversion_currency: editConversionCurrency,
+        pv1_value: parseFloat(editPv1Value) || 0,
+        pv2_value: parseFloat(editPv2Value) || 0,
+        pv3_value: parseFloat(editPv3Value) || 0,
+        pv4_value: parseFloat(editPv4Value) || 0,
+        slot_header: editSlotHeader.trim() || null,
+        slot_feed: editSlotFeed.trim() || null,
+        slot_side1: editSlotSide1.trim() || null,
+        slot_side2: editSlotSide2.trim() || null,
+        slot_interstitial: editSlotInterstitial.trim() || null,
+        slot_anchor: editSlotAnchor.trim() || null
+      });
+      setExportSuccess(`Configuration for ${editDomainTarget} saved & synced successfully!`);
+      setEditTargetModal(false);
+      fetchExportTargets();
+    } catch (err) {
+      setExportError(err.response?.data?.detail || 'Failed to update target configuration.');
+    }
+  };
+
   useEffect(() => {
     fetchStatus();
     fetchGadsAccounts();
@@ -737,6 +821,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
                 <th className="px-4 py-3">Domain</th>
                 <th className="px-4 py-3">Target File Path</th>
                 <th className="px-4 py-3 text-center">Operating Hours</th>
+                <th className="px-4 py-3 text-center">Conversion Tracking</th>
                 <th className="px-4 py-3 text-center">Status</th>
                 <th className="px-4 py-3 text-right">Action</th>
               </tr>
@@ -753,6 +838,17 @@ export default function SettingsPage({ onOpenPricingModal }) {
                       {target.start_hour}:00 - {target.end_hour}:00 UTC+7
                     </td>
                     <td className="px-4 py-3 text-center">
+                      {target.conversion_enabled && target.conversion_send_to ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono" title={target.conversion_send_to}>
+                          🟢 Active ({target.conversion_send_to.split('/')[0]})
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-700/50 text-slate-400 border border-slate-600">
+                          ⚪ Off
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => handleToggleTargetActive(target)}
                         className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all ${
@@ -765,6 +861,14 @@ export default function SettingsPage({ onOpenPricingModal }) {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right space-x-1.5">
+                      <button
+                        onClick={() => handleOpenEditTargetModal(target)}
+                        className="px-2.5 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg font-medium text-[11px] transition-all inline-flex items-center space-x-1"
+                        title="Edit Conversion & GAM Slots"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Config</span>
+                      </button>
                       <button
                         onClick={() => handleTestExport(target.id, target.domain)}
                         className="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded-lg font-medium text-[11px] transition-all"
@@ -784,7 +888,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-4 py-6 text-center text-slate-500 italic">
+                  <td colSpan="6" className="px-4 py-6 text-center text-slate-500 italic">
                     No auto-export JSON targets registered yet.
                   </td>
                 </tr>
@@ -793,6 +897,273 @@ export default function SettingsPage({ onOpenPricingModal }) {
           </table>
         </div>
       </div>
+
+      {/* Edit Target Config Modal */}
+      {editTargetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <Sliders className="w-5 h-5 text-purple-400" />
+                <h3 className="font-bold text-white text-base">
+                  Target Config: <span className="text-purple-300 font-mono">{editDomainTarget}</span>
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditTargetModal(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-all"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditTarget} className="space-y-4 text-xs">
+              {/* Seksi 1: Basic Target */}
+              <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/50 space-y-3">
+                <h4 className="font-semibold text-purple-300 border-b border-slate-700/50 pb-2 flex items-center space-x-2">
+                  <Globe className="w-4 h-4" />
+                  <span>1. Basic Target & Operating Hours</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Target Domain</label>
+                    <input
+                      type="text"
+                      value={editDomainTarget}
+                      onChange={(e) => setEditDomainTarget(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">VPS JSON File Path</label>
+                    <input
+                      type="text"
+                      value={editFilepath}
+                      onChange={(e) => setEditFilepath(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-[11px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-slate-400">Operating Hours:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={editStartHour}
+                      onChange={(e) => setEditStartHour(e.target.value)}
+                      className="w-14 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-center font-mono"
+                    />
+                    <span className="text-slate-500">to</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={editEndHour}
+                      onChange={(e) => setEditEndHour(e.target.value)}
+                      className="w-14 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-center font-mono"
+                    />
+                    <span className="text-slate-400">UTC+7</span>
+                  </div>
+
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editIsActive}
+                      onChange={(e) => setEditIsActive(e.target.checked)}
+                      className="rounded border-slate-700 text-purple-600 focus:ring-purple-500"
+                    />
+                    <span className="text-slate-300 font-medium">Active Export Target</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Seksi 2: Conversion Tracking */}
+              <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/50 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-700/50 pb-2">
+                  <h4 className="font-semibold text-emerald-400 flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>2. Google Ads Conversion Tracking (Option 2 Progressive Tiers)</span>
+                  </h4>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editConversionEnabled}
+                      onChange={(e) => setEditConversionEnabled(e.target.checked)}
+                      className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500"
+                    />
+                    <span className="text-emerald-400 font-medium">Enable Conversion</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="md:col-span-2">
+                    <label className="block text-slate-400 mb-1">Conversion Label (`send_to`)</label>
+                    <input
+                      type="text"
+                      value={editConversionSendTo}
+                      onChange={(e) => setEditConversionSendTo(e.target.value)}
+                      placeholder="e.g. AW-16785269892/nNVJCMe5mowaEITJ68M-"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-emerald-300 font-mono text-[11px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Currency</label>
+                    <select
+                      value={editConversionCurrency}
+                      onChange={(e) => setEditConversionCurrency(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-mono"
+                    >
+                      <option value="IDR">IDR (Rp)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="MYR">MYR (RM)</option>
+                      <option value="SGD">SGD ($)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1.5 font-medium">
+                    Conversion Value Tiers per Pageview ({editConversionCurrency}):
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
+                    <div>
+                      <span className="block text-[10px] text-slate-500 mb-0.5">Pageview 1</span>
+                      <input
+                        type="number"
+                        step="100"
+                        value={editPv1Value}
+                        onChange={(e) => setEditPv1Value(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-300 text-center"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-emerald-400 mb-0.5">Pageview 2</span>
+                      <input
+                        type="number"
+                        step="100"
+                        value={editPv2Value}
+                        onChange={(e) => setEditPv2Value(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-emerald-300 text-center"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-emerald-400 mb-0.5">Pageview 3</span>
+                      <input
+                        type="number"
+                        step="100"
+                        value={editPv3Value}
+                        onChange={(e) => setEditPv3Value(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-emerald-300 text-center"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-emerald-400 mb-0.5">Pageview 4+</span>
+                      <input
+                        type="number"
+                        step="100"
+                        value={editPv4Value}
+                        onChange={(e) => setEditPv4Value(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-emerald-300 text-center font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seksi 3: GAM Ad Unit Paths */}
+              <div className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/50 space-y-3">
+                <h4 className="font-semibold text-sky-400 border-b border-slate-700/50 pb-2 flex items-center space-x-2">
+                  <Layers className="w-4 h-4" />
+                  <span>3. GAM Ad Unit Slot Paths</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-[11px]">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Header Slot Path</label>
+                    <input
+                      type="text"
+                      value={editSlotHeader}
+                      onChange={(e) => setEditSlotHeader(e.target.value)}
+                      placeholder={`/22806125615/${editDomainTarget}.Header`}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sky-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Feed Slot Path</label>
+                    <input
+                      type="text"
+                      value={editSlotFeed}
+                      onChange={(e) => setEditSlotFeed(e.target.value)}
+                      placeholder={`/22806125615/${editDomainTarget}.Feed`}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sky-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Sidebar 1 Slot Path</label>
+                    <input
+                      type="text"
+                      value={editSlotSide1}
+                      onChange={(e) => setEditSlotSide1(e.target.value)}
+                      placeholder={`/22806125615/${editDomainTarget}.Sidebar`}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sky-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Sidebar 2 Slot Path</label>
+                    <input
+                      type="text"
+                      value={editSlotSide2}
+                      onChange={(e) => setEditSlotSide2(e.target.value)}
+                      placeholder={`/22806125615/${editDomainTarget}.Sidebar2`}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sky-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Interstitial Slot Path</label>
+                    <input
+                      type="text"
+                      value={editSlotInterstitial}
+                      onChange={(e) => setEditSlotInterstitial(e.target.value)}
+                      placeholder={`/22806125615/${editDomainTarget}.Interstitial`}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sky-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Sticky Anchor Slot Path</label>
+                    <input
+                      type="text"
+                      value={editSlotAnchor}
+                      onChange={(e) => setEditSlotAnchor(e.target.value)}
+                      placeholder={`/22806125615/${editDomainTarget}.Sticky`}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sky-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditTargetModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-all flex items-center space-x-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save & Sync Config</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Clear Cache Card */}
       <div className="bg-slate-800 border border-slate-700/60 p-6 rounded-2xl shadow-sm">

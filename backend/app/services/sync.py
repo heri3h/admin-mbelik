@@ -1000,12 +1000,34 @@ def save_pricing_config_and_sync(config_dict: dict, db: Session = None) -> list:
             for t in targets:
                 target_dir = os.path.dirname(t.target_filepath)
                 dest_path = os.path.join(target_dir, "pricing_config.json")
-                if dest_path != master_path and dest_path not in synced_paths:
-                    try:
-                        atomic_write_json(dest_path, config_dict)
-                        synced_paths.append(dest_path)
-                    except Exception as e:
-                        logger.warning(f"Failed syncing pricing_config.json to {dest_path}: {e}")
+
+                domain_cfg = dict(config_dict)
+                domain_cfg["domain"] = t.domain
+                domain_cfg["conversion"] = {
+                    "enabled": bool(t.conversion_enabled),
+                    "send_to": t.conversion_send_to or "",
+                    "currency": t.conversion_currency or "IDR",
+                    "value_tiers": {
+                        "1": t.pv1_value if t.pv1_value is not None else 0.0,
+                        "2": t.pv2_value if t.pv2_value is not None else 1000.0,
+                        "3": t.pv3_value if t.pv3_value is not None else 3000.0,
+                        "4": t.pv4_value if t.pv4_value is not None else 6000.0
+                    }
+                }
+                domain_cfg["ad_units"] = {
+                    "header": t.slot_header or f"/22806125615/{t.domain}.Header",
+                    "feed": t.slot_feed or f"/22806125615/{t.domain}.Feed",
+                    "side": t.slot_side1 or f"/22806125615/{t.domain}.Sidebar",
+                    "side2": t.slot_side2 or f"/22806125615/{t.domain}.Sidebar2",
+                    "interstitial": t.slot_interstitial or f"/22806125615/{t.domain}.Interstitial",
+                    "anchor": t.slot_anchor or f"/22806125615/{t.domain}.Sticky"
+                }
+
+                try:
+                    atomic_write_json(dest_path, domain_cfg)
+                    synced_paths.append(dest_path)
+                except Exception as e:
+                    logger.warning(f"Failed syncing pricing_config.json to {dest_path}: {e}")
         except Exception as e:
             logger.warning(f"Error querying export targets for pricing_config sync: {e}")
 

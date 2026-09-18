@@ -82,6 +82,24 @@ class JSONExportTarget(Base):
     start_hour = Column(Integer, default=10)
     end_hour = Column(Integer, default=23)
     is_active = Column(Boolean, default=True)
+
+    # Conversion Tracking Settings
+    conversion_enabled = Column(Boolean, default=True)
+    conversion_send_to = Column(String(255), nullable=True)
+    conversion_currency = Column(String(10), default="IDR")
+    pv1_value = Column(Float, default=0.0)
+    pv2_value = Column(Float, default=1000.0)
+    pv3_value = Column(Float, default=3000.0)
+    pv4_value = Column(Float, default=6000.0)
+
+    # GAM Ad Unit Slot Paths
+    slot_header = Column(String(255), nullable=True)
+    slot_feed = Column(String(255), nullable=True)
+    slot_side1 = Column(String(255), nullable=True)
+    slot_side2 = Column(String(255), nullable=True)
+    slot_interstitial = Column(String(255), nullable=True)
+    slot_anchor = Column(String(255), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class GAMCountryMetric(Base):

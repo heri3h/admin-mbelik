@@ -226,7 +226,20 @@ def create_export_target(
         target_filepath=clean_path,
         start_hour=target_data.start_hour,
         end_hour=target_data.end_hour,
-        is_active=target_data.is_active
+        is_active=target_data.is_active,
+        conversion_enabled=target_data.conversion_enabled,
+        conversion_send_to=target_data.conversion_send_to.strip() if target_data.conversion_send_to else None,
+        conversion_currency=target_data.conversion_currency,
+        pv1_value=target_data.pv1_value,
+        pv2_value=target_data.pv2_value,
+        pv3_value=target_data.pv3_value,
+        pv4_value=target_data.pv4_value,
+        slot_header=target_data.slot_header.strip() if target_data.slot_header else None,
+        slot_feed=target_data.slot_feed.strip() if target_data.slot_feed else None,
+        slot_side1=target_data.slot_side1.strip() if target_data.slot_side1 else None,
+        slot_side2=target_data.slot_side2.strip() if target_data.slot_side2 else None,
+        slot_interstitial=target_data.slot_interstitial.strip() if target_data.slot_interstitial else None,
+        slot_anchor=target_data.slot_anchor.strip() if target_data.slot_anchor else None
     )
     db.add(new_target)
     db.commit()
@@ -272,6 +285,34 @@ def update_export_target(
         target.end_hour = target_data.end_hour
     if target_data.is_active is not None:
         target.is_active = target_data.is_active
+
+    if target_data.conversion_enabled is not None:
+        target.conversion_enabled = target_data.conversion_enabled
+    if target_data.conversion_send_to is not None:
+        target.conversion_send_to = target_data.conversion_send_to.strip() if target_data.conversion_send_to else None
+    if target_data.conversion_currency is not None:
+        target.conversion_currency = target_data.conversion_currency
+    if target_data.pv1_value is not None:
+        target.pv1_value = target_data.pv1_value
+    if target_data.pv2_value is not None:
+        target.pv2_value = target_data.pv2_value
+    if target_data.pv3_value is not None:
+        target.pv3_value = target_data.pv3_value
+    if target_data.pv4_value is not None:
+        target.pv4_value = target_data.pv4_value
+
+    if target_data.slot_header is not None:
+        target.slot_header = target_data.slot_header.strip() if target_data.slot_header else None
+    if target_data.slot_feed is not None:
+        target.slot_feed = target_data.slot_feed.strip() if target_data.slot_feed else None
+    if target_data.slot_side1 is not None:
+        target.slot_side1 = target_data.slot_side1.strip() if target_data.slot_side1 else None
+    if target_data.slot_side2 is not None:
+        target.slot_side2 = target_data.slot_side2.strip() if target_data.slot_side2 else None
+    if target_data.slot_interstitial is not None:
+        target.slot_interstitial = target_data.slot_interstitial.strip() if target_data.slot_interstitial else None
+    if target_data.slot_anchor is not None:
+        target.slot_anchor = target_data.slot_anchor.strip() if target_data.slot_anchor else None
 
     db.commit()
     db.refresh(target)
