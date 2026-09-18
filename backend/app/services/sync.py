@@ -412,6 +412,37 @@ class SyncService:
             "is_mock_data": google_ads_service.use_mock or gam_service.use_mock
         }
 
+def atomic_write_json(target_filepath: str, data: dict, indent: int = 2):
+    """
+    Writes data to a temporary file first, flushes to disk, and then performs
+    an atomic file replacement (os.replace) to ensure target file is never read
+    in a partial/corrupted state by concurrent web requests.
+    """
+    target_dir = os.path.dirname(target_filepath)
+    if target_dir:
+        os.makedirs(target_dir, exist_ok=True)
+
+    temp_filepath = f"{target_filepath}.tmp.{os.getpid()}"
+    try:
+        with open(temp_filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=indent, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+
+        try:
+            os.chmod(temp_filepath, 0o666)
+        except Exception:
+            pass
+
+        os.replace(temp_filepath, target_filepath)
+    except Exception as e:
+        if os.path.exists(temp_filepath):
+            try:
+                os.remove(temp_filepath)
+            except Exception:
+                pass
+        raise e
+
 def export_site_today_json(
     db: Session,
     domain: str = "spotgames.top",
@@ -875,14 +906,8 @@ def export_site_today_json(
     }
 
     try:
-        os.makedirs(os.path.dirname(target_filepath), exist_ok=True)
-        with open(target_filepath, "w", encoding="utf-8") as f:
-            json.dump(data_payload, f, indent=2, ensure_ascii=False)
-        try:
-            os.chmod(target_filepath, 0o666)
-        except Exception:
-            pass
-        logger.info(f"Auto-exported today's data for {domain} to {target_filepath}")
+        atomic_write_json(target_filepath, data_payload)
+        logger.info(f"Auto-exported today's data (atomic) for {domain} to {target_filepath}")
     except Exception as e:
         logger.warning(f"Failed to export JSON to {target_filepath}: {e}")
 
@@ -960,15 +985,11 @@ def load_pricing_config() -> dict:
     return DEFAULT_PRICING_CONFIG
 
 def save_pricing_config_and_sync(config_dict: dict, db: Session = None) -> list:
-    import json
     master_path = get_master_pricing_config_path()
-    os.makedirs(os.path.dirname(master_path), exist_ok=True)
-    with open(master_path, "w", encoding="utf-8") as f:
-        json.dump(config_dict, f, indent=2, ensure_ascii=False)
     try:
-        os.chmod(master_path, 0o666)
-    except Exception:
-        pass
+        atomic_write_json(master_path, config_dict)
+    except Exception as e:
+        logger.warning(f"Failed writing master pricing_config.json to {master_path}: {e}")
 
     synced_paths = [master_path]
 
@@ -981,13 +1002,7 @@ def save_pricing_config_and_sync(config_dict: dict, db: Session = None) -> list:
                 dest_path = os.path.join(target_dir, "pricing_config.json")
                 if dest_path != master_path and dest_path not in synced_paths:
                     try:
-                        os.makedirs(target_dir, exist_ok=True)
-                        with open(dest_path, "w", encoding="utf-8") as f:
-                            json.dump(config_dict, f, indent=2, ensure_ascii=False)
-                        try:
-                            os.chmod(dest_path, 0o666)
-                        except Exception:
-                            pass
+                        atomic_write_json(dest_path, config_dict)
                         synced_paths.append(dest_path)
                     except Exception as e:
                         logger.warning(f"Failed syncing pricing_config.json to {dest_path}: {e}")
