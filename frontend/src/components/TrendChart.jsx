@@ -72,8 +72,8 @@ export default function TrendChart({ data, startDate, endDate }) {
   };
 
   return (
-    <div className="bg-slate-800 border border-slate-700/60 p-3.5 sm:p-6 rounded-2xl shadow-sm space-y-4 mt-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <div className="bg-slate-800 border border-slate-700/60 px-1 py-3.5 sm:p-6 rounded-2xl shadow-sm space-y-4 mt-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-2 sm:px-0">
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <span>{isSingleDay ? 'Intraday Hourly Performance & ROI Trend' : 'Daily Performance & ROI Trend'}</span>
