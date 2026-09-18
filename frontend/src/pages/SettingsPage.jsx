@@ -819,7 +819,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
             <thead className="bg-slate-900/80 text-slate-400 font-semibold border-b border-slate-700">
               <tr>
                 <th className="px-4 py-3">Domain</th>
-                <th className="px-4 py-3">Target File Path</th>
+                <th className="px-4 py-3 max-w-[180px]">Target File Path</th>
                 <th className="px-4 py-3 text-center">Operating Hours</th>
                 <th className="px-4 py-3 text-center">Conversion Tracking</th>
                 <th className="px-4 py-3 text-center">Status</th>
@@ -831,7 +831,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
                 exportTargets.map((target) => (
                   <tr key={target.id} className="hover:bg-slate-700/30 transition-colors">
                     <td className="px-4 py-3 font-semibold text-white">{target.domain}</td>
-                    <td className="px-4 py-3 font-mono text-[11px] text-purple-300 max-w-xs truncate" title={target.target_filepath}>
+                    <td className="px-4 py-3 font-mono text-[11px] text-purple-300 max-w-[180px] truncate" title={target.target_filepath}>
                       {target.target_filepath}
                     </td>
                     <td className="px-4 py-3 text-center font-mono text-xs text-slate-300">
