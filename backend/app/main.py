@@ -126,7 +126,7 @@ def auto_seed_export_targets():
                 t = JSONExportTarget(
                     domain=dom,
                     target_filepath=path,
-                    start_hour=0,
+                    start_hour=10,
                     end_hour=23,
                     is_active=True
                 )
