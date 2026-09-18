@@ -157,6 +157,8 @@ export default function TrendChart({ data, startDate, endDate }) {
               stroke="#64748b"
               tick={false}
               tickLine={false}
+              axisLine={false}
+              padding={{ left: 0, right: 0 }}
             />
             {/* Left Y Axis for Monetary Values */}
             <YAxis
@@ -164,6 +166,8 @@ export default function TrendChart({ data, startDate, endDate }) {
               stroke="#64748b"
               tick={false}
               tickLine={false}
+              axisLine={false}
+              width={0}
             />
             {/* Right Y Axis for ROI % */}
             {showRoi && (
@@ -173,6 +177,8 @@ export default function TrendChart({ data, startDate, endDate }) {
                 stroke="#f59e0b"
                 tick={false}
                 tickLine={false}
+                axisLine={false}
+                width={0}
               />
             )}
             <Tooltip content={<CustomTooltip />} />
