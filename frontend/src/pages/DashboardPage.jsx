@@ -95,9 +95,11 @@ export default function DashboardPage() {
               GAM
             </span>
             <span 
-              title={summary?.gads_status === 'rate_limited' ? 'Google Ads API: Rate Limited (Quota Exceeded)' : 'Google Ads API: Live & Connected'} 
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-extrabold border shadow-sm ${
+              title={summary?.gads_status === 'rate_limited' ? 'Google Ads API: Rate Limited (Quota Exceeded)' : `Google Ads API: Live & Connected (${summary?.gads_quota_used_pct ?? 0}% daily quota used)`} 
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-extrabold border shadow-sm ${
                 summary?.gads_status === 'rate_limited'
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/40'
+                  : summary?.gads_quota_used_pct > 80
                   ? 'bg-amber-500/10 text-amber-400 border-amber-500/40'
                   : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
               }`}
@@ -105,7 +107,7 @@ export default function DashboardPage() {
               <span className={`w-1.5 h-1.5 rounded-full ${
                 summary?.gads_status === 'rate_limited' ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'
               }`}></span>
-              GAds
+              <span>GAds {summary?.gads_quota_used_pct !== undefined ? `${summary.gads_quota_used_pct}%` : ''}</span>
             </span>
           </div>
 

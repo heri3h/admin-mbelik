@@ -12,12 +12,30 @@ logger = logging.getLogger(__name__)
 class GoogleAdsService:
     def __init__(self):
         self.last_rate_limit_at = None
+        self.daily_ops_count = 0
+        self.ops_count_date = date.today()
+
+    def _track_op(self):
+        today = date.today()
+        if self.ops_count_date != today:
+            self.ops_count_date = today
+            self.daily_ops_count = 0
+        self.daily_ops_count += 1
+
+    @property
+    def quota_used_pct(self) -> float:
+        today = date.today()
+        if self.ops_count_date != today:
+            self.ops_count_date = today
+            self.daily_ops_count = 0
+        return round((self.daily_ops_count / 15000.0) * 100.0, 1)
 
     @property
     def use_mock(self) -> bool:
         return bool(settings.USE_MOCK_DATA)
 
     def _search_stream_with_retry(self, ga_service, customer_id: str, query: str, max_retries: int = 2):
+        self._track_op()
         for attempt in range(max_retries):
             try:
                 return ga_service.search_stream(customer_id=customer_id, query=query)

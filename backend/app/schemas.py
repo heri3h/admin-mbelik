@@ -44,6 +44,7 @@ class SummaryMetrics(BaseModel):
     comparison_period_label: Optional[str] = None
     gads_status: Optional[str] = "live"
     gam_status: Optional[str] = "live"
+    gads_quota_used_pct: Optional[float] = 0.0
 
 
 

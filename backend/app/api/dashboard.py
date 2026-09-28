@@ -310,7 +310,8 @@ def get_summary(
         roi_change_pct=roi_change_pct,
         comparison_period_label=comp_label,
         gads_status=gads_status_val,
-        gam_status="live"
+        gam_status="live",
+        gads_quota_used_pct=google_ads_service.quota_used_pct
     )
 
 @router.get("/trend", response_model=List[DailyTrendItem])
