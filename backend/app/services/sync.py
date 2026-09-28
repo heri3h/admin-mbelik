@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 _sync_lock = threading.Lock()
 
 class SyncService:
-    def sync_range(self, db: Session, start_date: date, end_date: date) -> Dict[str, Any]:
+    def sync_range(self, db: Session, start_date: date, end_date: date, sync_gads: bool = True) -> Dict[str, Any]:
         """
         Pull Google Ads & GAM metrics for start_date to end_date, update DB cache tables,
         apply +11% tax on Google Ads spend and -8% deduction on GAM AdX revenue,
@@ -207,12 +207,13 @@ class SyncService:
             logger.error(f"GAM API Error: {err_msg}")
             messages.append(f"GAM API Error: {err_msg}")
 
-        # 2. Fetch & Upsert Google Ads metrics
-        try:
-            db_accounts = db.query(GoogleAdsAccount).all()
-        except Exception:
-            db.rollback()
-            db_accounts = []
+        # 2. Fetch & Upsert Google Ads metrics (if enabled)
+        if sync_gads:
+            try:
+                db_accounts = db.query(GoogleAdsAccount).all()
+            except Exception:
+                db.rollback()
+                db_accounts = []
 
         cids = [acc.customer_id for acc in db_accounts] if db_accounts else None
 
