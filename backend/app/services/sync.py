@@ -39,6 +39,14 @@ class SyncService:
             logger.warning(f"Sync table creation notice: {e}")
 
         try:
+            gam_sync_start = start_date
+            gam_data = gam_service.fetch_daily_metrics(gam_sync_start, end_date)
+        except Exception as e:
+            err_msg = str(e)
+            logger.error(f"GAM API Error: {err_msg}")
+            messages.append(f"GAM API Error: {err_msg}")
+
+        try:
             db_accounts = db.query(GoogleAdsAccount).all()
         except Exception:
             db.rollback()
@@ -55,14 +63,6 @@ class SyncService:
                 messages.append("Google Ads: Developer Token masih level Test Account. Ajukan Basic Access di Google Ads API Center untuk akses akun live.")
             else:
                 messages.append(f"Google Ads API Error: {err_msg}")
-
-        try:
-            gam_sync_start = start_date
-            gam_data = gam_service.fetch_daily_metrics(gam_sync_start, end_date)
-        except Exception as e:
-            err_msg = str(e)
-            logger.error(f"GAM API Error: {err_msg}")
-            messages.append(f"GAM API Error: {err_msg}")
 
         records_synced = 0
 

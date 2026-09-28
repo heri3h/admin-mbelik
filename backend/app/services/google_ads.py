@@ -14,7 +14,7 @@ class GoogleAdsService:
     def use_mock(self) -> bool:
         return bool(settings.USE_MOCK_DATA)
 
-    def _search_stream_with_retry(self, ga_service, customer_id: str, query: str, max_retries: int = 5):
+    def _search_stream_with_retry(self, ga_service, customer_id: str, query: str, max_retries: int = 2):
         for attempt in range(max_retries):
             try:
                 return ga_service.search_stream(customer_id=customer_id, query=query)
@@ -22,7 +22,7 @@ class GoogleAdsService:
                 err_str = str(ex)
                 is_rate_limit = any(k in err_str.lower() for k in ["429", "resource_exhausted", "too_many_requests", "too many requests"])
                 if is_rate_limit and attempt < max_retries - 1:
-                    sleep_time = (2 ** attempt) * 2.5 + random.uniform(0.5, 1.5)
+                    sleep_time = 1.0 + random.uniform(0.1, 0.5)
                     logger.warning(f"Google Ads API 429 Rate Limit for CID {customer_id}. Retrying in {sleep_time:.1f}s (Attempt {attempt + 1}/{max_retries})...")
                     time.sleep(sleep_time)
                 else:
