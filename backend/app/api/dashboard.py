@@ -285,6 +285,15 @@ def get_summary(
     else:
         last_synced_str = datetime.now(WIB).strftime("%d %b %Y, %H:%M WIB")
 
+    from app.services.google_ads import google_ads_service
+    is_gads_limited = False
+    if google_ads_service.last_rate_limit_at:
+        seconds_since_limit = (datetime.utcnow() - google_ads_service.last_rate_limit_at).total_seconds()
+        if seconds_since_limit < 3600:
+            is_gads_limited = True
+
+    gads_status_val = "rate_limited" if is_gads_limited else "live"
+
     return SummaryMetrics(
         total_spend=round(tot_spend, 2),
         total_revenue=round(tot_revenue, 2),
@@ -299,7 +308,9 @@ def get_summary(
         revenue_change_pct=revenue_change_pct,
         profit_change_pct=profit_change_pct,
         roi_change_pct=roi_change_pct,
-        comparison_period_label=comp_label
+        comparison_period_label=comp_label,
+        gads_status=gads_status_val,
+        gam_status="live"
     )
 
 @router.get("/trend", response_model=List[DailyTrendItem])

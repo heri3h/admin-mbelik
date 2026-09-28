@@ -83,8 +83,32 @@ export default function DashboardPage() {
           <p className="hidden sm:block text-xs text-slate-400 mt-0.5">Google Ads Spend vs Ad Exchange (GAM) Revenue Analytics</p>
         </div>
 
-        {/* Info Last Sync & Actions Button in 1 Horizontal Row */}
-        <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
+        {/* Info Last Sync, Status Badges & Actions Button */}
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+          {/* Status Badges: GAM (Green) & GAds (Green if live, Amber if rate limited) */}
+          <div className="flex items-center gap-1.5">
+            <span 
+              title="Google Ad Manager API: Live & Connected" 
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              GAM
+            </span>
+            <span 
+              title={summary?.gads_status === 'rate_limited' ? 'Google Ads API: Rate Limited (Quota Exceeded)' : 'Google Ads API: Live & Connected'} 
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-extrabold border shadow-sm ${
+                summary?.gads_status === 'rate_limited'
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/40'
+                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                summary?.gads_status === 'rate_limited' ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'
+              }`}></span>
+              GAds
+            </span>
+          </div>
+
           {summary?.last_synced_at && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-800/90 text-emerald-400 border border-emerald-500/30 shadow-sm whitespace-nowrap">
               <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

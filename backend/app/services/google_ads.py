@@ -10,6 +10,9 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 class GoogleAdsService:
+    def __init__(self):
+        self.last_rate_limit_at = None
+
     @property
     def use_mock(self) -> bool:
         return bool(settings.USE_MOCK_DATA)
@@ -21,6 +24,8 @@ class GoogleAdsService:
             except Exception as ex:
                 err_str = str(ex)
                 is_rate_limit = any(k in err_str.lower() for k in ["429", "resource_exhausted", "too_many_requests", "too many requests"])
+                if is_rate_limit:
+                    self.last_rate_limit_at = datetime.utcnow()
                 if is_rate_limit and attempt < max_retries - 1:
                     sleep_time = 1.0 + random.uniform(0.1, 0.5)
                     logger.warning(f"Google Ads API 429 Rate Limit for CID {customer_id}. Retrying in {sleep_time:.1f}s (Attempt {attempt + 1}/{max_retries})...")

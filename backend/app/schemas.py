@@ -42,6 +42,8 @@ class SummaryMetrics(BaseModel):
     profit_change_pct: Optional[float] = None
     roi_change_pct: Optional[float] = None
     comparison_period_label: Optional[str] = None
+    gads_status: Optional[str] = "live"
+    gam_status: Optional[str] = "live"
 
 
 
