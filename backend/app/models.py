@@ -135,15 +135,35 @@ class GoogleAdsCountryMetric(Base):
     customer_id = Column(String(50), index=True, nullable=False)
     country = Column(String(100), index=True, nullable=False)
     country_code = Column(String(10), nullable=True)
+    device_category = Column(String(20), nullable=True, default="all")
     spend = Column(Float, default=0.0)
     impressions = Column(Integer, default=0)
     clicks = Column(Integer, default=0)
     synced_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint('date', 'customer_id', 'country', name='_date_customer_country_uc'),
-        Index('idx_gads_country_date_customer', 'date', 'customer_id', 'country'),
+        UniqueConstraint('date', 'customer_id', 'country', 'device_category', name='_date_customer_country_dev_uc'),
+        Index('idx_gads_country_date_customer_dev', 'date', 'customer_id', 'country', 'device_category'),
     )
+
+
+class GoogleAdsDeviceMetric(Base):
+    __tablename__ = "google_ads_device_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, index=True, nullable=False)
+    customer_id = Column(String(50), index=True, nullable=False)
+    device_category = Column(String(20), index=True, nullable=False)
+    spend = Column(Float, default=0.0)
+    impressions = Column(Integer, default=0)
+    clicks = Column(Integer, default=0)
+    synced_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('date', 'customer_id', 'device_category', name='_date_customer_device_uc'),
+        Index('idx_gads_device_date_customer', 'date', 'customer_id', 'device_category'),
+    )
+
 
 
 

@@ -1,6 +1,8 @@
 import logging
 import random
 import time
+import os
+import json
 from datetime import datetime, timedelta, date
 from typing import List, Dict, Any
 from app.config import settings
@@ -12,7 +14,7 @@ class GoogleAdsService:
     def use_mock(self) -> bool:
         return bool(settings.USE_MOCK_DATA)
 
-    def _search_stream_with_retry(self, ga_service, customer_id: str, query: str, max_retries: int = 2):
+    def _search_stream_with_retry(self, ga_service, customer_id: str, query: str, max_retries: int = 5):
         for attempt in range(max_retries):
             try:
                 return ga_service.search_stream(customer_id=customer_id, query=query)
@@ -20,7 +22,7 @@ class GoogleAdsService:
                 err_str = str(ex)
                 is_rate_limit = any(k in err_str.lower() for k in ["429", "resource_exhausted", "too_many_requests", "too many requests"])
                 if is_rate_limit and attempt < max_retries - 1:
-                    sleep_time = 1.0 + random.uniform(0.1, 0.5)
+                    sleep_time = (2 ** attempt) * 2.5 + random.uniform(0.5, 1.5)
                     logger.warning(f"Google Ads API 429 Rate Limit for CID {customer_id}. Retrying in {sleep_time:.1f}s (Attempt {attempt + 1}/{max_retries})...")
                     time.sleep(sleep_time)
                 else:
@@ -185,41 +187,59 @@ class GoogleAdsService:
         if not cids:
             cids = ["default"]
 
-        # 1. Fetch official country mapping from geo_target_constant API for all 219+ countries
+        # 1. Fetch official country mapping from geo_cache.json or geo_target_constant API
         geo_map = getattr(self, '_geo_cache', None)
         if not geo_map:
             geo_map = {}
-            try:
-                sample_cid = cids[0].replace("-", "")
-                query_geo = """
-                    SELECT
-                        geo_target_constant.id,
-                        geo_target_constant.name,
-                        geo_target_constant.country_code
-                    FROM geo_target_constant
-                    WHERE geo_target_constant.status = 'ENABLED'
-                """
-                stream_geo = self._search_stream_with_retry(ga_service, sample_cid, query_geo)
-                if stream_geo:
-                    for batch in stream_geo:
-                        for row in batch.results:
-                            g = row.geo_target_constant
-                            code = str(g.country_code).upper() if g.country_code else ""
-                            c_meta = get_country_meta(code or g.name)
-                            geo_map[g.id] = {
-                                "country": str(g.name),
-                                "code": c_meta.get("code") or code or "XX"
-                            }
+            cache_file = os.path.join(os.path.dirname(__file__), "geo_cache.json")
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, "r") as f:
+                        raw_cache = json.load(f)
+                    for k, v in raw_cache.items():
+                        if k.isdigit():
+                            geo_map[int(k)] = v
+                        geo_map[k] = v
                     self._geo_cache = geo_map
-            except Exception as e:
-                logger.warning(f"Failed loading geo_target_constant map: {e}")
+                except Exception as e:
+                    logger.warning(f"Failed loading geo_cache.json: {e}")
 
+            if not geo_map:
+                try:
+                    sample_cid = cids[0].replace("-", "")
+                    query_geo = """
+                        SELECT
+                            geo_target_constant.id,
+                            geo_target_constant.name,
+                            geo_target_constant.country_code
+                        FROM geo_target_constant
+                        WHERE geo_target_constant.status = 'ENABLED'
+                    """
+                    stream_geo = self._search_stream_with_retry(ga_service, sample_cid, query_geo)
+                    if stream_geo:
+                        for batch in stream_geo:
+                            for row in batch.results:
+                                g = row.geo_target_constant
+                                code = str(g.country_code).upper() if g.country_code else ""
+                                c_meta = get_country_meta(code or g.name)
+                                entry = {
+                                    "country": str(g.name),
+                                    "code": c_meta.get("code") or code or "XX"
+                                }
+                                geo_map[g.id] = entry
+                                geo_map[str(g.id)] = entry
+                        self._geo_cache = geo_map
+                except Exception as e:
+                    logger.warning(f"Failed loading geo_target_constant map: {e}")
+
+        device_enum = googleads_client.enums.DeviceEnum
         formatted_start = start_date.strftime("%Y-%m-%d")
         formatted_end = end_date.strftime("%Y-%m-%d")
 
         query = f"""
             SELECT
                 segments.date,
+                segments.device,
                 customer.id,
                 user_location_view.country_criterion_id,
                 metrics.cost_micros,
@@ -232,17 +252,21 @@ class GoogleAdsService:
         results = []
         for cid in cids:
             clean_cid = cid.replace("-", "")
-            time.sleep(0.05)
+            time.sleep(0.75)
             try:
                 stream = self._search_stream_with_retry(ga_service, clean_cid, query)
                 if not stream:
                     continue
                 for batch in stream:
                     for row in batch.results:
+                        dev_raw = int(row.segments.device)
+                        dev_name = device_enum(dev_raw).name if callable(device_enum) else str(dev_raw)
+                        dev_cat = "desktop" if dev_name == "DESKTOP" else "mobile"
+
                         cost = row.metrics.cost_micros / 1000000.0 if row.metrics.cost_micros else 0.0
                         crit_id = getattr(row.user_location_view, 'country_criterion_id', None)
                         
-                        meta = geo_map.get(crit_id)
+                        meta = geo_map.get(crit_id) or geo_map.get(str(crit_id))
                         if not meta:
                             c_meta = get_country_meta("Unknown")
                             meta = {"country": f"Location #{crit_id}", "code": c_meta.get("code", "XX")}
@@ -253,6 +277,7 @@ class GoogleAdsService:
                             "customer_id": cid,
                             "country": meta["country"],
                             "country_code": meta["code"],
+                            "device_category": dev_cat,
                             "spend": round(cost, 2),  # Raw spend, +11% tax applied during sync
                             "impressions": int(row.metrics.impressions),
                             "clicks": int(row.metrics.clicks)
@@ -263,6 +288,7 @@ class GoogleAdsService:
                 if "invalid_grant" in err_str.lower():
                     raise RuntimeError("Google Ads API Auth Error: Refresh Token is expired or revoked. Please update GOOGLE_ADS_REFRESH_TOKEN in .env.")
                 continue
+
 
         return results
 
@@ -307,5 +333,113 @@ class GoogleAdsService:
 
         return results
 
+    def fetch_device_metrics(self, start_date: date, end_date: date, customer_ids: List[str] = None) -> List[Dict[str, Any]]:
+        """
+        Fetch daily device breakdown metrics for configured Google Ads Customer IDs.
+        """
+        if self.use_mock:
+            return self._generate_mock_device_data(start_date, end_date, customer_ids=customer_ids)
+        
+        return self._fetch_live_google_ads_device_data(start_date, end_date, customer_ids=customer_ids)
+
+    def _fetch_live_google_ads_device_data(self, start_date: date, end_date: date, customer_ids: List[str] = None) -> List[Dict[str, Any]]:
+        from google.ads.googleads.client import GoogleAdsClient
+        from google.ads.googleads.errors import GoogleAdsException
+
+        credentials = {
+            "developer_token": settings.GOOGLE_ADS_DEVELOPER_TOKEN,
+            "client_id": settings.GOOGLE_ADS_CLIENT_ID,
+            "client_secret": settings.GOOGLE_ADS_CLIENT_SECRET,
+            "refresh_token": settings.GOOGLE_ADS_REFRESH_TOKEN,
+            "use_proto_plus": True
+        }
+        if settings.GOOGLE_ADS_LOGIN_CUSTOMER_ID:
+            credentials["login_customer_id"] = settings.GOOGLE_ADS_LOGIN_CUSTOMER_ID.replace("-", "")
+
+        googleads_client = GoogleAdsClient.load_from_dict(credentials)
+        ga_service = googleads_client.get_service("GoogleAdsService")
+        device_enum = googleads_client.enums.DeviceEnum
+
+        formatted_start = start_date.strftime("%Y-%m-%d")
+        formatted_end = end_date.strftime("%Y-%m-%d")
+
+        query = f"""
+            SELECT
+                segments.date,
+                segments.device,
+                metrics.cost_micros,
+                metrics.impressions,
+                metrics.clicks
+            FROM campaign
+            WHERE segments.date BETWEEN '{formatted_start}' AND '{formatted_end}'
+        """
+
+        results = []
+        cids = customer_ids or settings.customer_ids_list
+        if not cids:
+            cids = ["default"]
+
+        for cid in cids:
+            clean_cid = cid.replace("-", "")
+            time.sleep(0.05)
+            try:
+                stream = self._search_stream_with_retry(ga_service, clean_cid, query)
+                if not stream:
+                    continue
+                for batch in stream:
+                    for row in batch.results:
+                        dev_raw = int(row.segments.device)
+                        dev_name = device_enum(dev_raw).name if callable(device_enum) else str(dev_raw)
+
+                        # Map enum names to normalized device category: 'desktop' or 'mobile'
+                        if dev_name == "DESKTOP":
+                            dev_cat = "desktop"
+                        else:
+                            dev_cat = "mobile"
+
+                        cost = row.metrics.cost_micros / 1000000.0 if row.metrics.cost_micros else 0.0
+                        row_date = datetime.strptime(row.segments.date, "%Y-%m-%d").date()
+
+                        results.append({
+                            "date": row_date,
+                            "customer_id": cid,
+                            "device_category": dev_cat,
+                            "spend": round(cost, 2), # Raw spend, +11% tax applied during sync
+                            "impressions": int(row.metrics.impressions),
+                            "clicks": int(row.metrics.clicks)
+                        })
+            except Exception as ex:
+                logger.warning(f"Google Ads API Device Notice for CID {cid}: {str(ex)}")
+                continue
+
+        return results
+
+    def _generate_mock_device_data(self, start_date: date, end_date: date, customer_ids: List[str] = None) -> List[Dict[str, Any]]:
+        results = []
+        cids = customer_ids or (settings.customer_ids_list if settings.customer_ids_list else ["102-394-8812", "551-902-1143"])
+
+        curr_date = start_date
+        while curr_date <= end_date:
+            for cid in cids:
+                results.append({
+                    "date": curr_date,
+                    "customer_id": cid,
+                    "device_category": "desktop",
+                    "spend": 300000.0,
+                    "impressions": 5000,
+                    "clicks": 200
+                })
+                results.append({
+                    "date": curr_date,
+                    "customer_id": cid,
+                    "device_category": "mobile",
+                    "spend": 500000.0,
+                    "impressions": 10000,
+                    "clicks": 400
+                })
+            curr_date += timedelta(days=1)
+        return results
+
 google_ads_service = GoogleAdsService()
+
 

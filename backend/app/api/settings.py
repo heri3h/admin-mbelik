@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -221,6 +222,16 @@ def create_export_target(
     if not clean_domain or not clean_path:
         raise HTTPException(status_code=400, detail="Domain dan Target Filepath wajib diisi.")
 
+    existing_target = db.query(JSONExportTarget).filter(
+        func.lower(JSONExportTarget.domain) == clean_domain.lower(),
+        JSONExportTarget.target_filepath == clean_path
+    ).first()
+    if existing_target:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target export untuk domain '{clean_domain}' dengan path '{clean_path}' yang sama persis sudah ada."
+        )
+
     new_target = JSONExportTarget(
         domain=clean_domain,
         target_filepath=clean_path,
@@ -274,6 +285,20 @@ def update_export_target(
     target = db.query(JSONExportTarget).filter(JSONExportTarget.id == target_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="JSON Export Target tidak ditemukan.")
+
+    check_domain = target_data.domain.strip() if target_data.domain is not None else target.domain
+    check_path = target_data.target_filepath.strip() if target_data.target_filepath is not None else target.target_filepath
+
+    existing_target = db.query(JSONExportTarget).filter(
+        func.lower(JSONExportTarget.domain) == check_domain.lower(),
+        JSONExportTarget.target_filepath == check_path,
+        JSONExportTarget.id != target_id
+    ).first()
+    if existing_target:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target export untuk domain '{check_domain}' dengan path '{check_path}' yang sama persis sudah ada."
+        )
 
     if target_data.domain is not None:
         target.domain = target_data.domain.strip()

@@ -1,0 +1,130 @@
+{
+  "target_mr": 65.0,
+  "emergency_mr_threshold": 15.0,
+  "default_pricing": "google_optimize",
+  "adjustments": {
+    "high_mr_threshold": 85.0,
+    "high_mr_boost_pct": 25.0,
+    "med_mr_threshold": 70.0,
+    "med_mr_boost_pct": 10.0,
+    "low_mr_threshold": 50.0,
+    "low_mr_penalty_pct": -15.0
+  },
+  "rules": [
+    {
+      "cpm": 5000,
+      "target_key": "5000",
+      "floor_key": "f4000"
+    },
+    {
+      "cpm": 7500,
+      "target_key": "7500",
+      "floor_key": "f7000"
+    },
+    {
+      "cpm": 10000,
+      "target_key": "10000",
+      "floor_key": "f9000"
+    },
+    {
+      "cpm": 12500,
+      "target_key": "12500",
+      "floor_key": "f12000"
+    },
+    {
+      "cpm": 15000,
+      "target_key": "15000",
+      "floor_key": "f15000"
+    },
+    {
+      "cpm": 17500,
+      "target_key": "17500",
+      "floor_key": "f17000"
+    },
+    {
+      "cpm": 20000,
+      "target_key": "20000",
+      "floor_key": "f20000"
+    },
+    {
+      "cpm": 22500,
+      "target_key": "22500",
+      "floor_key": "f23000"
+    },
+    {
+      "cpm": 25000,
+      "target_key": "25000",
+      "floor_key": "f25000"
+    },
+    {
+      "cpm": 30000,
+      "target_key": "30000",
+      "floor_key": "f27000"
+    },
+    {
+      "cpm": 35000,
+      "target_key": "35000",
+      "floor_key": "f30000"
+    },
+    {
+      "cpm": 40000,
+      "target_key": "40000",
+      "floor_key": "f35000"
+    },
+    {
+      "cpm": 45000,
+      "target_key": "45000",
+      "floor_key": "f40000"
+    },
+    {
+      "cpm": 50000,
+      "target_key": "50000",
+      "floor_key": "f45000"
+    },
+    {
+      "cpm": 55000,
+      "target_key": "55000",
+      "floor_key": "f50000"
+    },
+    {
+      "cpm": 60000,
+      "target_key": "60000",
+      "floor_key": "f55000"
+    },
+    {
+      "cpm": 65000,
+      "target_key": "65000",
+      "floor_key": "f60000"
+    },
+    {
+      "cpm": 70000,
+      "target_key": "70000",
+      "floor_key": "f60000"
+    },
+    {
+      "cpm": 75000,
+      "target_key": "75000",
+      "floor_key": "f60000"
+    },
+    {
+      "cpm": 80000,
+      "target_key": "80000",
+      "floor_key": "f60000"
+    },
+    {
+      "cpm": 100000,
+      "target_key": "100000",
+      "floor_key": "f60000"
+    },
+    {
+      "cpm": 130000,
+      "target_key": "130000",
+      "floor_key": "f60000"
+    },
+    {
+      "cpm": 155000,
+      "target_key": "155000",
+      "floor_key": "f60000"
+    }
+  ]
+}

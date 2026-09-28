@@ -7,25 +7,26 @@ const LEVEL1_COLUMNS = [
   { key: 'name', label: 'Country' },
   { key: 'spend', label: 'Spend (Ads)' },
   { key: 'revenue', label: 'Revenue (AdX)' },
+  { key: 'net_profit', label: 'Profit' },
   { key: 'ecpm', label: 'CPM AdX (eCPM)' },
-  { key: 'ad_requests', label: 'Ad Requests' },
-  { key: 'matched_requests', label: 'Matched Requests' },
   { key: 'match_rate', label: 'Match Rate' },
   { key: 'ctr', label: 'CTR' },
+  { key: 'ad_requests', label: 'Ad Requests' },
+  { key: 'matched_requests', label: 'Matched Requests' },
   { key: 'roi', label: 'ROI' },
-  { key: 'net_profit', label: 'Profit' },
   { key: 'pricing_rule_name', label: 'PRICING_RULE_NAME' },
 ];
 
 const LEVEL2_COLUMNS = [
-  { key: 'name', label: 'Ad Unit / Placement' },
+  { key: 'name', label: 'Ad Unit' },
   { key: 'revenue', label: 'Revenue (AdX)' },
   { key: 'ecpm', label: 'CPM AdX (eCPM)' },
-  { key: 'ad_requests', label: 'Ad Requests' },
-  { key: 'matched_requests', label: 'Matched Requests' },
   { key: 'match_rate', label: 'Match Rate' },
   { key: 'ctr', label: 'CTR' },
+  { key: 'ad_requests', label: 'Ad Requests' },
+  { key: 'matched_requests', label: 'Matched Requests' },
   { key: 'pricing_rule_name', label: 'PRICING_RULE_NAME' },
+  { key: 'placement_format', label: 'Format Iklan (Placement)' },
 ];
 
 const formatPricingRuleName = (rule) => {
@@ -429,7 +430,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         {activeVisibleCols.name && (
                           <th onClick={() => handleSort('name')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
                             <div className="flex items-center space-x-1 leading-tight">
-                              <span>{selectedCountry ? 'Ad Unit /<br/>Placement' : 'Country'}</span>
+                              <span>{selectedCountry ? 'Ad Unit' : 'Country'}</span>
                               {renderSortIndicator('name')}
                             </div>
                           </th>
@@ -450,27 +451,19 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             </div>
                           </th>
                         )}
+                        {!selectedCountry && activeVisibleCols.net_profit && (
+                          <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>Profit</span>
+                              {renderSortIndicator('net_profit')}
+                            </div>
+                          </th>
+                        )}
                         {activeVisibleCols.ecpm && (
                           <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                             <div className="flex items-center justify-end space-x-1 leading-tight">
                               <span>CPM AdX<br/>(eCPM)</span>
                               {renderSortIndicator('ecpm')}
-                            </div>
-                          </th>
-                        )}
-                        {activeVisibleCols.ad_requests && (
-                          <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                            <div className="flex items-center justify-end space-x-1 leading-tight">
-                              <span>Ad<br/>Requests</span>
-                              {renderSortIndicator('ad_requests')}
-                            </div>
-                          </th>
-                        )}
-                        {activeVisibleCols.matched_requests && (
-                          <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                            <div className="flex items-center justify-end space-x-1 leading-tight">
-                              <span>Matched<br/>Requests</span>
-                              {renderSortIndicator('matched_requests')}
                             </div>
                           </th>
                         )}
@@ -490,6 +483,22 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             </div>
                           </th>
                         )}
+                        {activeVisibleCols.ad_requests && (
+                          <th onClick={() => handleSort('ad_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>Ad<br/>Requests</span>
+                              {renderSortIndicator('ad_requests')}
+                            </div>
+                          </th>
+                        )}
+                        {activeVisibleCols.matched_requests && (
+                          <th onClick={() => handleSort('matched_requests')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>Matched<br/>Requests</span>
+                              {renderSortIndicator('matched_requests')}
+                            </div>
+                          </th>
+                        )}
                         {!selectedCountry && activeVisibleCols.roi && (
                           <th onClick={() => handleSort('roi')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                             <div className="flex items-center justify-end space-x-1 leading-tight">
@@ -498,19 +507,19 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             </div>
                           </th>
                         )}
-                        {!selectedCountry && activeVisibleCols.net_profit && (
-                          <th onClick={() => handleSort('net_profit')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
-                            <div className="flex items-center justify-end space-x-1 leading-tight">
-                              <span>Profit</span>
-                              {renderSortIndicator('net_profit')}
-                            </div>
-                          </th>
-                        )}
                         {activeVisibleCols.pricing_rule_name && (
                           <th onClick={() => handleSort('pricing_rule_name')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                             <div className="flex items-center justify-end space-x-1 leading-tight">
                               <span>PRICING_<br/>RULE_NAME</span>
                               {renderSortIndicator('pricing_rule_name')}
+                            </div>
+                          </th>
+                        )}
+                        {selectedCountry && activeVisibleCols.placement_format && (
+                          <th onClick={() => handleSort('placement_format')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>Format Iklan<br/>(Placement)</span>
+                              {renderSortIndicator('placement_format')}
                             </div>
                           </th>
                         )}
@@ -564,21 +573,26 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   </td>
                                 )}
 
+                                {activeVisibleCols.net_profit && (
+                                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                                    {hasSpend ? (
+                                      <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold border ${
+                                        isProfitable
+                                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                          : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                      }`}>
+                                        {isProfitable ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                        <span>{formatCurrency(c.net_profit)}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-emerald-400 font-bold">{formatCurrency(c.revenue)}</span>
+                                    )}
+                                  </td>
+                                )}
+
                                 {activeVisibleCols.ecpm && (
                                   <td className="px-3 py-2.5 text-right font-mono font-semibold text-sky-400 whitespace-nowrap">
                                     {formatCurrency(c.ecpm)}
-                                  </td>
-                                )}
-
-                                {activeVisibleCols.ad_requests && (
-                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
-                                    {(c.ad_requests || 0).toLocaleString()}
-                                  </td>
-                                )}
-
-                                {activeVisibleCols.matched_requests && (
-                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
-                                    {(c.matched_requests || 0).toLocaleString()}
                                   </td>
                                 )}
 
@@ -594,6 +608,18 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   </td>
                                 )}
 
+                                {activeVisibleCols.ad_requests && (
+                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                    {(c.ad_requests || 0).toLocaleString()}
+                                  </td>
+                                )}
+
+                                {activeVisibleCols.matched_requests && (
+                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                    {(c.matched_requests || 0).toLocaleString()}
+                                  </td>
+                                )}
+
                                 {activeVisibleCols.roi && (
                                   <td className="px-3 py-2.5 text-right font-mono font-bold whitespace-nowrap">
                                     {hasSpend ? (
@@ -602,23 +628,6 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                       </span>
                                     ) : (
                                       <span className="text-slate-500">N/A</span>
-                                    )}
-                                  </td>
-                                )}
-
-                                {activeVisibleCols.net_profit && (
-                                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                                    {hasSpend ? (
-                                      <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold border ${
-                                        isProfitable
-                                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                          : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                                      }`}>
-                                        {isProfitable ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                                        <span>{formatCurrency(c.net_profit)}</span>
-                                      </span>
-                                    ) : (
-                                      <span className="text-emerald-400 font-bold">{formatCurrency(c.revenue)}</span>
                                     )}
                                   </td>
                                 )}
@@ -675,18 +684,6 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   </td>
                                 )}
 
-                                {activeVisibleCols.ad_requests && (
-                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
-                                    {(p.ad_requests || 0).toLocaleString()}
-                                  </td>
-                                )}
-
-                                {activeVisibleCols.matched_requests && (
-                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
-                                    {(p.matched_requests || 0).toLocaleString()}
-                                  </td>
-                                )}
-
                                 {activeVisibleCols.match_rate && (
                                   <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">
                                     {(p.match_rate || 0).toFixed(1)}%
@@ -699,9 +696,37 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                   </td>
                                 )}
 
+                                {activeVisibleCols.ad_requests && (
+                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                    {(p.ad_requests || 0).toLocaleString()}
+                                  </td>
+                                )}
+
+                                {activeVisibleCols.matched_requests && (
+                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                    {(p.matched_requests || 0).toLocaleString()}
+                                  </td>
+                                )}
+
                                 {activeVisibleCols.pricing_rule_name && (
                                   <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
                                     {formatPricingRuleName(p.pricing_rule_name)}
+                                  </td>
+                                )}
+
+                                {activeVisibleCols.placement_format && (
+                                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                                      p.placement_format === 'Interstitial' ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' :
+                                      p.placement_format === 'Anchor / Sticky' ? 'bg-purple-500/10 text-purple-300 border-purple-500/30' :
+                                      p.placement_format === 'Vignette' ? 'bg-rose-500/10 text-rose-300 border-rose-500/30' :
+                                      p.placement_format === 'In-Feed' ? 'bg-teal-500/10 text-teal-300 border-teal-500/30' :
+                                      p.placement_format === 'Header' ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30' :
+                                      p.placement_format === 'Sidebar 1' || p.placement_format === 'Sidebar 2' ? 'bg-blue-500/10 text-blue-300 border-blue-500/30' :
+                                      'bg-slate-700/50 text-slate-300 border-slate-600/50'
+                                    }`}>
+                                      {p.placement_format || 'Banner'}
+                                    </span>
                                   </td>
                                 )}
                               </tr>
@@ -726,16 +751,6 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           {activeVisibleCols.ecpm && (
                             <td className="px-3 py-2.5 text-right font-mono text-sky-400 whitespace-nowrap">{formatCurrency(activeEcpm)}</td>
                           )}
-                          {activeVisibleCols.ad_requests && (
-                            <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                              {level2TotalAdReqs.toLocaleString()}
-                            </td>
-                          )}
-                          {activeVisibleCols.matched_requests && (
-                            <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                              {level2TotalMatchedReqs.toLocaleString()}
-                            </td>
-                          )}
                           {activeVisibleCols.match_rate && (
                             <td className="px-3 py-2.5 text-right font-mono text-indigo-300 whitespace-nowrap">
                               {level2AvgMatchRate.toFixed(1)}%
@@ -744,6 +759,16 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           {activeVisibleCols.ctr && (
                             <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                               {level2AvgCtr.toFixed(2)}%
+                            </td>
+                          )}
+                          {activeVisibleCols.ad_requests && (
+                            <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                              {level2TotalAdReqs.toLocaleString()}
+                            </td>
+                          )}
+                          {activeVisibleCols.matched_requests && (
+                            <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                              {level2TotalMatchedReqs.toLocaleString()}
                             </td>
                           )}
                           {activeVisibleCols.pricing_rule_name && (
@@ -767,18 +792,11 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           {activeVisibleCols.revenue && (
                             <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeRev)}</td>
                           )}
+                          {activeVisibleCols.net_profit && (
+                            <td className={`px-3 py-2.5 text-right font-bold whitespace-nowrap ${activeProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatCurrency(activeProfit)}</td>
+                          )}
                           {activeVisibleCols.ecpm && (
                             <td className="px-3 py-2.5 text-right font-mono text-sky-400 whitespace-nowrap">{formatCurrency(activeEcpm)}</td>
-                          )}
-                          {activeVisibleCols.ad_requests && (
-                            <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                              {totalAdReqs.toLocaleString()}
-                            </td>
-                          )}
-                          {activeVisibleCols.matched_requests && (
-                            <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                              {totalMatchedReqs.toLocaleString()}
-                            </td>
                           )}
                           {activeVisibleCols.match_rate && (
                             <td className="px-3 py-2.5 text-right font-mono text-indigo-300 whitespace-nowrap">
@@ -788,6 +806,16 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           {activeVisibleCols.ctr && (
                             <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                               {avgCtr.toFixed(2)}%
+                            </td>
+                          )}
+                          {activeVisibleCols.ad_requests && (
+                            <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                              {totalAdReqs.toLocaleString()}
+                            </td>
+                          )}
+                          {activeVisibleCols.matched_requests && (
+                            <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                              {totalMatchedReqs.toLocaleString()}
                             </td>
                           )}
                           {activeVisibleCols.roi && (
@@ -800,9 +828,6 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                 <span className="text-slate-500">N/A</span>
                               )}
                             </td>
-                          )}
-                          {activeVisibleCols.net_profit && (
-                            <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeProfit)}</td>
                           )}
                           {activeVisibleCols.pricing_rule_name && (
                             <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">

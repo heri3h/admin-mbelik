@@ -100,6 +100,7 @@ class SiteBreakdownItem(BaseModel):
 class PlacementBreakdownItem(BaseModel):
     domain: str
     ad_unit: str
+    placement_format: Optional[str] = "Banner"
     total_revenue: float
     impressions: int
     clicks: int
@@ -173,7 +174,7 @@ class GoogleAdsAccountResponse(BaseModel):
 class JSONExportTargetBase(BaseModel):
     domain: str
     target_filepath: str
-    start_hour: int = 10
+    start_hour: int = 0
     end_hour: int = 23
     is_active: bool = True
 
@@ -242,8 +243,10 @@ class PricingAdjustmentsSchema(BaseModel):
 
 class PricingConfigSchema(BaseModel):
     target_mr: float = 65.0
+    emergency_mr_threshold: Optional[float] = 15.0
     default_pricing: str = "google_optimize"
     device_settings: Optional[dict] = None
+    format_settings: Optional[dict] = None
     adjustments: Optional[PricingAdjustmentsSchema] = None
     rules: List[PricingRuleSchema]
 

@@ -8,7 +8,7 @@ from typing import Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.models import GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, DailyProfitSummary, GoogleAdsAccount
+from app.models import GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, GoogleAdsDeviceMetric, DailyProfitSummary, GoogleAdsAccount
 
 from app.services.google_ads import google_ads_service
 from app.services.gam import gam_service
@@ -141,13 +141,15 @@ class SyncService:
 
             aggregated_gads_country = {}
             for item in gads_country_data:
-                key = (item["date"], item["customer_id"], item["country"])
+                dev_cat = item.get("device_category", "mobile")
+                key = (item["date"], item["customer_id"], item["country"], dev_cat)
                 if key not in aggregated_gads_country:
                     aggregated_gads_country[key] = {
                         "date": item["date"],
                         "customer_id": item["customer_id"],
                         "country": item["country"],
                         "country_code": item.get("country_code", "ID"),
+                        "device_category": dev_cat,
                         "spend": 0.0,
                         "impressions": 0,
                         "clicks": 0
@@ -165,6 +167,7 @@ class SyncService:
                     customer_id=item["customer_id"],
                     country=item["country"],
                     country_code=item["country_code"],
+                    device_category=item["device_category"],
                     spend=adj_spend,
                     impressions=item["impressions"],
                     clicks=item["clicks"],
@@ -175,6 +178,52 @@ class SyncService:
         except Exception as e:
             db.rollback()
             logger.warning(f"Sync Google Ads Country Metrics notice: {e}")
+
+
+        # 1c. Deduplicate & Upsert Google Ads Device metrics (Apply +11% tax adjustment)
+        try:
+            gads_device_data = google_ads_service.fetch_device_metrics(start_date, end_date, customer_ids=cids)
+            db.query(GoogleAdsDeviceMetric).filter(
+                GoogleAdsDeviceMetric.date >= start_date,
+                GoogleAdsDeviceMetric.date <= end_date
+            ).delete(synchronize_session=False)
+            db.commit()
+
+            aggregated_gads_device = {}
+            for item in gads_device_data:
+                key = (item["date"], item["customer_id"], item["device_category"])
+                if key not in aggregated_gads_device:
+                    aggregated_gads_device[key] = {
+                        "date": item["date"],
+                        "customer_id": item["customer_id"],
+                        "device_category": item["device_category"],
+                        "spend": 0.0,
+                        "impressions": 0,
+                        "clicks": 0
+                    }
+                agg = aggregated_gads_device[key]
+                agg["spend"] += item.get("spend", 0.0)
+                agg["impressions"] += item.get("impressions", 0)
+                agg["clicks"] += item.get("clicks", 0)
+
+            for item in aggregated_gads_device.values():
+                raw_spend = item.get("spend", 0.0)
+                adj_spend = round(raw_spend * 1.11, 2)  # Adds 11% PPN tax
+                new_d_gads = GoogleAdsDeviceMetric(
+                    date=item["date"],
+                    customer_id=item["customer_id"],
+                    device_category=item["device_category"],
+                    spend=adj_spend,
+                    impressions=item["impressions"],
+                    clicks=item["clicks"],
+                    synced_at=datetime.utcnow()
+                )
+                db.add(new_d_gads)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"Sync Google Ads Device Metrics notice: {e}")
+
 
         # 2. Delete stale GAM metrics for target sync range and insert fresh live GAM API data
         db.query(GAMMetric).filter(
@@ -459,7 +508,7 @@ def export_site_today_json(
     wib_now = datetime.now(WIB)
     current_hour = wib_now.hour
 
-    # Jam operasional auto-export: Pukul 10:00 pagi s/d 23:00 malam WIB
+    # Jam operasional auto-export: 24 Jam Full (00:00 - 23:59 WIB)
     if not force and not (start_hour <= current_hour <= end_hour):
         logger.info(f"Auto-export JSON untuk {domain} dilewati (di luar jam operasional {start_hour}:00 - {end_hour}:00 WIB). Jam saat ini: {wib_now.strftime('%H:%M WIB')}")
         return
@@ -586,31 +635,161 @@ def export_site_today_json(
         ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else 0.0
         hist_summary_dev_map[dev_cat] = {"match_rate": mr, "ecpm": ecpm}
 
-    def ensure_devices(dev_dict, hist_dict=None, country_fallback=None, summary_fallback=None):
+    def classify_ad_format(unit_name: str) -> str:
+        if not unit_name:
+            return "bnr"
+        u = str(unit_name).lower().strip()
+        if any(k in u for k in ["int", "vignet", "interstitial"]):
+            return "int"
+        if any(k in u for k in ["sticky", "anchor", "anc"]):
+            return "anc"
+        return "bnr"
+
+    # 7-day historical format breakdown summary
+    hist_fmt_summary_rows = db.query(
+        GAMMetric.device_category,
+        GAMMetric.ad_unit,
+        func.sum(GAMMetric.revenue).label("revenue"),
+        func.sum(GAMMetric.impressions).label("impressions"),
+        func.sum(GAMMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMMetric.matched_requests).label("matched_requests")
+    ).filter(
+        GAMMetric.domain == domain,
+        GAMMetric.date >= d_start_7d,
+        GAMMetric.date <= today_date
+    ).group_by(GAMMetric.device_category, GAMMetric.ad_unit).all()
+
+    hist_summary_fmt_map = {}
+    hist_fmt_temp = {}
+    for r in hist_fmt_summary_rows:
+        dev_cat = (r.device_category or "mobile").lower()
+        fmt = classify_ad_format(r.ad_unit)
+        if dev_cat not in hist_fmt_temp:
+            hist_fmt_temp[dev_cat] = {}
+        if fmt not in hist_fmt_temp[dev_cat]:
+            hist_fmt_temp[dev_cat][fmt] = {"rev": 0.0, "imps": 0, "ad_reqs": 0, "matched": 0}
+        hist_fmt_temp[dev_cat][fmt]["rev"] += (r.revenue or 0.0)
+        hist_fmt_temp[dev_cat][fmt]["imps"] += (r.impressions or 0)
+        hist_fmt_temp[dev_cat][fmt]["ad_reqs"] += (r.ad_requests or 0)
+        hist_fmt_temp[dev_cat][fmt]["matched"] += (r.matched_requests or 0)
+
+    for dev_cat, fmts in hist_fmt_temp.items():
+        hist_summary_fmt_map[dev_cat] = {}
+        for fmt, d in fmts.items():
+            mr = round((d["matched"] / d["ad_reqs"] * 100.0), 1) if d["ad_reqs"] > 0 else 0.0
+            ecpm = round((d["rev"] / d["imps"] * 1000.0), 2) if d["imps"] > 0 else 0.0
+            hist_summary_fmt_map[dev_cat][fmt] = {"match_rate": mr, "ecpm": ecpm}
+
+    # 7-day historical format breakdown per country+device
+    hist_c_fmt_rows = db.query(
+        GAMCountryMetric.country,
+        GAMCountryMetric.device_category,
+        GAMCountryMetric.ad_unit,
+        func.sum(GAMCountryMetric.revenue).label("revenue"),
+        func.sum(GAMCountryMetric.impressions).label("impressions"),
+        func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
+    ).filter(
+        func.lower(GAMCountryMetric.domain) == domain.lower(),
+        GAMCountryMetric.date >= d_start_7d,
+        GAMCountryMetric.date <= today_date
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.device_category, GAMCountryMetric.ad_unit).all()
+
+    hist_c_fmt_map = {}
+    hist_cf_temp = {}
+    for r in hist_c_fmt_rows:
+        c_name = r.country or "Unknown Region"
+        dev_cat = (r.device_category or "mobile").lower()
+        fmt = classify_ad_format(r.ad_unit)
+        if c_name not in hist_cf_temp:
+            hist_cf_temp[c_name] = {}
+        if dev_cat not in hist_cf_temp[c_name]:
+            hist_cf_temp[c_name][dev_cat] = {}
+        if fmt not in hist_cf_temp[c_name][dev_cat]:
+            hist_cf_temp[c_name][dev_cat][fmt] = {"rev": 0.0, "imps": 0, "ad_reqs": 0, "matched": 0}
+        hist_cf_temp[c_name][dev_cat][fmt]["rev"] += (r.revenue or 0.0)
+        hist_cf_temp[c_name][dev_cat][fmt]["imps"] += (r.impressions or 0)
+        hist_cf_temp[c_name][dev_cat][fmt]["ad_reqs"] += (r.ad_requests or 0)
+        hist_cf_temp[c_name][dev_cat][fmt]["matched"] += (r.matched_requests or 0)
+
+    for c_name, devs in hist_cf_temp.items():
+        hist_c_fmt_map[c_name] = {}
+        for dev_cat, fmts in devs.items():
+            hist_c_fmt_map[c_name][dev_cat] = {}
+            for fmt, d in fmts.items():
+                mr = round((d["matched"] / d["ad_reqs"] * 100.0), 1) if d["ad_reqs"] > 0 else 0.0
+                ecpm = round((d["rev"] / d["imps"] * 1000.0), 2) if d["imps"] > 0 else 0.0
+                hist_c_fmt_map[c_name][dev_cat][fmt] = {"match_rate": mr, "ecpm": ecpm}
+
+    def ensure_devices(dev_dict, fmt_today_map=None, hist_dict=None, hist_fmt_map=None, country_fallback=None, summary_fallback=None):
         out = {}
         for dev in ["mobile", "desktop"]:
             d_val = dev_dict.get(dev) if dev_dict else None
+            out_dev = None
             if d_val and (d_val.get("ecpm", 0) > 0 or d_val.get("match_rate", 0) > 0):
-                out[dev] = d_val
-                continue
+                out_dev = dict(d_val)
+            elif hist_dict and hist_dict.get(dev) and (hist_dict[dev].get("ecpm", 0) > 0 or hist_dict[dev].get("match_rate", 0) > 0):
+                out_dev = dict(hist_dict[dev])
+            elif country_fallback and country_fallback.get(dev) and (country_fallback[dev].get("ecpm", 0) > 0 or country_fallback[dev].get("match_rate", 0) > 0):
+                out_dev = dict(country_fallback[dev])
+            elif summary_fallback and summary_fallback.get(dev) and (summary_fallback[dev].get("ecpm", 0) > 0 or summary_fallback[dev].get("match_rate", 0) > 0):
+                out_dev = dict(summary_fallback[dev])
+            else:
+                out_dev = {"match_rate": 0.0, "ecpm": 0.0}
 
-            h_val = hist_dict.get(dev) if hist_dict else None
-            if h_val and (h_val.get("ecpm", 0) > 0 or h_val.get("match_rate", 0) > 0):
-                out[dev] = h_val
-                continue
+            base_mr = out_dev.get("match_rate", 0.0)
+            base_ecpm = out_dev.get("ecpm", 0.0)
 
-            c_val = country_fallback.get(dev) if country_fallback else None
-            if c_val and (c_val.get("ecpm", 0) > 0 or c_val.get("match_rate", 0) > 0):
-                out[dev] = c_val
-                continue
+            f_today_dev = fmt_today_map.get(dev, {}) if fmt_today_map else {}
+            f_hist_dev = hist_fmt_map.get(dev, {}) if hist_fmt_map else {}
 
-            s_val = summary_fallback.get(dev) if summary_fallback else None
-            if s_val and (s_val.get("ecpm", 0) > 0 or s_val.get("match_rate", 0) > 0):
-                out[dev] = s_val
-                continue
+            for fmt in ["int", "anc", "bnr"]:
+                t_data = f_today_dev.get(fmt)
+                if t_data and (t_data.get("imps", 0) > 0 or t_data.get("ad_reqs", 0) > 0):
+                    rev = t_data["rev"]
+                    imps = t_data["imps"]
+                    ad_reqs = t_data["ad_reqs"]
+                    matched = t_data["matched"]
+                    f_mr = round((matched / ad_reqs * 100.0), 1) if ad_reqs > 0 else (100.0 if imps > 0 else base_mr)
+                    f_ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else base_ecpm
+                    out_dev[fmt] = {"match_rate": f_mr, "ecpm": f_ecpm}
+                elif f_hist_dev.get(fmt) and (f_hist_dev[fmt].get("match_rate", 0) > 0 or f_hist_dev[fmt].get("ecpm", 0) > 0):
+                    out_dev[fmt] = f_hist_dev[fmt]
+                elif country_fallback and country_fallback.get(dev) and country_fallback[dev].get(fmt):
+                    out_dev[fmt] = country_fallback[dev][fmt]
+                elif summary_fallback and summary_fallback.get(dev) and summary_fallback[dev].get(fmt):
+                    out_dev[fmt] = summary_fallback[dev][fmt]
+                else:
+                    out_dev[fmt] = {"match_rate": base_mr, "ecpm": base_ecpm}
 
-            out[dev] = {"match_rate": 0.0, "ecpm": 0.0}
+            out[dev] = out_dev
         return out
+
+    # Today format breakdown summary query
+    summary_fmt_today_rows = db.query(
+        GAMMetric.device_category,
+        GAMMetric.ad_unit,
+        func.sum(GAMMetric.revenue).label("revenue"),
+        func.sum(GAMMetric.impressions).label("impressions"),
+        func.sum(GAMMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMMetric.matched_requests).label("matched_requests")
+    ).filter(
+        GAMMetric.domain == domain,
+        GAMMetric.date == today_date
+    ).group_by(GAMMetric.device_category, GAMMetric.ad_unit).all()
+
+    summary_fmt_today_map = {}
+    for r in summary_fmt_today_rows:
+        dev_cat = (r.device_category or "mobile").lower()
+        fmt = classify_ad_format(r.ad_unit)
+        if dev_cat not in summary_fmt_today_map:
+            summary_fmt_today_map[dev_cat] = {}
+        if fmt not in summary_fmt_today_map[dev_cat]:
+            summary_fmt_today_map[dev_cat][fmt] = {"rev": 0.0, "imps": 0, "ad_reqs": 0, "matched": 0}
+        summary_fmt_today_map[dev_cat][fmt]["rev"] += (r.revenue or 0.0)
+        summary_fmt_today_map[dev_cat][fmt]["imps"] += (r.impressions or 0)
+        summary_fmt_today_map[dev_cat][fmt]["ad_reqs"] += (r.ad_requests or 0)
+        summary_fmt_today_map[dev_cat][fmt]["matched"] += (r.matched_requests or 0)
 
     # Query per-device summary breakdown
     summary_dev_rows = db.query(
@@ -638,7 +817,12 @@ def export_site_today_json(
             "match_rate": dev_mr,
             "ecpm": dev_ecpm
         }
-    summary_devices = ensure_devices(summary_devices_raw, hist_summary_dev_map)
+    summary_devices = ensure_devices(
+        summary_devices_raw,
+        fmt_today_map=summary_fmt_today_map,
+        hist_dict=hist_summary_dev_map,
+        hist_fmt_map=hist_summary_fmt_map
+    )
 
     # Query real GAM country metrics from DB for the specified domain
     target_c_date = today_date
@@ -712,6 +896,36 @@ def export_site_today_json(
             "match_rate": mr,
             "ecpm": ecpm
         }
+
+    # Query format breakdown per country and device for target_c_date
+    c_fmt_today_rows = db.query(
+        GAMCountryMetric.country,
+        GAMCountryMetric.device_category,
+        GAMCountryMetric.ad_unit,
+        func.sum(GAMCountryMetric.revenue).label("revenue"),
+        func.sum(GAMCountryMetric.impressions).label("impressions"),
+        func.sum(GAMCountryMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
+    ).filter(
+        func.lower(GAMCountryMetric.domain) == domain.lower(),
+        GAMCountryMetric.date == target_c_date
+    ).group_by(GAMCountryMetric.country, GAMCountryMetric.device_category, GAMCountryMetric.ad_unit).all()
+
+    c_fmt_today_map = {}
+    for r in c_fmt_today_rows:
+        c_name = r.country or "Unknown Region"
+        dev_cat = (r.device_category or "mobile").lower()
+        fmt = classify_ad_format(r.ad_unit)
+        if c_name not in c_fmt_today_map:
+            c_fmt_today_map[c_name] = {}
+        if dev_cat not in c_fmt_today_map[c_name]:
+            c_fmt_today_map[c_name][dev_cat] = {}
+        if fmt not in c_fmt_today_map[c_name][dev_cat]:
+            c_fmt_today_map[c_name][dev_cat][fmt] = {"rev": 0.0, "imps": 0, "ad_reqs": 0, "matched": 0}
+        c_fmt_today_map[c_name][dev_cat][fmt]["rev"] += (r.revenue or 0.0)
+        c_fmt_today_map[c_name][dev_cat][fmt]["imps"] += (r.impressions or 0)
+        c_fmt_today_map[c_name][dev_cat][fmt]["ad_reqs"] += (r.ad_requests or 0)
+        c_fmt_today_map[c_name][dev_cat][fmt]["matched"] += (r.matched_requests or 0)
 
     # Query device breakdown per country
     db_country_dev_rows = db.query(
@@ -797,7 +1011,9 @@ def export_site_today_json(
 
             c_dev_dict = ensure_devices(
                 country_device_map.get(c_name, {}),
+                fmt_today_map=c_fmt_today_map.get(c_name, {}),
                 hist_dict=hist_c_dev_map.get(c_name, {}),
+                hist_fmt_map=hist_c_fmt_map.get(c_name, {}),
                 summary_fallback=summary_devices
             )
 
@@ -922,6 +1138,20 @@ DEFAULT_PRICING_CONFIG = {
         "mobile": {
             "cpm_multiplier": 1.0,
             "min_floor": 5000
+        }
+    },
+    "format_settings": {
+        "interstitial": {
+            "multiplier": 1.5,
+            "high_mr_threshold": 70.0
+        },
+        "anchor": {
+            "multiplier": 1.2,
+            "high_mr_threshold": 65.0
+        },
+        "banner": {
+            "multiplier": 1.0,
+            "high_mr_threshold": 85.0
         }
     },
     "adjustments": {

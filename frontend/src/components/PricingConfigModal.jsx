@@ -30,6 +30,7 @@ const DEFAULT_RULES = [
 
 export default function PricingConfigModal({ isOpen, onClose }) {
   const [targetMr, setTargetMr] = useState(65.0);
+  const [emergencyMrThreshold, setEmergencyMrThreshold] = useState(15.0);
   const [defaultPricing, setDefaultPricing] = useState('google_optimize');
   const [rules, setRules] = useState(DEFAULT_RULES);
 
@@ -37,6 +38,12 @@ export default function PricingConfigModal({ isOpen, onClose }) {
   const [deviceSettings, setDeviceSettings] = useState({
     desktop: { cpm_multiplier: 1.25 },
     mobile: { cpm_multiplier: 1.0 }
+  });
+
+  const [formatSettings, setFormatSettings] = useState({
+    interstitial: { multiplier: 1.5, high_mr_threshold: 70.0 },
+    anchor: { multiplier: 1.2, high_mr_threshold: 65.0 },
+    banner: { multiplier: 1.0, high_mr_threshold: 85.0 }
   });
 
   const [adjustments, setAdjustments] = useState({
@@ -73,11 +80,28 @@ export default function PricingConfigModal({ isOpen, onClose }) {
       const data = await dashboardService.getPricingConfig();
       if (data) {
         if (data.target_mr !== undefined) setTargetMr(data.target_mr);
+        if (data.emergency_mr_threshold !== undefined) setEmergencyMrThreshold(data.emergency_mr_threshold);
         if (data.default_pricing !== undefined) setDefaultPricing(data.default_pricing);
         if (data.device_settings) {
           setDeviceSettings({
             desktop: { cpm_multiplier: data.device_settings.desktop?.cpm_multiplier ?? 1.25 },
             mobile: { cpm_multiplier: data.device_settings.mobile?.cpm_multiplier ?? 1.0 }
+          });
+        }
+        if (data.format_settings) {
+          setFormatSettings({
+            interstitial: {
+              multiplier: data.format_settings.interstitial?.multiplier ?? 1.5,
+              high_mr_threshold: data.format_settings.interstitial?.high_mr_threshold ?? 70.0
+            },
+            anchor: {
+              multiplier: data.format_settings.anchor?.multiplier ?? 1.2,
+              high_mr_threshold: data.format_settings.anchor?.high_mr_threshold ?? 65.0
+            },
+            banner: {
+              multiplier: data.format_settings.banner?.multiplier ?? 1.0,
+              high_mr_threshold: data.format_settings.banner?.high_mr_threshold ?? 85.0
+            }
           });
         }
         if (data.adjustments) {
@@ -159,6 +183,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
   const handleResetDefaults = () => {
     if (window.confirm('Reset pricing rules to system defaults?')) {
       setTargetMr(65.0);
+      setEmergencyMrThreshold(15.0);
       setDefaultPricing('google_optimize');
       setRules(DEFAULT_RULES);
       setError('');
@@ -174,8 +199,10 @@ export default function PricingConfigModal({ isOpen, onClose }) {
 
     const payload = {
       target_mr: parseFloat(targetMr) || 65.0,
+      emergency_mr_threshold: parseFloat(emergencyMrThreshold) || 15.0,
       default_pricing: defaultPricing.trim() || 'google_optimize',
       device_settings: deviceSettings,
+      format_settings: formatSettings,
       adjustments: {
         high_mr_threshold: parseFloat(adjustments.high_mr_threshold) || 85.0,
         high_mr_boost_pct: parseFloat(adjustments.high_mr_boost_pct) || 25.0,
@@ -218,7 +245,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-white tracking-tight">GAM Auto Pricing Rules & Central Config</h2>
-              <p className="text-slate-400 text-xs mt-0.5">Edit CPM threshold rules, target match rate, device multipliers, and fallback pricing across all sites</p>
+              <p className="text-slate-400 text-xs mt-0.5">Edit CPM threshold rules, target match rate, emergency fallback, device multipliers, and fallback pricing across all sites</p>
             </div>
           </div>
           <button
@@ -265,7 +292,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
               )}
 
               {/* Central Settings */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-800/60 p-4 rounded-xl border border-slate-700/60">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-800/60 p-4 rounded-xl border border-slate-700/60">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                     Target Match Rate (Target MR %)
@@ -282,7 +309,26 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                     />
                     <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">%</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1">Default target match rate used for pricing rule calculations</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Default target match rate for pricing rules</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-rose-400 uppercase tracking-wider mb-1.5">
+                    Emergency MR Fallback (&lt; %)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="1"
+                      max="50"
+                      value={emergencyMrThreshold}
+                      onChange={(e) => setEmergencyMrThreshold(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-900 border border-rose-500/50 rounded-lg text-xs text-rose-300 font-mono font-bold focus:outline-none focus:border-rose-400"
+                    />
+                    <span className="absolute right-3 top-2.5 text-xs text-rose-400 font-bold">%</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">If MR &lt; this, force google_optimize</p>
                 </div>
 
                 <div>
@@ -296,7 +342,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                     placeholder="e.g. google_optimize"
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white font-mono font-semibold focus:outline-none focus:border-sky-500"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">Fallback rule name when pricing match fails or falls back to Google GAM default</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Fallback rule when match fails</p>
                 </div>
               </div>
 
@@ -341,6 +387,132 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                       className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-sky-500"
                     />
                     <p className="text-[10px] text-slate-500 mt-1">Default 1.0x (Standard Mobile CPM)</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Format-Specific Optimizations Section */}
+              <div className="bg-slate-800/60 p-4 rounded-xl border border-sky-500/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sliders className="w-4 h-4 text-sky-400" />
+                    <span>Format-Specific Pricing Controls (Interstitial / Anchor / Banner)</span>
+                  </h3>
+                  <span className="text-[11px] font-semibold text-sky-400/90">3-Track Format Engine</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Interstitial Controls */}
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-purple-500/40 space-y-2">
+                    <span className="text-xs font-bold text-purple-400 flex items-center gap-1">
+                      📱 Interstitial (Full Screen)
+                    </span>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">CPM Multiplier</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.5"
+                        max="5.0"
+                        value={formatSettings.interstitial?.multiplier ?? 1.5}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          interstitial: { ...formatSettings.interstitial, multiplier: parseFloat(e.target.value) || 1.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-purple-500/50 rounded-lg text-xs text-purple-300 font-mono font-bold focus:outline-none focus:border-purple-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">High MR Hard Floor Min (%)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="30"
+                        max="95"
+                        value={formatSettings.interstitial?.high_mr_threshold ?? 70.0}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          interstitial: { ...formatSettings.interstitial, high_mr_threshold: parseFloat(e.target.value) || 70.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-purple-500/50 rounded-lg text-xs text-purple-300 font-mono font-bold focus:outline-none focus:border-purple-400"
+                      />
+                    </div>
+                    <p className="text-[10px] text-purple-300/70 italic">Blocks google_optimize when MR &ge; threshold</p>
+                  </div>
+
+                  {/* Anchor Controls */}
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-emerald-500/40 space-y-2">
+                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                      📌 Sticky Anchor (Bottom)
+                    </span>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">CPM Multiplier</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.5"
+                        max="3.0"
+                        value={formatSettings.anchor?.multiplier ?? 1.2}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          anchor: { ...formatSettings.anchor, multiplier: parseFloat(e.target.value) || 1.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-emerald-500/50 rounded-lg text-xs text-emerald-300 font-mono font-bold focus:outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">High MR Floor Min (%)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="30"
+                        max="95"
+                        value={formatSettings.anchor?.high_mr_threshold ?? 65.0}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          anchor: { ...formatSettings.anchor, high_mr_threshold: parseFloat(e.target.value) || 65.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-emerald-500/50 rounded-lg text-xs text-emerald-300 font-mono font-bold focus:outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                    <p className="text-[10px] text-emerald-300/70 italic">Moderate boost for sticky bottom slot</p>
+                  </div>
+
+                  {/* Banner Controls */}
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-sky-500/40 space-y-2">
+                    <span className="text-xs font-bold text-sky-400 flex items-center gap-1">
+                      🖼️ Banner (Header / Feed)
+                    </span>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">CPM Multiplier</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.5"
+                        max="3.0"
+                        value={formatSettings.banner?.multiplier ?? 1.0}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          banner: { ...formatSettings.banner, multiplier: parseFloat(e.target.value) || 1.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-sky-500/50 rounded-lg text-xs text-sky-300 font-mono font-bold focus:outline-none focus:border-sky-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">High MR Floor Min (%)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="30"
+                        max="95"
+                        value={formatSettings.banner?.high_mr_threshold ?? 85.0}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          banner: { ...formatSettings.banner, high_mr_threshold: parseFloat(e.target.value) || 85.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-sky-500/50 rounded-lg text-xs text-sky-300 font-mono font-bold focus:outline-none focus:border-sky-400"
+                      />
+                    </div>
+                    <p className="text-[10px] text-sky-300/70 italic">High fill rate priority for standard banners</p>
                   </div>
                 </div>
               </div>

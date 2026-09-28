@@ -3,17 +3,18 @@ import { LayoutGrid, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import ColumnToggleDropdown from './ColumnToggleDropdown';
 
 const ALL_COLUMNS = [
-  { key: 'ad_unit', label: 'Ad Unit / Placement' },
+  { key: 'ad_unit', label: 'Ad Unit' },
   { key: 'domain', label: 'Site / Domain' },
   { key: 'total_revenue', label: 'AdX Revenue' },
-  { key: 'impressions', label: 'AdX Impressions' },
-  { key: 'clicks', label: 'Clicks' },
+  { key: 'ecpm', label: 'eCPM' },
+  { key: 'match_rate', label: 'Match Rate' },
   { key: 'ctr', label: 'CTR' },
   { key: 'ad_requests', label: 'Ad Requests' },
   { key: 'matched_requests', label: 'Matched Requests' },
-  { key: 'match_rate', label: 'Match Rate' },
-  { key: 'ecpm', label: 'eCPM' },
+  { key: 'impressions', label: 'AdX Impressions' },
+  { key: 'clicks', label: 'Clicks' },
   { key: 'pricing_rule_name', label: 'PRICING_RULE_NAME' },
+  { key: 'placement_format', label: 'Format Iklan (Placement)' },
 ];
 
 const formatPricingRuleName = (rule) => {
@@ -170,7 +171,7 @@ export default function PlacementsTable({ placements }) {
               {visibleColumns.ad_unit && (
                 <th onClick={() => handleSort('ad_unit')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center space-x-1 leading-tight">
-                    <span>Ad Unit /<br/>Placement</span>
+                    <span>Ad Unit</span>
                     {renderSortIndicator('ad_unit')}
                   </div>
                 </th>
@@ -191,19 +192,19 @@ export default function PlacementsTable({ placements }) {
                   </div>
                 </th>
               )}
-              {visibleColumns.impressions && (
-                <th onClick={() => handleSort('impressions')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              {visibleColumns.ecpm && (
+                <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center justify-end space-x-1 leading-tight">
-                    <span>AdX<br/>Impressions</span>
-                    {renderSortIndicator('impressions')}
+                    <span>eCPM</span>
+                    {renderSortIndicator('ecpm')}
                   </div>
                 </th>
               )}
-              {visibleColumns.clicks && (
-                <th onClick={() => handleSort('clicks')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              {visibleColumns.match_rate && (
+                <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center justify-end space-x-1 leading-tight">
-                    <span>Clicks</span>
-                    {renderSortIndicator('clicks')}
+                    <span>Match<br/>Rate</span>
+                    {renderSortIndicator('match_rate')}
                   </div>
                 </th>
               )}
@@ -231,19 +232,19 @@ export default function PlacementsTable({ placements }) {
                   </div>
                 </th>
               )}
-              {visibleColumns.match_rate && (
-                <th onClick={() => handleSort('match_rate')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              {visibleColumns.impressions && (
+                <th onClick={() => handleSort('impressions')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center justify-end space-x-1 leading-tight">
-                    <span>Match<br/>Rate</span>
-                    {renderSortIndicator('match_rate')}
+                    <span>AdX<br/>Impressions</span>
+                    {renderSortIndicator('impressions')}
                   </div>
                 </th>
               )}
-              {visibleColumns.ecpm && (
-                <th onClick={() => handleSort('ecpm')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+              {visibleColumns.clicks && (
+                <th onClick={() => handleSort('clicks')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center justify-end space-x-1 leading-tight">
-                    <span>eCPM</span>
-                    {renderSortIndicator('ecpm')}
+                    <span>Clicks</span>
+                    {renderSortIndicator('clicks')}
                   </div>
                 </th>
               )}
@@ -252,6 +253,14 @@ export default function PlacementsTable({ placements }) {
                   <div className="flex items-center justify-end space-x-1 leading-tight">
                     <span>PRICING_<br/>RULE_NAME</span>
                     {renderSortIndicator('pricing_rule_name')}
+                  </div>
+                </th>
+              )}
+              {visibleColumns.placement_format && (
+                <th onClick={() => handleSort('placement_format')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>Format Iklan<br/>(Placement)</span>
+                    {renderSortIndicator('placement_format')}
                   </div>
                 </th>
               )}
@@ -284,11 +293,17 @@ export default function PlacementsTable({ placements }) {
                     </td>
                   )}
 
-                  {visibleColumns.impressions && (
-                    <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.impressions || 0).toLocaleString()}</td>
+                  {visibleColumns.ecpm && (
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <div className="flex flex-col items-end font-mono font-semibold text-sky-400">
+                        <span>{formatCurrency(item.ecpm)}</span>
+                        {renderDeltaBadge(item.ecpm_change_pct, compLabel)}
+                      </div>
+                    </td>
                   )}
-                  {visibleColumns.clicks && (
-                    <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.clicks || 0).toLocaleString()}</td>
+
+                  {visibleColumns.match_rate && (
+                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">{(item.match_rate || 0).toFixed(1)}%</td>
                   )}
                   {visibleColumns.ctr && (
                     <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.ctr || 0).toFixed(2)}%</td>
@@ -300,22 +315,33 @@ export default function PlacementsTable({ placements }) {
                   {visibleColumns.matched_requests && (
                     <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.matched_requests || 0).toLocaleString()}</td>
                   )}
-                  {visibleColumns.match_rate && (
-                    <td className="px-3 py-2.5 text-right font-mono font-semibold text-indigo-300 whitespace-nowrap">{(item.match_rate || 0).toFixed(1)}%</td>
-                  )}
 
-                  {visibleColumns.ecpm && (
-                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                      <div className="flex flex-col items-end font-mono font-semibold text-sky-400">
-                        <span>{formatCurrency(item.ecpm)}</span>
-                        {renderDeltaBadge(item.ecpm_change_pct, compLabel)}
-                      </div>
-                    </td>
+                  {visibleColumns.impressions && (
+                    <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.impressions || 0).toLocaleString()}</td>
+                  )}
+                  {visibleColumns.clicks && (
+                    <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">{(item.clicks || 0).toLocaleString()}</td>
                   )}
 
                   {visibleColumns.pricing_rule_name && (
                     <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
                       {formatPricingRuleName(item.pricing_rule_name)}
+                    </td>
+                  )}
+
+                  {visibleColumns.placement_format && (
+                    <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                        item.placement_format === 'Interstitial' ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' :
+                        item.placement_format === 'Anchor / Sticky' ? 'bg-purple-500/10 text-purple-300 border-purple-500/30' :
+                        item.placement_format === 'Vignette' ? 'bg-rose-500/10 text-rose-300 border-rose-500/30' :
+                        item.placement_format === 'In-Feed' ? 'bg-teal-500/10 text-teal-300 border-teal-500/30' :
+                        item.placement_format === 'Header' ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30' :
+                        item.placement_format === 'Sidebar 1' || item.placement_format === 'Sidebar 2' ? 'bg-blue-500/10 text-blue-300 border-blue-500/30' :
+                        'bg-slate-700/50 text-slate-300 border-slate-600/50'
+                      }`}>
+                        {item.placement_format || 'Banner'}
+                      </span>
                     </td>
                   )}
                 </tr>

@@ -42,11 +42,13 @@ export default function SettingsPage({ onOpenPricingModal }) {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState('');
   const [exportSuccess, setExportSuccess] = useState('');
+  const [addWarningBypass, setAddWarningBypass] = useState(false);
+  const [editWarningBypass, setEditWarningBypass] = useState(false);
 
   // Add Target Form State
   const [targetDomain, setTargetDomain] = useState('');
   const [targetFilepath, setTargetFilepath] = useState('');
-  const [targetStartHour, setTargetStartHour] = useState(10);
+  const [targetStartHour, setTargetStartHour] = useState(0);
   const [targetEndHour, setTargetEndHour] = useState(23);
 
   // Edit Target Modal State
@@ -54,7 +56,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
   const [editTargetId, setEditTargetId] = useState(null);
   const [editDomainTarget, setEditDomainTarget] = useState('');
   const [editFilepath, setEditFilepath] = useState('');
-  const [editStartHour, setEditStartHour] = useState(10);
+  const [editStartHour, setEditStartHour] = useState(0);
   const [editEndHour, setEditEndHour] = useState(23);
   const [editIsActive, setEditIsActive] = useState(true);
 
@@ -77,7 +79,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
     setEditTargetId(target.id);
     setEditDomainTarget(target.domain || '');
     setEditFilepath(target.target_filepath || '');
-    setEditStartHour(target.start_hour !== undefined ? target.start_hour : 10);
+    setEditStartHour(target.start_hour !== undefined ? target.start_hour : 0);
     setEditEndHour(target.end_hour !== undefined ? target.end_hour : 23);
     setEditIsActive(target.is_active !== undefined ? target.is_active : true);
 
@@ -104,10 +106,43 @@ export default function SettingsPage({ onOpenPricingModal }) {
     setExportError('');
     setExportSuccess('');
 
+    const cleanDomain = editDomainTarget.trim();
+    const cleanPath = editFilepath.trim();
+
+    const sameDomain = exportTargets.find(
+      t => t.id !== editTargetId && t.domain.trim().toLowerCase() === cleanDomain.toLowerCase()
+    );
+    const samePath = exportTargets.find(
+      t => t.id !== editTargetId && t.target_filepath.trim() === cleanPath
+    );
+
+    // 1. Both domain and path match another entry -> BLOCKED
+    if (sameDomain && samePath && sameDomain.id === samePath.id) {
+      setExportError(`Target export untuk domain "${cleanDomain}" dengan target path "${cleanPath}" yang sama persis sudah terdaftar.`);
+      setEditWarningBypass(false);
+      return;
+    }
+
+    // 2. Exact Domain matches another entry
+    if (sameDomain && !editWarningBypass) {
+      setExportError(`⚠️ Peringatan: Domain "${cleanDomain}" sudah terdaftar pada target lain (Path: ${sameDomain.target_filepath}). Klik "Save Changes" sekali lagi jika Anda yakin ingin mengubah ke domain ini.`);
+      setEditWarningBypass(true);
+      return;
+    }
+
+    // 3. Exact Target Path matches another entry
+    if (samePath && !editWarningBypass) {
+      setExportError(`⚠️ Peringatan: Target path "${cleanPath}" sudah digunakan oleh domain "${samePath.domain}". File JSON di lokasi ini akan tertindih. Klik "Save Changes" sekali lagi jika Anda yakin.`);
+      setEditWarningBypass(true);
+      return;
+    }
+
+    setEditWarningBypass(false);
+
     try {
       await dashboardService.updateExportTarget(editTargetId, {
-        domain: editDomainTarget.trim(),
-        target_filepath: editFilepath.trim(),
+        domain: cleanDomain,
+        target_filepath: cleanPath,
         start_hour: parseInt(editStartHour),
         end_hour: parseInt(editEndHour),
         is_active: editIsActive,
@@ -125,7 +160,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
         slot_interstitial: editSlotInterstitial.trim() || null,
         slot_anchor: editSlotAnchor.trim() || null
       });
-      setExportSuccess(`Configuration for ${editDomainTarget} saved & synced successfully!`);
+      setExportSuccess(`Configuration for ${cleanDomain} saved & synced successfully!`);
       setEditTargetModal(false);
       fetchExportTargets();
     } catch (err) {
@@ -157,23 +192,56 @@ export default function SettingsPage({ onOpenPricingModal }) {
     setExportError('');
     setExportSuccess('');
 
-    if (!targetDomain.trim() || !targetFilepath.trim()) {
+    const cleanDomain = targetDomain.trim();
+    const cleanPath = targetFilepath.trim();
+
+    if (!cleanDomain || !cleanPath) {
       setExportError('Domain and Target Filepath are required.');
       return;
     }
 
+    const sameDomain = exportTargets.find(
+      t => t.domain.trim().toLowerCase() === cleanDomain.toLowerCase()
+    );
+    const samePath = exportTargets.find(
+      t => t.target_filepath.trim() === cleanPath
+    );
+
+    // 1. Both domain and path are identical -> BLOCKED
+    if (sameDomain && samePath && sameDomain.id === samePath.id) {
+      setExportError(`Target export untuk domain "${cleanDomain}" dengan target path "${cleanPath}" yang sama persis sudah terdaftar.`);
+      setAddWarningBypass(false);
+      return;
+    }
+
+    // 2. Exact Domain matches another entry
+    if (sameDomain && !addWarningBypass) {
+      setExportError(`⚠️ Peringatan: Domain "${cleanDomain}" sudah terdaftar pada target lain (Path: ${sameDomain.target_filepath}). Klik "Add Target" sekali lagi jika Anda yakin ingin membuat target kedua untuk domain yang sama ini.`);
+      setAddWarningBypass(true);
+      return;
+    }
+
+    // 3. Exact Target Path matches another entry
+    if (samePath && !addWarningBypass) {
+      setExportError(`⚠️ Peringatan: Target path "${cleanPath}" sudah digunakan oleh domain "${samePath.domain}". File JSON di lokasi ini akan tertindih. Klik "Add Target" sekali lagi jika Anda yakin.`);
+      setAddWarningBypass(true);
+      return;
+    }
+
+    setAddWarningBypass(false);
+
     try {
       await dashboardService.addExportTarget({
-        domain: targetDomain.trim(),
-        target_filepath: targetFilepath.trim(),
+        domain: cleanDomain,
+        target_filepath: cleanPath,
         start_hour: parseInt(targetStartHour),
         end_hour: parseInt(targetEndHour),
         is_active: true
       });
-      setExportSuccess(`Export target for ${targetDomain.trim()} added successfully!`);
+      setExportSuccess(`Export target for ${cleanDomain} added successfully!`);
       setTargetDomain('');
       setTargetFilepath('');
-      setTargetStartHour(10);
+      setTargetStartHour(0);
       setTargetEndHour(23);
       fetchExportTargets();
     } catch (err) {

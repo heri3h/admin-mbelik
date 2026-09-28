@@ -80,8 +80,8 @@ export default function TrendChart({ data, startDate, endDate }) {
           </h3>
           <p className="text-slate-400 text-xs mt-0.5">
             {isSingleDay
-              ? 'Trend jam demi jam Spend (Google Ads), Revenue (AdX), Net Profit, dan ROI (%)'
-              : 'Perbandingan Daily Spend (Google Ads), Revenue (AdX), Net Profit, dan ROI (%)'}
+              ? 'Hourly trend of Spend (Google Ads), Revenue (AdX), Net Profit, and ROI (%)'
+              : 'Daily breakdown of Spend (Google Ads), Revenue (AdX), Net Profit, and ROI (%)'}
           </p>
         </div>
 

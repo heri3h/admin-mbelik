@@ -5,9 +5,10 @@ import TrendChart from '../components/TrendChart';
 import AccountsTable from '../components/AccountsTable';
 import SitesTable from '../components/SitesTable';
 import PlacementsTable from '../components/PlacementsTable';
+import CountriesTable from '../components/CountriesTable';
 import SyncButton from '../components/SyncButton';
 import { dashboardService } from '../services/api';
-import { Loader2, Globe, LayoutGrid, Layers, Clock } from 'lucide-react';
+import { Loader2, Globe, LayoutGrid, Layers, Clock, Flag } from 'lucide-react';
 
 const formatLocalDate = (d) => {
   const year = d.getFullYear();
@@ -31,22 +32,24 @@ export default function DashboardPage() {
   const [accounts, setAccounts] = useState([]);
   const [sites, setSites] = useState([]);
   const [placements, setPlacements] = useState([]);
+  const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Active breakdown view: 'sites' (default), 'placements', 'accounts'
+  // Active breakdown view: 'sites' (default), 'countries', 'placements', 'accounts'
   const [activeReportTab, setActiveReportTab] = useState('sites');
 
   const loadDashboardData = async () => {
     if (!summary) setLoading(true);
     setIsRefreshing(true);
     try {
-      const [sumData, trendData, accData, siteData, placementData] = await Promise.all([
+      const [sumData, trendData, accData, siteData, placementData, countryData] = await Promise.all([
         dashboardService.getSummary(startDate, endDate, deviceFilter),
         dashboardService.getTrend(startDate, endDate, deviceFilter),
         dashboardService.getAccounts(startDate, endDate, deviceFilter),
         dashboardService.getSites(startDate, endDate, deviceFilter),
-        dashboardService.getPlacements(startDate, endDate, deviceFilter)
+        dashboardService.getPlacements(startDate, endDate, deviceFilter),
+        dashboardService.getSiteCountries('all', startDate, endDate, deviceFilter)
       ]);
 
       setSummary(sumData);
@@ -54,6 +57,7 @@ export default function DashboardPage() {
       setAccounts(accData);
       setSites(siteData);
       setPlacements(placementData);
+      setCountries(countryData);
     } catch (err) {
       console.error('Failed loading dashboard data', err);
     } finally {
@@ -74,23 +78,25 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Top Header & Sync controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <span>Profitability Dashboard</span>
             {isRefreshing && <Loader2 className="w-4 h-4 animate-spin text-sky-400" title="Updating data..." />}
           </h1>
-          <div className="flex flex-wrap items-center gap-2 text-slate-400 text-xs mt-1">
-            <span>Google Ads Spend vs Ad Exchange (GAM) Revenue Analytics</span>
-            {summary?.last_synced_at && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800 text-emerald-400 border border-emerald-500/30 shadow-sm">
-                <Clock className="w-3 h-3 text-emerald-400" />
-                <span>Last Synced: {summary.last_synced_at} (Auto 10m)</span>
-              </span>
-            )}
-          </div>
+          <p className="hidden sm:block text-xs text-slate-400 mt-0.5">Google Ads Spend vs Ad Exchange (GAM) Revenue Analytics</p>
         </div>
-        <SyncButton startDate={startDate} endDate={endDate} onSyncSuccess={loadDashboardData} />
+
+        {/* Info Last Sync & Actions Button in 1 Horizontal Row */}
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
+          {summary?.last_synced_at && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-800/90 text-emerald-400 border border-emerald-500/30 shadow-sm whitespace-nowrap">
+              <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>{summary.last_synced_at}</span>
+            </span>
+          )}
+          <SyncButton startDate={startDate} endDate={endDate} onSyncSuccess={loadDashboardData} />
+        </div>
       </div>
 
       {/* Date & Device Filter Bar */}
@@ -165,6 +171,18 @@ export default function DashboardPage() {
                 </button>
 
                 <button
+                  onClick={() => setActiveReportTab('countries')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
+                    activeReportTab === 'countries'
+                      ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <Flag className="w-3.5 h-3.5" />
+                  <span>By Country</span>
+                </button>
+
+                <button
                   onClick={() => setActiveReportTab('placements')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
                     activeReportTab === 'placements'
@@ -192,6 +210,7 @@ export default function DashboardPage() {
 
             {/* Active Report Table Display */}
             {activeReportTab === 'sites' && <SitesTable sites={sites} startDate={startDate} endDate={endDate} />}
+            {activeReportTab === 'countries' && <CountriesTable countries={countries} startDate={startDate} endDate={endDate} />}
             {activeReportTab === 'placements' && <PlacementsTable placements={placements} />}
             {activeReportTab === 'accounts' && <AccountsTable accounts={accounts} />}
           </div>

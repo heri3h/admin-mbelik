@@ -179,7 +179,7 @@ def auto_seed_export_targets():
                 t = JSONExportTarget(
                     domain=dom,
                     target_filepath=path,
-                    start_hour=10,
+                    start_hour=0,
                     end_hour=23,
                     is_active=True,
                     conversion_enabled=True,
@@ -231,45 +231,101 @@ app = FastAPI(
     version="1.0.0"
 )
 
-async def auto_sync_background_task():
+async def auto_pricing_background_task():
     """
-    Background worker that runs every 30 minutes in a separate thread (asyncio.to_thread)
-    to automatically sync Yesterday & Today's Google Ads & GAM metrics into SQLite DB without blocking the API server!
+    Jalur 1 (AutoPricing Exporter):
+    Background worker that runs every 30 minutes (1800s) in a separate thread
+    to update current_pricing.json for all active websites during operational hours.
+    Does NOT call Google Ads API (0% quota impact).
     """
-    await asyncio.sleep(10)  # Wait 10 seconds after server startup
+    await asyncio.sleep(15)  # Wait 15 seconds after server startup
     while True:
         try:
-            logger.info("Executing automatic background sync for Yesterday & Today in worker thread...")
+            logger.info("Executing 30-minute AutoPricing (current_pricing.json) export for all domains...")
+
+            def run_export():
+                db = SessionLocal()
+                try:
+                    from app.models import JSONExportTarget
+                    from app.services.sync import export_site_today_json
+                    targets = db.query(JSONExportTarget).filter(JSONExportTarget.is_active == True).all()
+                    if targets:
+                        for t in targets:
+                            export_site_today_json(
+                                db,
+                                domain=t.domain,
+                                target_filepath=t.target_filepath,
+                                start_hour=t.start_hour,
+                                end_hour=t.end_hour
+                            )
+                    else:
+                        export_site_today_json(db, domain="spotgames.top", target_filepath="/home/mbummm/web/spotgames.top/public_html/current_pricing.json")
+                finally:
+                    db.close()
+
+            await asyncio.to_thread(run_export)
+            logger.info("AutoPricing export finished successfully.")
+        except Exception as e:
+            logger.error(f"Error in AutoPricing background export task: {e}")
+
+        # Repeat every 30 minutes (1800 seconds)
+        await asyncio.sleep(1800)
+
+
+async def auto_sync_background_task():
+    """
+    Jalur 2 (Full Auto-Sync):
+    Background worker that runs every 1 hour (3600s) in a separate thread
+    to automatically sync Google Ads & GAM metrics into SQLite DB.
+    """
+    await asyncio.sleep(10)  # Wait 10 seconds after server startup
+    sync_count = 0
+    while True:
+        try:
+            today = date.today()
+            yesterday = today - timedelta(days=1)
+            
+            # Sync yesterday on first run or every 12 hours (sync_count % 12 == 0)
+            sync_yesterday = (sync_count % 12 == 0)
+            
+            if sync_yesterday:
+                logger.info("Executing hourly background sync for Yesterday & Today...")
+            else:
+                logger.info("Executing hourly background sync for Today...")
 
             def run_sync():
                 db = SessionLocal()
                 try:
-                    today = date.today()
-                    yesterday = today - timedelta(days=1)
-                    sync_service.sync_range(db, yesterday, today)
+                    start_d = yesterday if sync_yesterday else today
+                    sync_service.sync_range(db, start_d, today)
                 finally:
                     db.close()
 
             await asyncio.to_thread(run_sync)
             logger.info("Automatic background sync finished successfully.")
+            sync_count += 1
         except Exception as e:
             logger.error(f"Error in automatic background sync task: {e}")
 
-        # Repeat every 30 minutes (1800 seconds)
-        await asyncio.sleep(1800)
+        # Repeat every 1 hour (3600 seconds)
+        await asyncio.sleep(3600)
 
 _auto_sync_task = None
+_auto_pricing_task = None
 
 @app.on_event("startup")
-def start_auto_sync_task():
-    global _auto_sync_task
+def start_background_tasks():
+    global _auto_sync_task, _auto_pricing_task
     _auto_sync_task = asyncio.create_task(auto_sync_background_task())
+    _auto_pricing_task = asyncio.create_task(auto_pricing_background_task())
 
 @app.on_event("shutdown")
-def stop_auto_sync_task():
-    global _auto_sync_task
+def stop_background_tasks():
+    global _auto_sync_task, _auto_pricing_task
     if _auto_sync_task:
         _auto_sync_task.cancel()
+    if _auto_pricing_task:
+        _auto_pricing_task.cancel()
 
 
 # CORS Configuration
