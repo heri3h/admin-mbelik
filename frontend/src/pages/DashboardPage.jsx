@@ -5,10 +5,9 @@ import TrendChart from '../components/TrendChart';
 import AccountsTable from '../components/AccountsTable';
 import SitesTable from '../components/SitesTable';
 import PlacementsTable from '../components/PlacementsTable';
-import CountriesTable from '../components/CountriesTable';
 import SyncButton from '../components/SyncButton';
 import { dashboardService } from '../services/api';
-import { Loader2, Globe, LayoutGrid, Layers, Clock, Flag } from 'lucide-react';
+import { Loader2, Globe, LayoutGrid, Layers, Clock } from 'lucide-react';
 
 const formatLocalDate = (d) => {
   const year = d.getFullYear();
@@ -32,24 +31,22 @@ export default function DashboardPage() {
   const [accounts, setAccounts] = useState([]);
   const [sites, setSites] = useState([]);
   const [placements, setPlacements] = useState([]);
-  const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Active breakdown view: 'sites' (default), 'countries', 'placements', 'accounts'
+  // Active breakdown view: 'sites' (default), 'placements', 'accounts'
   const [activeReportTab, setActiveReportTab] = useState('sites');
 
   const loadDashboardData = async () => {
     if (!summary) setLoading(true);
     setIsRefreshing(true);
     try {
-      const [sumData, trendData, accData, siteData, placementData, countryData] = await Promise.all([
+      const [sumData, trendData, accData, siteData, placementData] = await Promise.all([
         dashboardService.getSummary(startDate, endDate, deviceFilter),
         dashboardService.getTrend(startDate, endDate, deviceFilter),
         dashboardService.getAccounts(startDate, endDate, deviceFilter),
         dashboardService.getSites(startDate, endDate, deviceFilter),
-        dashboardService.getPlacements(startDate, endDate, deviceFilter),
-        dashboardService.getSiteCountries('all', startDate, endDate, deviceFilter)
+        dashboardService.getPlacements(startDate, endDate, deviceFilter)
       ]);
 
       setSummary(sumData);
@@ -57,7 +54,6 @@ export default function DashboardPage() {
       setAccounts(accData);
       setSites(siteData);
       setPlacements(placementData);
-      setCountries(countryData);
     } catch (err) {
       console.error('Failed loading dashboard data', err);
     } finally {
@@ -171,18 +167,6 @@ export default function DashboardPage() {
                 </button>
 
                 <button
-                  onClick={() => setActiveReportTab('countries')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
-                    activeReportTab === 'countries'
-                      ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  <Flag className="w-3.5 h-3.5" />
-                  <span>By Country</span>
-                </button>
-
-                <button
                   onClick={() => setActiveReportTab('placements')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all whitespace-nowrap ${
                     activeReportTab === 'placements'
@@ -210,7 +194,6 @@ export default function DashboardPage() {
 
             {/* Active Report Table Display */}
             {activeReportTab === 'sites' && <SitesTable sites={sites} startDate={startDate} endDate={endDate} />}
-            {activeReportTab === 'countries' && <CountriesTable countries={countries} startDate={startDate} endDate={endDate} />}
             {activeReportTab === 'placements' && <PlacementsTable placements={placements} />}
             {activeReportTab === 'accounts' && <AccountsTable accounts={accounts} />}
           </div>
