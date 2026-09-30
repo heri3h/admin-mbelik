@@ -288,8 +288,8 @@ async def auto_sync_background_task():
             # Sync yesterday on first run or every 12 hours (sync_count % 12 == 0)
             sync_yesterday = (sync_count % 12 == 0)
             
-            # Sync Google Ads spend every 3 hours (sync_count % 3 == 0) to stay far under 15k/day Basic quota
-            should_sync_gads = (sync_count % 3 == 0)
+            # Sync Google Ads spend every 1 hour (sync_gads=True on every hourly run)
+            should_sync_gads = True
 
             if sync_yesterday:
                 logger.info(f"Executing background sync (GAds: {should_sync_gads}) for Yesterday & Today...")

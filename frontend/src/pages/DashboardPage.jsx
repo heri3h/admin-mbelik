@@ -85,30 +85,39 @@ export default function DashboardPage() {
 
         {/* Info Last Sync, Status Badges & Actions Button */}
         <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-          {/* Status Badges: GAM (Green) & GAds (Green if live, Amber if rate limited) */}
-          <div className="flex items-center gap-1.5">
-            <span 
+          {/* Compact 2-Row Icon-Only API Status Container with Official Logos */}
+          <div className="flex flex-col justify-center gap-1.5 bg-slate-900/90 border border-slate-700/60 rounded-xl px-2.5 py-1.5 shadow-sm">
+            {/* Row 1: GAM Status (Official GAM Logo + Live Dot) */}
+            <div 
               title="Google Ad Manager API: Live & Connected" 
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm"
+              className="flex items-center gap-2 cursor-help"
             >
+              {/* Official Google Ad Manager (GAM) Logo */}
+              <img src="/gam_icon.svg" alt="Google Ad Manager" className="w-4 h-4 object-contain shrink-0" />
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              GAM
-            </span>
-            <span 
+            </div>
+
+            {/* Divider */}
+            <div className="h-[1px] bg-slate-800/80 w-full"></div>
+
+            {/* Row 2: GAds Status (Official Google Ads Logo + Live Dot + Quota %) */}
+            <div 
               title={summary?.gads_status === 'rate_limited' ? 'Google Ads API: Rate Limited (Quota Exceeded)' : `Google Ads API: Live & Connected (${summary?.gads_quota_used_pct ?? 0}% daily quota used)`} 
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-extrabold border shadow-sm ${
-                summary?.gads_status === 'rate_limited'
-                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/40'
-                  : summary?.gads_quota_used_pct > 80
-                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/40'
-                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-              }`}
+              className="flex items-center gap-2 cursor-help"
             >
+              {/* Official Google Ads Logo */}
+              <img src="/gads_icon.png" alt="Google Ads" className="w-4 h-4 object-contain shrink-0" />
               <span className={`w-1.5 h-1.5 rounded-full ${
                 summary?.gads_status === 'rate_limited' ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'
               }`}></span>
-              <span>GAds {summary?.gads_quota_used_pct !== undefined ? `${summary.gads_quota_used_pct}%` : ''}</span>
-            </span>
+              <span className={`text-[10px] font-extrabold ${
+                summary?.gads_status === 'rate_limited' || summary?.gads_quota_used_pct > 80
+                  ? 'text-amber-400'
+                  : 'text-emerald-400'
+              }`}>
+                {summary?.gads_quota_used_pct !== undefined ? `${summary.gads_quota_used_pct}%` : '0%'}
+              </span>
+            </div>
           </div>
 
           {summary?.last_synced_at && (
