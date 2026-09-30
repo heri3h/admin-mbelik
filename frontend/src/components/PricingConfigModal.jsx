@@ -184,7 +184,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
     if (window.confirm('Reset pricing rules to system defaults?')) {
       setTargetMr(65.0);
       setEmergencyMrThreshold(15.0);
-      setDefaultPricing('google_optimize');
+      setDefaultPricing('f10000');
       setRules(DEFAULT_RULES);
       setError('');
       setSuccessMsg('');
@@ -200,7 +200,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
     const payload = {
       target_mr: parseFloat(targetMr) || 65.0,
       emergency_mr_threshold: parseFloat(emergencyMrThreshold) || 15.0,
-      default_pricing: defaultPricing.trim() || 'google_optimize',
+      default_pricing: defaultPricing.trim() || 'f10000',
       device_settings: deviceSettings,
       format_settings: formatSettings,
       adjustments: {

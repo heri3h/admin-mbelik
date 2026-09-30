@@ -1118,7 +1118,7 @@ def export_site_today_json(
 
 DEFAULT_PRICING_CONFIG = {
     "target_mr": 65.0,
-    "default_pricing": "google_optimize",
+    "default_pricing": "f10000",
     "device_settings": {
         "desktop": {
             "cpm_multiplier": 1.25,

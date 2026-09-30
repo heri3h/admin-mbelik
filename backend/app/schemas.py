@@ -247,7 +247,7 @@ class PricingAdjustmentsSchema(BaseModel):
 class PricingConfigSchema(BaseModel):
     target_mr: float = 65.0
     emergency_mr_threshold: Optional[float] = 15.0
-    default_pricing: str = "google_optimize"
+    default_pricing: str = "f10000"
     device_settings: Optional[dict] = None
     format_settings: Optional[dict] = None
     adjustments: Optional[PricingAdjustmentsSchema] = None
