@@ -228,6 +228,15 @@ class SyncService:
                 messages.append(f"Google Ads API Error: {err_msg}")
 
         # 1. Deduplicate & Upsert Google Ads metrics (Apply +11% tax adjustment)
+        try:
+            db.query(GoogleAdsMetric).filter(
+                GoogleAdsMetric.date >= start_date,
+                GoogleAdsMetric.date <= end_date
+            ).delete(synchronize_session=False)
+            db.commit()
+        except Exception:
+            db.rollback()
+
         aggregated_gads = {}
         for item in gads_data:
             key = (item["date"], item["customer_id"], item["campaign_name"])
