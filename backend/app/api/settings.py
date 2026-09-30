@@ -82,18 +82,25 @@ def get_google_ads_accounts(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    accounts = db.query(GoogleAdsAccount).all()
-    # Auto-populate from .env if table is empty but .env has customer IDs
-    if not accounts and settings.customer_ids_list:
-        for cid in settings.customer_ids_list:
-            acc = GoogleAdsAccount(
-                customer_id=cid,
-                account_name=f"Google Ads ({cid})",
-                assigned_domain="All / Unassigned"
-            )
-            db.add(acc)
-        db.commit()
-        accounts = db.query(GoogleAdsAccount).all()
+    existing_cids = {a.customer_id for a in accounts}
+    try:
+        from app.services.google_ads import google_ads_service
+        effective_cids = google_ads_service._get_effective_cids(None)
+        added = False
+        for cid in effective_cids:
+            if cid not in existing_cids and cid != "default":
+                acc = GoogleAdsAccount(
+                    customer_id=cid,
+                    account_name=f"Google Ads ({cid})",
+                    assigned_domain="All / Unassigned"
+                )
+                db.add(acc)
+                added = True
+        if added:
+            db.commit()
+            accounts = db.query(GoogleAdsAccount).all()
+    except Exception as e:
+        logger.warning(f"Auto-populate MCC CIDs notice: {e}")
     return accounts
 
 @router.post("/google-ads-accounts", response_model=GoogleAdsAccountResponse)
