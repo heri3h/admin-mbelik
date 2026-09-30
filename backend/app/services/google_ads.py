@@ -60,6 +60,34 @@ class GoogleAdsService:
         
         return self._fetch_live_google_ads_data(start_date, end_date, customer_ids=customer_ids)
 
+    def _get_effective_cids(self, ga_service, customer_ids: List[str] = None) -> List[str]:
+        if customer_ids:
+            return customer_ids
+        
+        cids = settings.customer_ids_list or []
+        if settings.GOOGLE_ADS_LOGIN_CUSTOMER_ID:
+            try:
+                mcc_id = settings.GOOGLE_ADS_LOGIN_CUSTOMER_ID.replace("-", "")
+                query = """
+                    SELECT customer_client.id, customer_client.status, customer_client.manager
+                    FROM customer_client
+                    WHERE customer_client.status = 'ENABLED' AND customer_client.manager = FALSE
+                """
+                stream = ga_service.search_stream(customer_id=mcc_id, query=query)
+                mcc_cids = []
+                for batch in stream:
+                    for row in batch.results:
+                        raw_id = str(row.customer_client.id)
+                        mcc_cids.append(f"{raw_id[:3]}-{raw_id[3:6]}-{raw_id[6:]}")
+                if mcc_cids:
+                    all_cids = list(dict.fromkeys(cids + mcc_cids))
+                    logger.info(f"MCC Auto-Discovery found {len(mcc_cids)} active child accounts.")
+                    return all_cids
+            except Exception as e:
+                logger.warning(f"MCC auto-discovery notice: {e}")
+        
+        return cids if cids else ["default"]
+
     def _fetch_live_google_ads_data(self, start_date: date, end_date: date, customer_ids: List[str] = None) -> List[Dict[str, Any]]:
         from google.ads.googleads.client import GoogleAdsClient
         from google.ads.googleads.errors import GoogleAdsException
@@ -96,9 +124,7 @@ class GoogleAdsService:
         """
 
         results = []
-        cids = customer_ids or settings.customer_ids_list
-        if not cids:
-            cids = ["default"]
+        cids = self._get_effective_cids(ga_service, customer_ids=customer_ids)
 
         for cid in cids:
             clean_cid = cid.replace("-", "")
@@ -206,9 +232,7 @@ class GoogleAdsService:
         googleads_client = GoogleAdsClient.load_from_dict(credentials)
         ga_service = googleads_client.get_service("GoogleAdsService")
 
-        cids = customer_ids or settings.customer_ids_list
-        if not cids:
-            cids = ["default"]
+        cids = self._get_effective_cids(ga_service, customer_ids=customer_ids)
 
         # 1. Fetch official country mapping from geo_cache.json or geo_target_constant API
         geo_map = getattr(self, '_geo_cache', None)
