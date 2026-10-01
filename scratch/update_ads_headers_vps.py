@@ -23,13 +23,22 @@ $pricingConfigFile = $dirPath . '/../../pricing_config.json';
 if (!file_exists($pricingConfigFile)) $pricingConfigFile = $dirPath . '/../pricing_config.json';
 if (!file_exists($pricingConfigFile)) $pricingConfigFile = $dirPath . '/pricing_config.json';
 
+$phpSendTo = "AW-16785269892/nNVJCMe5mowaEITJ68M-";
+$phpConversionAw = "AW-16785269892";
 $cfgJson = null;
 if (file_exists($pricingConfigFile)) {
     $cfgContent = @file_get_contents($pricingConfigFile);
     if ($cfgContent) {
         $cfgJson = @json_decode($cfgContent, true);
-        if (is_array($cfgJson) && isset($cfgJson['ad_units'])) {
-            $phpAdUnits = $cfgJson['ad_units'];
+        if (is_array($cfgJson)) {
+            if (isset($cfgJson['ad_units'])) {
+                $phpAdUnits = $cfgJson['ad_units'];
+            }
+            if (isset($cfgJson['conversion']['send_to']) && !empty($cfgJson['conversion']['send_to'])) {
+                $phpSendTo = trim($cfgJson['conversion']['send_to']);
+                $parts = explode('/', $phpSendTo);
+                $phpConversionAw = trim($parts[0]);
+            }
         }
     }
 }
@@ -51,7 +60,10 @@ if (file_exists($currentPricingFile)) {
                 else if ($e >= 25000) $phpFallbackBnr = "f25000";
                 else if ($e >= 20000) $phpFallbackBnr = "f20000";
                 else if ($e >= 15000) $phpFallbackBnr = "f15000";
-                else if ($e >= 10000) $phpFallbackBnr = "f10000";
+                else if ($e >= 12000) $phpFallbackBnr = "f12000";
+                else if ($e >= 9000)  $phpFallbackBnr = "f9000";
+                else if ($e >= 7000)  $phpFallbackBnr = "f7000";
+                else if ($e >= 4000)  $phpFallbackBnr = "f4000";
             }
             if (isset($s['int']['ecpm']) && floatval($s['int']['ecpm']) > 0) {
                 $e = floatval($s['int']['ecpm']);
@@ -60,6 +72,10 @@ if (file_exists($currentPricingFile)) {
                 else if ($e >= 25000) $phpFallbackInt = "f25000";
                 else if ($e >= 20000) $phpFallbackInt = "f20000";
                 else if ($e >= 15000) $phpFallbackInt = "f15000";
+                else if ($e >= 12000) $phpFallbackInt = "f12000";
+                else if ($e >= 9000)  $phpFallbackInt = "f9000";
+                else if ($e >= 7000)  $phpFallbackInt = "f7000";
+                else if ($e >= 4000)  $phpFallbackInt = "f4000";
             }
             if (isset($s['anc']['ecpm']) && floatval($s['anc']['ecpm']) > 0) {
                 $e = floatval($s['anc']['ecpm']);
@@ -67,38 +83,41 @@ if (file_exists($currentPricingFile)) {
                 else if ($e >= 25000) $phpFallbackAnc = "f25000";
                 else if ($e >= 20000) $phpFallbackAnc = "f20000";
                 else if ($e >= 15000) $phpFallbackAnc = "f15000";
+                else if ($e >= 12000) $phpFallbackAnc = "f12000";
+                else if ($e >= 9000)  $phpFallbackAnc = "f9000";
+                else if ($e >= 7000)  $phpFallbackAnc = "f7000";
+                else if ($e >= 4000)  $phpFallbackAnc = "f4000";
             }
         }
     }
 }
 ?>
 <!-- Global site tag (gtag.js) - Google Ads -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=AW-16785269892/nNVJCMe5mowaEITJ68M-"></script>
-<script>
+<script data-cfasync="false" async src="https://www.googletagmanager.com/gtag/js?id=<?php echo htmlspecialchars($phpConversionAw); ?>"></script>
+<script data-cfasync="false">
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'AW-16785269892/nNVJCMe5mowaEITJ68M-');
+  gtag('config', <?php echo json_encode($phpConversionAw); ?>);
 </script>
 
-<script>
+<script data-cfasync="false">
 window.MBELIK_COUNTRY = <?php echo json_encode($detectedCountry); ?>;
 window.MBELIK_INLINE_CURRENT_PRICING = <?php echo json_encode($cpJson); ?>;
 window.MBELIK_INLINE_PRICING_CONFIG = <?php echo json_encode($cfgJson); ?>;
 </script>
 
-<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
-<script>
+<script data-cfasync="false" async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<script data-cfasync="false">
 window.googletag = window.googletag || { cmd: [] };
 
 var phpFallbackBnr = <?php echo json_encode($phpFallbackBnr); ?>;
 var phpFallbackInt = <?php echo json_encode($phpFallbackInt); ?>;
 var phpFallbackAnc = <?php echo json_encode($phpFallbackAnc); ?>;
+var phpSendTo = <?php echo json_encode($phpSendTo); ?>;
 
-var mbelikPricingVal = phpFallbackBnr;
 var slotHeader, slotFeed, slotSide1, slotSide2, slotInt, slotSticky;
 window.slotStateMap = window.slotStateMap || {};
-window.pricingEngineResolved = false;
 
 function detectDevice() {
     var ua = navigator.userAgent || navigator.vendor || window.opera;
@@ -106,25 +125,6 @@ function detectDevice() {
     if (/iPhone|iPod/i.test(ua)) return 'mobile';
     if (/iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'mobile';
     return 'desktop';
-}
-
-function fetchWithTimeout(url, options, timeoutMs) {
-    return new Promise(function(resolve, reject) {
-        var timer = setTimeout(function() {
-            reject(new Error("Request timeout"));
-        }, timeoutMs);
-
-        fetch(url, options).then(
-            function(response) {
-                clearTimeout(timer);
-                resolve(response);
-            },
-            function(err) {
-                clearTimeout(timer);
-                reject(err);
-            }
-        );
-    });
 }
 
 function findRuleWithStepDown(targetCPM, matchRate, targetMr, rules, emergencyMr, fmtName, fmtThreshold) {
@@ -177,189 +177,88 @@ function findRuleWithStepDown(targetCPM, matchRate, targetMr, rules, emergencyMr
 var userDevice = detectDevice();
 var userCountry = window.MBELIK_COUNTRY || 'ID';
 
-var pricingEnginePromise = new Promise(function(resolve) {
-    var isResolved = false;
+var keys = (function() {
+    var inlineData = window.MBELIK_INLINE_CURRENT_PRICING;
+    var inlineCfg = window.MBELIK_INLINE_PRICING_CONFIG;
+    if (!inlineData || !inlineCfg) {
+        return { keyBnr: phpFallbackBnr, keyInt: phpFallbackInt, keyAnc: phpFallbackAnc };
+    }
+    window.mbelikConfig = inlineCfg;
 
-    if (window.MBELIK_INLINE_CURRENT_PRICING && window.MBELIK_INLINE_PRICING_CONFIG) {
-        var inlineData = window.MBELIK_INLINE_CURRENT_PRICING;
-        var inlineCfg = window.MBELIK_INLINE_PRICING_CONFIG;
-        window.mbelikConfig = inlineCfg;
+    function computeKeySync(fmtName) {
+        var rawEcpm = 0.0;
+        var matchRate = 0.0;
+        var fmtLongName = (fmtName === 'bnr') ? 'banner' : (fmtName === 'int') ? 'interstitial' : 'anchor';
+        var fmtObj = (inlineCfg.format_settings && inlineCfg.format_settings[fmtLongName]) ? inlineCfg.format_settings[fmtLongName] : {};
+        var fmtMultiplier = (fmtObj.multiplier !== undefined) ? fmtObj.multiplier : 1.0;
+        var fmtThreshold = (fmtObj.high_mr_threshold !== undefined) ? fmtObj.high_mr_threshold : (inlineCfg.target_mr || 65.0);
 
-        function computeKeyInline(fmtName) {
-            var rawEcpm = 0.0;
-            var matchRate = 0.0;
-            var fmtLongName = (fmtName === 'bnr') ? 'banner' : (fmtName === 'int') ? 'interstitial' : 'anchor';
-            var fmtObj = (inlineCfg.format_settings && inlineCfg.format_settings[fmtLongName]) ? inlineCfg.format_settings[fmtLongName] : {};
-            var fmtMultiplier = (fmtObj.multiplier !== undefined) ? fmtObj.multiplier : 1.0;
-            var fmtThreshold = (fmtObj.high_mr_threshold !== undefined) ? fmtObj.high_mr_threshold : (inlineCfg.target_mr || 65.0);
-
-            if (inlineData.countries && inlineData.countries[userCountry] && inlineData.countries[userCountry][userDevice]) {
-                var cData = inlineData.countries[userCountry][userDevice];
-                if (cData[fmtName]) {
-                    rawEcpm = cData[fmtName].ecpm || 0.0;
-                    matchRate = cData[fmtName].match_rate || 0.0;
-                } else {
-                    rawEcpm = cData.ecpm || 0.0;
-                    matchRate = cData.match_rate || 0.0;
-                }
-            } else if (inlineData.summary && inlineData.summary[userDevice]) {
-                var sData = inlineData.summary[userDevice];
-                if (sData[fmtName]) {
-                    rawEcpm = sData[fmtName].ecpm || 0.0;
-                    matchRate = sData[fmtName].match_rate || 0.0;
-                } else {
-                    rawEcpm = sData.ecpm || 0.0;
-                    matchRate = sData.match_rate || 0.0;
-                }
-            } else if (inlineData.summary) {
-                if (inlineData.summary[fmtName]) {
-                    rawEcpm = inlineData.summary[fmtName].ecpm || 0.0;
-                    matchRate = inlineData.summary[fmtName].match_rate || 0.0;
-                } else {
-                    rawEcpm = inlineData.summary.ecpm || 0.0;
-                    matchRate = inlineData.summary.match_rate || 0.0;
-                }
+        if (inlineData.countries && inlineData.countries[userCountry] && inlineData.countries[userCountry][userDevice]) {
+            var cData = inlineData.countries[userCountry][userDevice];
+            if (cData[fmtName]) {
+                rawEcpm = cData[fmtName].ecpm || 0.0;
+                matchRate = cData[fmtName].match_rate || 0.0;
+            } else {
+                rawEcpm = cData.ecpm || 0.0;
+                matchRate = cData.match_rate || 0.0;
             }
-
-            var adj = inlineCfg.adjustments || {};
-            var deviceMultiplier = 1.0;
-            if (inlineCfg.device_settings && inlineCfg.device_settings[userDevice] && inlineCfg.device_settings[userDevice].cpm_multiplier) {
-                deviceMultiplier = inlineCfg.device_settings[userDevice].cpm_multiplier;
+        } else if (inlineData.summary && inlineData.summary[userDevice]) {
+            var sData = inlineData.summary[userDevice];
+            if (sData[fmtName]) {
+                rawEcpm = sData[fmtName].ecpm || 0.0;
+                matchRate = sData[fmtName].match_rate || 0.0;
+            } else {
+                rawEcpm = sData.ecpm || 0.0;
+                matchRate = sData.match_rate || 0.0;
             }
-
-            var tierMultiplier = 1.0;
-            if (adj.high_mr_threshold && matchRate >= adj.high_mr_threshold) {
-                tierMultiplier = 1.0 + ((adj.high_mr_boost_pct || 25.0) / 100.0);
-            } else if (adj.med_mr_threshold && matchRate >= adj.med_mr_threshold) {
-                tierMultiplier = 1.0 + ((adj.med_mr_boost_pct || 10.0) / 100.0);
-            } else if (adj.low_mr_threshold && matchRate < adj.low_mr_threshold) {
-                tierMultiplier = 1.0 + ((adj.low_mr_penalty_pct || -15.0) / 100.0);
+        } else if (inlineData.summary) {
+            if (inlineData.summary[fmtName]) {
+                rawEcpm = inlineData.summary[fmtName].ecpm || 0.0;
+                matchRate = inlineData.summary[fmtName].match_rate || 0.0;
+            } else {
+                rawEcpm = inlineData.summary.ecpm || 0.0;
+                matchRate = inlineData.summary.match_rate || 0.0;
             }
-
-            var adjustedEcpm = rawEcpm * tierMultiplier * deviceMultiplier * fmtMultiplier;
-            var targetMr = inlineCfg.target_mr || 65.0;
-            var emergencyMrThreshold = inlineCfg.emergency_mr_threshold || 15.0;
-            var resRule = findRuleWithStepDown(adjustedEcpm, matchRate, targetMr, inlineCfg.rules || [], emergencyMrThreshold, fmtName, fmtThreshold);
-
-            var defaultFmtFallback = (fmtName === 'int') ? phpFallbackInt : (fmtName === 'anc') ? phpFallbackAnc : phpFallbackBnr;
-            var key = (resRule && resRule.key) ? resRule.key : defaultFmtFallback;
-
-            console.log("⚡ [Zero-Fallback AutoPricing] Format:", fmtName, "| Country:", userCountry, "| Device:", userDevice, "| Raw eCPM:", rawEcpm, "| MR:", matchRate + "%", "| Multiplier:", fmtMultiplier, "| Key:", key);
-            return key;
         }
 
-        window.pricingEngineResolved = true;
-        resolve({ keyBnr: computeKeyInline('bnr'), keyInt: computeKeyInline('int'), keyAnc: computeKeyInline('anc'), config: inlineCfg });
-        return;
+        var adj = inlineCfg.adjustments || {};
+        var deviceMultiplier = 1.0;
+        if (inlineCfg.device_settings && inlineCfg.device_settings[userDevice] && inlineCfg.device_settings[userDevice].cpm_multiplier) {
+            deviceMultiplier = inlineCfg.device_settings[userDevice].cpm_multiplier;
+        }
+
+        var tierMultiplier = 1.0;
+        if (adj.high_mr_threshold && matchRate >= adj.high_mr_threshold) {
+            tierMultiplier = 1.0 + ((adj.high_mr_boost_pct || 25.0) / 100.0);
+        } else if (adj.med_mr_threshold && matchRate >= adj.med_mr_threshold) {
+            tierMultiplier = 1.0 + ((adj.med_mr_boost_pct || 10.0) / 100.0);
+        } else if (adj.low_mr_threshold && matchRate < adj.low_mr_threshold) {
+            tierMultiplier = 1.0 + ((adj.low_mr_penalty_pct || -15.0) / 100.0);
+        }
+
+        var adjustedEcpm = rawEcpm * tierMultiplier * deviceMultiplier * fmtMultiplier;
+        var targetMr = inlineCfg.target_mr || 65.0;
+        var emergencyMrThreshold = inlineCfg.emergency_mr_threshold || 15.0;
+        var resRule = findRuleWithStepDown(adjustedEcpm, matchRate, targetMr, inlineCfg.rules || [], emergencyMrThreshold, fmtName, fmtThreshold);
+
+        var defaultFmtFallback = (fmtName === 'int') ? phpFallbackInt : (fmtName === 'anc') ? phpFallbackAnc : phpFallbackBnr;
+        var key = (resRule && resRule.key) ? resRule.key : defaultFmtFallback;
+
+        console.log("⚡ [Zero-Fallback AutoPricing] Format:", fmtName, "| Country:", userCountry, "| Device:", userDevice, "| Raw eCPM:", rawEcpm, "| MR:", matchRate + "%", "| Multiplier:", fmtMultiplier, "| Key:", key);
+        return key;
     }
 
-    var safetyTimer = setTimeout(function() {
-        if (!isResolved) {
-            isResolved = true;
-            window.pricingEngineResolved = true;
-            resolve({ keyBnr: phpFallbackBnr, keyInt: phpFallbackInt, keyAnc: phpFallbackAnc, config: null });
-        }
-    }, 2500);
+    return {
+        keyBnr: computeKeySync('bnr'),
+        keyInt: computeKeySync('int'),
+        keyAnc: computeKeySync('anc')
+    };
+})();
 
-    Promise.all([
-        fetchWithTimeout('/current_pricing.json?t=' + Date.now(), { cache: 'no-store' }, 2000)
-            .then(function(res) { return res.ok ? res.json() : null; })
-            .catch(function() { return null; }),
-
-        fetchWithTimeout('/pricing_config.json?t=' + Date.now(), { cache: 'no-store' }, 2000)
-            .then(function(res) { return res.ok ? res.json() : null; })
-            .catch(function() { return null; })
-    ])
-    .then(function(results) {
-        if (isResolved) return;
-        isResolved = true;
-        window.pricingEngineResolved = true;
-        clearTimeout(safetyTimer);
-
-        var pricingData = results[0];
-        var config = results[1];
-
-        if (config) window.mbelikConfig = config;
-
-        if (pricingData && config) {
-            var targetMr = config.target_mr || 65.0;
-            var emergencyMrThreshold = config.emergency_mr_threshold || 15.0;
-
-            function computeKeyAsync(fmtName) {
-                var rawEcpm = 0.0;
-                var matchRate = 0.0;
-                var fmtLongName = (fmtName === 'bnr') ? 'banner' : (fmtName === 'int') ? 'interstitial' : 'anchor';
-                var fmtObj = (config.format_settings && config.format_settings[fmtLongName]) ? config.format_settings[fmtLongName] : {};
-                var fmtMultiplier = (fmtObj.multiplier !== undefined) ? fmtObj.multiplier : 1.0;
-                var fmtThreshold = (fmtObj.high_mr_threshold !== undefined) ? fmtObj.high_mr_threshold : (config.target_mr || 65.0);
-
-                if (pricingData.countries && pricingData.countries[userCountry] && pricingData.countries[userCountry][userDevice]) {
-                    var cData = pricingData.countries[userCountry][userDevice];
-                    if (cData[fmtName]) {
-                        rawEcpm = cData[fmtName].ecpm || 0.0;
-                        matchRate = cData[fmtName].match_rate || 0.0;
-                    } else {
-                        rawEcpm = cData.ecpm || 0.0;
-                        matchRate = cData.match_rate || 0.0;
-                    }
-                } else if (pricingData.summary && pricingData.summary[userDevice]) {
-                    var sData = pricingData.summary[userDevice];
-                    if (sData[fmtName]) {
-                        rawEcpm = sData[fmtName].ecpm || 0.0;
-                        matchRate = sData[fmtName].match_rate || 0.0;
-                    } else {
-                        rawEcpm = sData.ecpm || 0.0;
-                        matchRate = sData.match_rate || 0.0;
-                    }
-                } else if (pricingData.summary) {
-                    if (pricingData.summary[fmtName]) {
-                        rawEcpm = pricingData.summary[fmtName].ecpm || 0.0;
-                        matchRate = pricingData.summary[fmtName].match_rate || 0.0;
-                    } else {
-                        rawEcpm = pricingData.summary.ecpm || 0.0;
-                        matchRate = pricingData.summary.match_rate || 0.0;
-                    }
-                }
-
-                var adj = config.adjustments || {};
-                var deviceMultiplier = 1.0;
-                if (config.device_settings && config.device_settings[userDevice] && config.device_settings[userDevice].cpm_multiplier) {
-                    deviceMultiplier = config.device_settings[userDevice].cpm_multiplier;
-                }
-
-                var tierMultiplier = 1.0;
-                if (adj.high_mr_threshold && matchRate >= adj.high_mr_threshold) {
-                    tierMultiplier = 1.0 + ((adj.high_mr_boost_pct || 25.0) / 100.0);
-                } else if (adj.med_mr_threshold && matchRate >= adj.med_mr_threshold) {
-                    tierMultiplier = 1.0 + ((adj.med_mr_boost_pct || 10.0) / 100.0);
-                } else if (adj.low_mr_threshold && matchRate < adj.low_mr_threshold) {
-                    tierMultiplier = 1.0 + ((adj.low_mr_penalty_pct || -15.0) / 100.0);
-                }
-
-                var adjustedEcpm = rawEcpm * tierMultiplier * deviceMultiplier * fmtMultiplier;
-                var resRule = findRuleWithStepDown(adjustedEcpm, matchRate, targetMr, config.rules || [], emergencyMrThreshold, fmtName, fmtThreshold);
-                var defaultFmtFallback = (fmtName === 'int') ? phpFallbackInt : (fmtName === 'anc') ? phpFallbackAnc : phpFallbackBnr;
-                var key = (resRule && resRule.key) ? resRule.key : defaultFmtFallback;
-
-                console.log("🚀 [AutoPricing] Format:", fmtName, "| Country:", userCountry, "| Device:", userDevice, "| Raw eCPM:", rawEcpm, "| MR:", matchRate + "%", "| Multiplier:", fmtMultiplier, "| Key:", key);
-                return key;
-            }
-
-            resolve({ keyBnr: computeKeyAsync('bnr'), keyInt: computeKeyAsync('int'), keyAnc: computeKeyAsync('anc'), config: config });
-            return;
-        }
-
-        resolve({ keyBnr: phpFallbackBnr, keyInt: phpFallbackInt, keyAnc: phpFallbackAnc, config: config });
-    })
-    .catch(function(err) {
-        if (!isResolved) {
-            isResolved = true;
-            window.pricingEngineResolved = true;
-            clearTimeout(safetyTimer);
-            resolve({ keyBnr: phpFallbackBnr, keyInt: phpFallbackInt, keyAnc: phpFallbackAnc, config: null });
-        }
-    });
-});
+var keyBnr = keys.keyBnr;
+var keyInt = keys.keyInt;
+var keyAnc = keys.keyAnc;
+window.mbelikPricingVal = keyBnr;
 
 var currentDomain = window.location.hostname.replace('www.', '');
 
@@ -369,7 +268,7 @@ googletag.cmd.push(function() {
     googletag.pubads().set('page_url', currentUrl);
     googletag.pubads().setTargeting('domain', currentDomain);
     googletag.pubads().setTargeting('device_type', userDevice);
-    googletag.pubads().setTargeting('mbelik_pricing', phpFallbackBnr);
+    googletag.pubads().setTargeting('mbelik_pricing', keyBnr);
 
     googletag.pubads().enableLazyLoad({
         fetchMarginPercent: 200,
@@ -390,57 +289,41 @@ googletag.cmd.push(function() {
     slotHeader = googletag.defineSlot('<?php echo isset($phpAdUnits["header"]) ? $phpAdUnits["header"] : $defaultHeader; ?>', [[970, 250], [728, 90], [320, 50], [320, 100], [250, 50]], 'div-gpt-ad-gm-header')
         .defineSizeMapping(mappingFlexible)
         .addService(googletag.pubads());
+    slotHeader.setTargeting('mbelik_pricing', keyBnr);
 
     slotFeed = googletag.defineSlot('<?php echo isset($phpAdUnits["feed"]) ? $phpAdUnits["feed"] : $defaultFeed; ?>', [[300, 250], [336, 280]], 'div-gpt-ad-gm-feed')
         .defineSizeMapping(mappingFeed)
         .addService(googletag.pubads());
+    slotFeed.setTargeting('mbelik_pricing', keyBnr);
 
-    slotSide1 = googletag.defineSlot('<?php echo isset($phpAdUnits["side1"]) ? $phpAdUnits["side1"] : $defaultSide; ?>', [[300, 250], [300, 600]], 'div-gpt-ad-gm-side1')
+    slotSide1 = googletag.defineSlot('<?php echo isset($phpAdUnits["side1"]) ? $phpAdUnits["side1"] : (isset($phpAdUnits["side"]) ? $phpAdUnits["side"] : $defaultSide); ?>', [[300, 250], [300, 600]], 'div-gpt-ad-gm-side1')
         .addService(googletag.pubads());
+    slotSide1.setTargeting('mbelik_pricing', keyBnr);
 
-    slotSide2 = googletag.defineSlot('<?php echo isset($phpAdUnits["side2"]) ? $phpAdUnits["side2"] : $defaultSide2; ?>', [[300, 250], [300, 600]], 'div-gpt-ad-gm-side2')
+    slotSide2 = googletag.defineSlot('<?php echo isset($phpAdUnits["side2"]) ? $phpAdUnits["side2"] : (isset($phpAdUnits["side_2"]) ? $phpAdUnits["side_2"] : $defaultSide2); ?>', [[300, 250], [300, 600]], 'div-gpt-ad-gm-side2')
         .addService(googletag.pubads());
+    slotSide2.setTargeting('mbelik_pricing', keyBnr);
 
     slotInt = googletag.defineOutOfPageSlot('<?php echo isset($phpAdUnits["interstitial"]) ? $phpAdUnits["interstitial"] : $defaultInt; ?>', googletag.enums.OutOfPageFormat.INTERSTITIAL);
     if (slotInt) {
         slotInt.addService(googletag.pubads());
+        slotInt.setTargeting('mbelik_pricing', keyInt);
+        console.log("💰 [AutoPricing SetTargeting Sync] Slot: interstitial | Key:", keyInt);
     }
 
     slotSticky = googletag.defineOutOfPageSlot('<?php echo isset($phpAdUnits["anchor"]) ? $phpAdUnits["anchor"] : $defaultSticky; ?>', googletag.enums.OutOfPageFormat.BOTTOM_ANCHOR);
     if (slotSticky) {
         slotSticky.addService(googletag.pubads());
+        slotSticky.setTargeting('mbelik_pricing', keyAnc);
+        console.log("💰 [AutoPricing SetTargeting Sync] Slot: anchor | Key:", keyAnc);
     }
 
     googletag.pubads().enableSingleRequest();
     googletag.pubads().collapseEmptyDivs();
     googletag.enableServices();
 });
-
-pricingEnginePromise.then(function(res) {
-    var keyBnr = res.keyBnr || phpFallbackBnr;
-    var keyInt = res.keyInt || phpFallbackInt;
-    var keyAnc = res.keyAnc || phpFallbackAnc;
-
-    window.mbelikPricingVal = keyBnr;
-
-    function applySlotTargeting(slot, slotKey, slotName) {
-        if (!slot) return;
-        slot.setTargeting('mbelik_pricing', slotKey);
-        window.slotStateMap[slotName] = { key: slotKey, state: 'initial' };
-        console.log("💰 [AutoPricing SetTargeting] Slot:", slotName, "| Key:", slotKey);
-    }
-
-    googletag.cmd.push(function() {
-        applySlotTargeting(slotHeader, keyBnr, 'header');
-        applySlotTargeting(slotFeed, keyBnr, 'feed');
-        applySlotTargeting(slotSide1, keyBnr, 'side1');
-        applySlotTargeting(slotSide2, keyBnr, 'side2');
-        applySlotTargeting(slotInt, keyInt, 'interstitial');
-        applySlotTargeting(slotSticky, keyAnc, 'anchor');
-    });
-});
 </script>
-<script>
+<script data-cfasync="false">
 window.mbelikAccumulator = window.mbelikAccumulator || { sessionTotal: 0 };
 window.googletag = window.googletag || { cmd: [] };
 
@@ -456,8 +339,6 @@ googletag.cmd.push(function() {
         var targetingValues = slot.getTargeting('mbelik_pricing');
         var pricingKey = (targetingValues && targetingValues.length > 0) ? targetingValues[0] : (window.mbelikPricingVal || 'unknown');
 
-        var isRefreshEligible = (pricingKey !== 'google_optimize');
-
         var currentRule = null;
         if (window.mbelikConfig && window.mbelikConfig.rules) {
             for (var i = 0; i < window.mbelikConfig.rules.length; i++) {
@@ -472,7 +353,17 @@ googletag.cmd.push(function() {
         var estimatedECPM = 0.0;
         if (currentRule && currentRule.cpm) {
             estimatedECPM = currentRule.cpm;
-        } else if (pricingKey !== 'unknown' && pricingKey !== 'google_optimize') {
+        } else if (pricingKey === 'google_optimize') {
+            // Option 1: Dynamic Historical JSON eCPM for google_optimize
+            var fmtKey = (path.indexOf('play-5') !== -1 || path.indexOf('zse-5') !== -1 || path.indexOf('int') !== -1) ? 'int' : ((path.indexOf('play-6') !== -1 || path.indexOf('zse-6') !== -1 || path.indexOf('anc') !== -1 || path.indexOf('sticky') !== -1) ? 'anc' : 'bnr');
+            var cpData = window.MBELIK_INLINE_CURRENT_PRICING || null;
+            if (cpData && cpData.summary && cpData.summary[fmtKey] && cpData.summary[fmtKey].ecpm) {
+                estimatedECPM = parseFloat(cpData.summary[fmtKey].ecpm) || 0.0;
+            }
+            if (estimatedECPM <= 0) {
+                estimatedECPM = (fmtKey === 'int') ? 25000.0 : (fmtKey === 'anc' ? 10000.0 : 5000.0);
+            }
+        } else if (pricingKey !== 'unknown') {
             var numericKey = parseFloat(pricingKey.replace(/[^0-9.]/g, ''));
             if (!isNaN(numericKey) && numericKey > 0) {
                 estimatedECPM = numericKey;
@@ -499,11 +390,75 @@ googletag.cmd.push(function() {
             icon + " [Micro-Earning] Slot: " + trackingKey + " | Status: " + statusText + " | PricingKey: " + pricingKey + " | eCPM: " + ecpmFormatted + " | Earning: " + earningFormatted + " | Total Session: " + totalFormatted + " [" + displayUrl + "]"
         );
     });
+
+    googletag.pubads().addEventListener('impressionViewable', function(event) {
+        var slot = event.slot;
+        
+        // Strict format check: ONLY trigger conversion if the viewable slot is the Interstitial format slot!
+        if (typeof slotInt === 'undefined' || slot !== slotInt) return;
+
+        var path = slot.getAdUnitPath();
+        var slotId = slot.getSlotElementId();
+        var trackingKey = slotId ? (path + " (" + slotId + ")") : path;
+
+        var targetingValues = slot.getTargeting('mbelik_pricing');
+        var pricingKey = (targetingValues && targetingValues.length > 0) ? targetingValues[0] : (window.mbelikPricingVal || 'unknown');
+
+        var currentRule = null;
+        if (window.mbelikConfig && window.mbelikConfig.rules) {
+            for (var i = 0; i < window.mbelikConfig.rules.length; i++) {
+                var r = window.mbelikConfig.rules[i];
+                if (r.target_key === pricingKey || r.floor_key === pricingKey) {
+                    currentRule = r;
+                    break;
+                }
+            }
+        }
+
+        var estimatedECPM = 0.0;
+        if (currentRule && currentRule.cpm) {
+            estimatedECPM = currentRule.cpm;
+        } else if (pricingKey === 'google_optimize') {
+            var fmtKey = 'int';
+            var cpData = window.MBELIK_INLINE_CURRENT_PRICING || null;
+            if (cpData && cpData.summary && cpData.summary[fmtKey] && cpData.summary[fmtKey].ecpm) {
+                estimatedECPM = parseFloat(cpData.summary[fmtKey].ecpm) || 0.0;
+            }
+            if (estimatedECPM <= 0) {
+                estimatedECPM = 25000.0;
+            }
+        } else if (pricingKey !== 'unknown') {
+            var numericKey = parseFloat(pricingKey.replace(/[^0-9.]/g, ''));
+            if (!isNaN(numericKey) && numericKey > 0) {
+                estimatedECPM = numericKey;
+            }
+        }
+
+        var earning = estimatedECPM / 1000.0;
+
+        var activeSendTo = phpSendTo;
+        if (window.mbelikConfig && window.mbelikConfig.conversion && window.mbelikConfig.conversion.send_to) {
+            activeSendTo = window.mbelikConfig.conversion.send_to;
+        } else if (window.MBELIK_INLINE_PRICING_CONFIG && window.MBELIK_INLINE_PRICING_CONFIG.conversion && window.MBELIK_INLINE_PRICING_CONFIG.conversion.send_to) {
+            activeSendTo = window.MBELIK_INLINE_PRICING_CONFIG.conversion.send_to;
+        }
+
+        var sessionVal = (window.mbelikAccumulator && window.mbelikAccumulator.sessionTotal > 0) ? window.mbelikAccumulator.sessionTotal : earning;
+
+        if (typeof gtag === 'function') {
+            gtag('event', 'conversion', {
+                'send_to': activeSendTo,
+                'value': Number(sessionVal.toFixed(2)),
+                'currency': 'IDR'
+            });
+            console.log("🎯 [Google Ads Interstitial Conversion Sent] Slot: " + trackingKey + " | SendTo: " + activeSendTo + " | Viewable on Screen | Value (Total Session): +Rp " + sessionVal.toFixed(2));
+        }
+    });
 });
 </script>
 """
 
-cmd = "find /home/mbummm/web/ -type f \( -name 'AdsHeader.php' -o -name 'adsheader.php' \)"
+cmd = "sudo find /home/mbummm/web/ -type f \( -name 'AdsHeader.php' -o -name 'adsheader.php' \) 2>/dev/null"
 header_files = subprocess.check_output(cmd, shell=True).decode().splitlines()
 
 success = 0
