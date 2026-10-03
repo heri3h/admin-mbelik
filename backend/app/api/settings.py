@@ -82,6 +82,7 @@ def get_google_ads_accounts(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    accounts = db.query(GoogleAdsAccount).all()
     existing_cids = {a.customer_id for a in accounts}
     try:
         from app.services.google_ads import google_ads_service
