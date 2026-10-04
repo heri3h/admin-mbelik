@@ -692,6 +692,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-900/80 uppercase text-[10px] tracking-wider text-slate-400 border-b border-slate-700/60">
               <tr>
+                <th className="px-4 py-3 text-center w-12">No</th>
                 <th className="px-4 py-3">Customer ID</th>
                 <th className="px-4 py-3">Account Name</th>
                 <th className="px-4 py-3">Connected Domain</th>
@@ -700,8 +701,9 @@ export default function SettingsPage({ onOpenPricingModal }) {
             </thead>
             <tbody className="divide-y divide-slate-700/40">
               {gadsAccounts.length > 0 ? (
-                gadsAccounts.map((acc) => (
+                gadsAccounts.map((acc, index) => (
                   <tr key={acc.id} className="hover:bg-slate-700/20 transition-colors">
+                    <td className="px-4 py-3 text-center text-slate-400 font-mono text-xs">{index + 1}</td>
                     <td className="px-4 py-3 font-mono text-sky-400 font-semibold">{acc.customer_id}</td>
                     <td className="px-4 py-3">
                       {editingId === acc.id ? (
@@ -767,7 +769,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="px-4 py-6 text-center text-slate-500 italic">
+                  <td colSpan="5" className="px-4 py-6 text-center text-slate-500 italic">
                     No Google Ads Accounts registered yet.
                   </td>
                 </tr>
@@ -886,6 +888,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-900/80 text-slate-400 font-semibold border-b border-slate-700">
               <tr>
+                <th className="px-4 py-3 text-center w-12">No</th>
                 <th className="px-4 py-3">Domain</th>
                 <th className="px-4 py-3 max-w-[180px]">Target File Path</th>
                 <th className="px-4 py-3 text-center">Operating Hours</th>
@@ -896,8 +899,9 @@ export default function SettingsPage({ onOpenPricingModal }) {
             </thead>
             <tbody className="divide-y divide-slate-700/50 text-slate-300">
               {exportTargets.length > 0 ? (
-                exportTargets.map((target) => (
+                exportTargets.map((target, index) => (
                   <tr key={target.id} className="hover:bg-slate-700/30 transition-colors">
+                    <td className="px-4 py-3 text-center text-slate-400 font-mono text-xs">{index + 1}</td>
                     <td className="px-4 py-3 font-semibold text-white">{target.domain}</td>
                     <td className="px-4 py-3 font-mono text-[11px] text-purple-300 max-w-[180px] truncate" title={target.target_filepath}>
                       {target.target_filepath}
@@ -956,7 +960,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-4 py-6 text-center text-slate-500 italic">
+                  <td colSpan="7" className="px-4 py-6 text-center text-slate-500 italic">
                     No auto-export JSON targets registered yet.
                   </td>
                 </tr>
