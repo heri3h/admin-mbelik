@@ -1006,6 +1006,8 @@ def get_site_countries_breakdown(
         )
         if domain_name.lower() not in ["all", "all sites", "global", ""]:
             gam_summary_q = gam_summary_q.filter(func.lower(GAMMetric.domain) == domain_name.lower())
+        if dev_filter:
+            gam_summary_q = gam_summary_q.filter(GAMMetric.device_category == dev_filter)
         gam_summary = gam_summary_q.first()
 
         tot_rev = (gam_summary.revenue or 0.0) if gam_summary else 0.0
@@ -1037,11 +1039,29 @@ def get_site_countries_breakdown(
             cids = [a.customer_id for a in db_accounts]
             tot_spend = 0.0
             if cids:
-                tot_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
-                    GoogleAdsMetric.date >= d_start,
-                    GoogleAdsMetric.date <= d_end,
-                    GoogleAdsMetric.customer_id.in_(cids)
-                ).scalar() or 0.0
+                if dev_filter:
+                    has_c_dev = db.query(GoogleAdsDeviceMetric.id).filter(
+                        GoogleAdsDeviceMetric.date >= d_start,
+                        GoogleAdsDeviceMetric.date <= d_end,
+                        GoogleAdsDeviceMetric.customer_id.in_(cids)
+                    ).first() is not None
+
+                    if has_c_dev:
+                        dev_sp_raw = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+                            GoogleAdsDeviceMetric.date >= d_start,
+                            GoogleAdsDeviceMetric.date <= d_end,
+                            GoogleAdsDeviceMetric.customer_id.in_(cids),
+                            GoogleAdsDeviceMetric.device_category == dev_filter
+                        ).scalar() or 0.0
+                        tot_spend = dev_sp_raw
+                    else:
+                        tot_spend = 0.0
+                else:
+                    tot_spend = db.query(func.sum(GoogleAdsMetric.spend)).filter(
+                        GoogleAdsMetric.date >= d_start,
+                        GoogleAdsMetric.date <= d_end,
+                        GoogleAdsMetric.customer_id.in_(cids)
+                    ).scalar() or 0.0
 
             tot_weight = sum(c["weight"] for c in country_weights)
             raw_rev_sum = sum((tot_rev * (c["weight"] / tot_weight)) * c["ecpm_mult"] for c in country_weights)
