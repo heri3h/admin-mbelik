@@ -139,12 +139,17 @@ def ensure_data_synced(db: Session, start_date: date, end_date: date):
 
 @router.get("/summary", response_model=SummaryMetrics)
 def get_summary(
+    response: Response,
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
     d_start, d_end = parse_date_range(start_date, end_date)
     ensure_data_synced(db, d_start, d_end)
 
@@ -545,12 +550,17 @@ def get_accounts_breakdown(
 
 @router.get("/sites", response_model=List[SiteBreakdownItem])
 def get_sites_breakdown(
+    response: Response,
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     device: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
     d_start, d_end = parse_date_range(start_date, end_date)
     ensure_data_synced(db, d_start, d_end)
 
