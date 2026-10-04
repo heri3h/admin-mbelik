@@ -162,13 +162,18 @@ def get_summary(
     tot_revenue = gam_q.scalar() or 0.0
 
     if dev_filter:
-        real_dev_spend = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+        has_device_data = db.query(GoogleAdsDeviceMetric.id).filter(
             GoogleAdsDeviceMetric.date >= d_start,
-            GoogleAdsDeviceMetric.date <= d_end,
-            GoogleAdsDeviceMetric.device_category == dev_filter
-        ).scalar()
-        if real_dev_spend is not None:
-            tot_spend = real_dev_spend
+            GoogleAdsDeviceMetric.date <= d_end
+        ).first() is not None
+
+        if has_device_data:
+            real_dev_spend = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+                GoogleAdsDeviceMetric.date >= d_start,
+                GoogleAdsDeviceMetric.date <= d_end,
+                GoogleAdsDeviceMetric.device_category == dev_filter
+            ).scalar()
+            tot_spend = real_dev_spend or 0.0
         else:
             tot_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
                 GAMMetric.date >= d_start, GAMMetric.date <= d_end
@@ -668,14 +673,20 @@ def get_sites_breakdown(
             ).scalar() or 0.0
 
             if dev_filter:
-                s_dev_sp = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+                has_s_dev = db.query(GoogleAdsDeviceMetric.id).filter(
                     GoogleAdsDeviceMetric.date >= d_start,
                     GoogleAdsDeviceMetric.date <= d_end,
-                    GoogleAdsDeviceMetric.customer_id.in_(assigned_cids),
-                    GoogleAdsDeviceMetric.device_category == dev_filter
-                ).scalar()
-                if s_dev_sp is not None:
-                    site_spend = s_dev_sp
+                    GoogleAdsDeviceMetric.customer_id.in_(assigned_cids)
+                ).first() is not None
+
+                if has_s_dev:
+                    s_dev_sp = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+                        GoogleAdsDeviceMetric.date >= d_start,
+                        GoogleAdsDeviceMetric.date <= d_end,
+                        GoogleAdsDeviceMetric.customer_id.in_(assigned_cids),
+                        GoogleAdsDeviceMetric.device_category == dev_filter
+                    ).scalar()
+                    site_spend = s_dev_sp or 0.0
                 else:
                     s_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
                         GAMMetric.date >= d_start, GAMMetric.date <= d_end,
@@ -685,14 +696,20 @@ def get_sites_breakdown(
                     s_ratio = (s_dev_imps / s_all_imps) if s_all_imps > 0 else 1.0
                     site_spend = site_spend_raw * s_ratio
 
-                p_dev_sp = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+                has_p_dev = db.query(GoogleAdsDeviceMetric.id).filter(
                     GoogleAdsDeviceMetric.date >= prev_start,
                     GoogleAdsDeviceMetric.date <= prev_end,
-                    GoogleAdsDeviceMetric.customer_id.in_(assigned_cids),
-                    GoogleAdsDeviceMetric.device_category == dev_filter
-                ).scalar()
-                if p_dev_sp is not None:
-                    prev_sp = p_dev_sp * intraday_factor
+                    GoogleAdsDeviceMetric.customer_id.in_(assigned_cids)
+                ).first() is not None
+
+                if has_p_dev:
+                    p_dev_sp = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+                        GoogleAdsDeviceMetric.date >= prev_start,
+                        GoogleAdsDeviceMetric.date <= prev_end,
+                        GoogleAdsDeviceMetric.customer_id.in_(assigned_cids),
+                        GoogleAdsDeviceMetric.device_category == dev_filter
+                    ).scalar()
+                    prev_sp = (p_dev_sp or 0.0) * intraday_factor
                 else:
                     p_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
                         GAMMetric.date >= prev_start, GAMMetric.date <= prev_end,
@@ -1126,14 +1143,20 @@ def get_site_countries_breakdown(
         ).scalar() or 0.0
 
         if dev_filter:
-            dev_sp_raw = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+            has_c_dev = db.query(GoogleAdsDeviceMetric.id).filter(
                 GoogleAdsDeviceMetric.date >= d_start,
                 GoogleAdsDeviceMetric.date <= d_end,
-                GoogleAdsDeviceMetric.customer_id.in_(cids),
-                GoogleAdsDeviceMetric.device_category == dev_filter
-            ).scalar()
-            if dev_sp_raw is not None and tot_spend_raw > 0:
-                s_ratio = dev_sp_raw / tot_spend_raw
+                GoogleAdsDeviceMetric.customer_id.in_(cids)
+            ).first() is not None
+
+            if has_c_dev:
+                dev_sp_raw = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+                    GoogleAdsDeviceMetric.date >= d_start,
+                    GoogleAdsDeviceMetric.date <= d_end,
+                    GoogleAdsDeviceMetric.customer_id.in_(cids),
+                    GoogleAdsDeviceMetric.device_category == dev_filter
+                ).scalar() or 0.0
+                tot_spend = dev_sp_raw
             else:
                 if domain_name.lower() not in ["all", "all sites", "global", ""]:
                     s_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
@@ -1154,7 +1177,7 @@ def get_site_countries_breakdown(
                         GAMMetric.device_category == dev_filter
                     ).scalar() or 0
                 s_ratio = (s_dev_imps / s_all_imps) if s_all_imps > 0 else 1.0
-            tot_spend = tot_spend_raw * s_ratio
+                tot_spend = tot_spend_raw * s_ratio
         else:
             tot_spend = tot_spend_raw
 
