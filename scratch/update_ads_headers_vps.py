@@ -459,7 +459,7 @@ googletag.cmd.push(function() {
 </script>
 """
 
-cmd = "sudo find /home/mbummm/web/ -type f \( -name 'AdsHeader.php' -o -name 'adsheader.php' \) 2>/dev/null"
+cmd = "sudo find /home/mbummm/web/ -type f \( -name 'AdsHeader.php' -o -name 'adsheader.php' -o -name 'ads-header.php' \) 2>/dev/null"
 header_files = subprocess.check_output(cmd, shell=True).decode().splitlines()
 
 success = 0
