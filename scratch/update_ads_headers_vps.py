@@ -324,7 +324,7 @@ googletag.cmd.push(function() {
 });
 </script>
 <script data-cfasync="false">
-window.mbelikAccumulator = window.mbelikAccumulator || { sessionTotal: 0 };
+window.mbelikAccumulator = window.mbelikAccumulator || { sessionTotal: parseFloat(sessionStorage.getItem('mbelik_session_total')) || 0 };
 window.googletag = window.googletag || { cmd: [] };
 
 googletag.cmd.push(function() {
@@ -374,6 +374,7 @@ googletag.cmd.push(function() {
 
         if (isLoaded) {
             window.mbelikAccumulator.sessionTotal += earning;
+            try { sessionStorage.setItem('mbelik_session_total', window.mbelikAccumulator.sessionTotal.toFixed(2)); } catch (e) {}
         }
 
         var ecpmFormatted = 'Rp ' + Math.round(estimatedECPM).toLocaleString('id-ID');
