@@ -464,9 +464,6 @@ header_files = subprocess.check_output(cmd, shell=True).decode().splitlines()
 
 success = 0
 for hf in header_files:
-    if 'skuy.me/public_html/pastime' in hf:
-        print(f'SKIP (Custom AdsHeader): {hf}')
-        continue
     try:
         with open(hf, 'w') as f:
             f.write(ADS_HEADER_TEMPLATE)
