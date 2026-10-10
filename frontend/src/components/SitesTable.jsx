@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Globe, Search, Link as LinkIcon, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Globe, Search, Link as LinkIcon, TrendingUp, TrendingDown, ChevronRight, FileText } from 'lucide-react';
 import CountryBreakdownModal from './CountryBreakdownModal';
 import ColumnToggleDropdown from './ColumnToggleDropdown';
+import SiteNoteModal from './SiteNoteModal';
 
 const ALL_COLUMNS = [
   { key: 'domain', label: 'Site / Domain' },
@@ -13,15 +14,32 @@ const ALL_COLUMNS = [
   { key: 'matched_requests', label: 'Matched Requests' },
   { key: 'match_rate', label: 'MR AdX' },
   { key: 'ecpm', label: 'eCPM' },
+  { key: 'note', label: 'Note' },
 ];
 
 export default function SitesTable({ sites, startDate, endDate }) {
   const isSingleDay = Boolean(startDate && endDate && startDate === endDate);
 
+  const [localSites, setLocalSites] = useState(sites || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState(null);
   const [sortColumn, setSortColumn] = useState('total_revenue');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [editingNoteDomain, setEditingNoteDomain] = useState(null);
+  const [editingNoteContent, setEditingNoteContent] = useState('');
+
+  useEffect(() => {
+    setLocalSites(sites || []);
+  }, [sites]);
+
+  const handleOpenNoteModal = (domain, currentNote) => {
+    setEditingNoteDomain(domain);
+    setEditingNoteContent(currentNote || '');
+  };
+
+  const handleNoteSaveSuccess = (domain, newNote) => {
+    setLocalSites(prev => prev.map(s => s.domain === domain ? { ...s, note: newNote } : s));
+  };
   const [visibleColumns, setVisibleColumns] = useState(() => {
     try {
       const saved = localStorage.getItem('col_vis_sites');
@@ -80,7 +98,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
     return sortDirection === 'asc' ? <span className="text-emerald-400 ml-1 font-bold">↑</span> : <span className="text-emerald-400 ml-1 font-bold">↓</span>;
   };
 
-  const filteredSites = sites.filter(s =>
+  const filteredSites = localSites.filter(s =>
     s.domain.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -253,6 +271,11 @@ export default function SitesTable({ sites, startDate, endDate }) {
                   </div>
                 </th>
               )}
+              {visibleColumns.note && (
+                <th className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-center text-slate-400">
+                  <span>Note</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/50">
@@ -382,12 +405,34 @@ export default function SitesTable({ sites, startDate, endDate }) {
                       </div>
                     </td>
                   )}
+
+                  {visibleColumns.note && (
+                    <td className="px-3 py-2.5 text-center whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenNoteModal(site.domain, site.note)}
+                        title={site.note ? site.note : "Tambah Catatan Optimasi"}
+                        className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-700/60 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {editingNoteDomain && (
+        <SiteNoteModal
+          domain={editingNoteDomain}
+          initialNote={editingNoteContent}
+          onClose={() => setEditingNoteDomain(null)}
+          onSaveSuccess={handleNoteSaveSuccess}
+        />
+      )}
     </div>
   );
 }

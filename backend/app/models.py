@@ -164,6 +164,15 @@ class GoogleAdsDeviceMetric(Base):
         Index('idx_gads_device_date_customer', 'date', 'customer_id', 'device_category'),
     )
 
+class SiteNote(Base):
+    __tablename__ = "site_notes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    domain = Column(String(100), unique=True, index=True, nullable=False)
+    note = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 
 
 

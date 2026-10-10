@@ -98,6 +98,12 @@ class SiteBreakdownItem(BaseModel):
     profit_change_pct: Optional[float] = None
     roi_change_pct: Optional[float] = None
     comparison_period_label: Optional[str] = None
+    note: Optional[str] = None
+
+class SiteNoteUpdate(BaseModel):
+    domain: str
+    note: str
+
     has_auto_export: bool = False
 
 class PlacementBreakdownItem(BaseModel):

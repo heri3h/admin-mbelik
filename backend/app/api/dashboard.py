@@ -6,11 +6,11 @@ from typing import List, Optional
 
 from app.config import settings
 from app.database import get_db
-from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, GoogleAdsDeviceMetric, User, GoogleAdsAccount, JSONExportTarget
+from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, GoogleAdsDeviceMetric, User, GoogleAdsAccount, JSONExportTarget, SiteNote
 
 from app.schemas import (
     SummaryMetrics, DailyTrendItem, AccountBreakdownItem, CampaignBreakdownItem,
-    SiteBreakdownItem, PlacementBreakdownItem, CountryBreakdownItem
+    SiteBreakdownItem, PlacementBreakdownItem, CountryBreakdownItem, SiteNoteUpdate
 )
 from app.services.auth import get_current_user
 from app.services.sync import sync_service, _sync_lock
@@ -658,6 +658,9 @@ def get_sites_breakdown(
         d[0] for d in db.query(JSONExportTarget.domain).filter(JSONExportTarget.is_active == True).all()
     )
 
+    site_notes_rows = db.query(SiteNote).all()
+    site_notes_map = {n.domain: n.note for n in site_notes_rows if n.note}
+
     items = []
     for domain_name in all_domains_set:
         row = query_dom_map.get(domain_name)
@@ -786,7 +789,8 @@ def get_sites_breakdown(
             profit_change_pct=prof_change,
             roi_change_pct=roi_change,
             comparison_period_label=comp_label,
-            has_auto_export=(domain_name in active_export_domains)
+            has_auto_export=(domain_name in active_export_domains),
+            note=site_notes_map.get(domain_name)
         ))
 
     items.sort(key=lambda x: x.total_revenue, reverse=True)
@@ -1479,3 +1483,31 @@ def get_site_country_placements_breakdown(
 
     items.sort(key=lambda x: x.total_revenue, reverse=True)
     return items
+
+@router.post("/sites/note")
+def save_site_note(
+    payload: SiteNoteUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    domain_clean = payload.domain.strip()
+    note_text = payload.note.strip() if payload.note else ""
+    if not domain_clean:
+        raise HTTPException(status_code=400, detail="Domain is required")
+
+    site_note = db.query(SiteNote).filter(SiteNote.domain == domain_clean).first()
+    if site_note:
+        site_note.note = note_text
+        site_note.updated_at = datetime.utcnow()
+    else:
+        site_note = SiteNote(domain=domain_clean, note=note_text)
+        db.add(site_note)
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "success", "domain": domain_clean, "note": note_text}
+
