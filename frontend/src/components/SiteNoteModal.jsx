@@ -15,7 +15,7 @@ export default function SiteNoteModal({ domain, initialNote, onClose, onSaveSucc
     setSaving(true);
     setError(null);
     try {
-      await api.post('/dashboard/sites/note', {
+      await api.post('/api/dashboard/sites/note', {
         domain: domain,
         note: note
       });
