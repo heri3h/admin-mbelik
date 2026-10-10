@@ -655,7 +655,7 @@ def get_sites_breakdown(
     all_domains_set = sorted(list(dynamic_domains))
 
     active_export_domains = set(
-        d[0] for d in db.query(JSONExportTarget.domain).filter(JSONExportTarget.is_active == True).all()
+        d[0].lower().strip() for d in db.query(JSONExportTarget.domain).filter(JSONExportTarget.is_active == True).all() if d[0]
     )
 
     site_notes_rows = db.query(SiteNote).all()
@@ -769,6 +769,12 @@ def get_sites_breakdown(
         else:
             domain_mr = 0.0
 
+        dom_low = domain_name.lower().strip()
+        has_export = any(
+            exp == dom_low or exp.startswith(dom_low + "/") or dom_low.startswith(exp + "/")
+            for exp in active_export_domains
+        )
+
         items.append(SiteBreakdownItem(
             domain=domain_name,
             total_revenue=round(tot_rev, 2),
@@ -789,7 +795,7 @@ def get_sites_breakdown(
             profit_change_pct=prof_change,
             roi_change_pct=roi_change,
             comparison_period_label=comp_label,
-            has_auto_export=(domain_name in active_export_domains),
+            has_auto_export=has_export,
             note=site_notes_map.get(domain_name)
         ))
 
