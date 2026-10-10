@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Globe, TrendingUp, TrendingDown, Search, ArrowLeft, Loader2, Layers } from 'lucide-react';
-import { dashboardService } from '../services/api';
+import { X, Globe, TrendingUp, TrendingDown, Search, ArrowLeft, Loader2, Layers, FileText } from 'lucide-react';
+import api, { dashboardService } from '../services/api';
 import ColumnToggleDropdown from './ColumnToggleDropdown';
+import SiteNoteModal from './SiteNoteModal';
 
 const LEVEL1_COLUMNS = [
   { key: 'name', label: 'Country' },
@@ -35,9 +36,30 @@ const formatPricingRuleName = (rule) => {
   return rule;
 };
 
-export default function CountryBreakdownModal({ domain, startDate, endDate, onClose }) {
+export default function CountryBreakdownModal({ domain, startDate, endDate, onClose, onNoteUpdate }) {
   const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [siteNote, setSiteNote] = useState('');
+
+  useEffect(() => {
+    const fetchNote = async () => {
+      try {
+        const res = await api.get('/api/dashboard/sites', {
+          params: { start_date: startDate, end_date: endDate }
+        });
+        if (res.data && Array.isArray(res.data)) {
+          const matched = res.data.find(s => s.domain === domain);
+          if (matched && matched.note) {
+            setSiteNote(matched.note);
+          }
+        }
+      } catch (e) {}
+    };
+    if (domain) {
+      fetchNote();
+    }
+  }, [domain, startDate, endDate]);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deviceFilter, setDeviceFilter] = useState('all');
@@ -273,16 +295,28 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                 {selectedCountry ? (
                   <>
                     <span>Ad Unit Performance Report - {selectedCountry.flag_emoji} {selectedCountry.country}</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {domain}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowNoteModal(true)}
+                      title={`Click to view/edit optimization notes for ${domain}`}
+                      className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>{domain}</span>
+                      <FileText className="w-3 h-3 text-emerald-400" />
+                    </button>
                   </>
                 ) : (
                   <>
                     <span>Domain Country Performance Breakdown</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {domain}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowNoteModal(true)}
+                      title={`Click to view/edit optimization notes for ${domain}`}
+                      className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center space-x-1 cursor-pointer"
+                    >
+                      <span>{domain}</span>
+                      <FileText className="w-3 h-3 text-emerald-400" />
+                    </button>
                   </>
                 )}
               </h2>
@@ -873,6 +907,20 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
         </div>
 
       </div>
+
+      {showNoteModal && (
+        <SiteNoteModal
+          domain={domain}
+          initialNote={siteNote}
+          onClose={() => setShowNoteModal(false)}
+          onSaveSuccess={(dom, newNote) => {
+            setSiteNote(newNote);
+            if (onNoteUpdate) {
+              onNoteUpdate(dom, newNote);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

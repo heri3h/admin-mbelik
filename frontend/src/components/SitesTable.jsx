@@ -152,6 +152,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
           startDate={startDate}
           endDate={endDate}
           onClose={() => setSelectedDomain(null)}
+          onNoteUpdate={handleNoteSaveSuccess}
         />
       )}
 
