@@ -7,6 +7,7 @@ import SiteNoteModal from './SiteNoteModal';
 const ALL_COLUMNS = [
   { key: 'domain', label: 'Site / Domain' },
   { key: 'total_spend', label: 'Spend (Ads)' },
+  { key: 'cpc', label: 'CPC (Ads)' },
   { key: 'total_revenue', label: 'Revenue (AdX)' },
   { key: 'net_profit', label: 'Net Profit' },
   { key: 'roi', label: 'ROI' },
@@ -216,6 +217,14 @@ export default function SitesTable({ sites, startDate, endDate }) {
                   </div>
                 </th>
               )}
+              {visibleColumns.cpc && (
+                <th onClick={() => handleSort('cpc')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                  <div className="flex items-center justify-end space-x-1 leading-tight">
+                    <span>CPC<br/>(Ads)</span>
+                    {renderSortIndicator('cpc')}
+                  </div>
+                </th>
+              )}
               {visibleColumns.total_revenue && (
                 <th onClick={() => handleSort('total_revenue')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center justify-end space-x-1 leading-tight">
@@ -333,6 +342,12 @@ export default function SitesTable({ sites, startDate, endDate }) {
                         </span>
                         {hasSpend && renderDeltaBadge(site.spend_change_pct, true, compLabel)}
                       </div>
+                    </td>
+                  )}
+
+                  {visibleColumns.cpc && (
+                    <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                      {site.cpc > 0 ? formatCurrency(site.cpc) : <span className="text-slate-500">-</span>}
                     </td>
                   )}
 

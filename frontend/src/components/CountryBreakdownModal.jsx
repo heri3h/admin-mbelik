@@ -7,6 +7,7 @@ import SiteNoteModal from './SiteNoteModal';
 const LEVEL1_COLUMNS = [
   { key: 'name', label: 'Country' },
   { key: 'spend', label: 'Spend (Ads)' },
+  { key: 'cpc', label: 'CPC (Ads)' },
   { key: 'revenue', label: 'Revenue (AdX)' },
   { key: 'net_profit', label: 'Profit' },
   { key: 'ecpm', label: 'CPM AdX (eCPM)' },
@@ -213,6 +214,8 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   // Calculations for Summary Cards
   const totalRev = countries.reduce((sum, c) => sum + (c.revenue || 0), 0);
   const totalSpend = countries.reduce((sum, c) => sum + (c.spend || 0), 0);
+  const totalGAdsClicks = countries.reduce((sum, c) => sum + (c.clicks_ads || 0), 0);
+  const avgOverallCpc = totalGAdsClicks > 0 ? (totalSpend / totalGAdsClicks) : (countries.filter(c => c.cpc > 0).length > 0 ? countries.reduce((sum, c) => sum + (c.cpc || 0), 0) / countries.filter(c => c.cpc > 0).length : 0);
   const netProfit = totalRev - totalSpend;
   const overallRoi = totalSpend > 0 ? (totalRev / totalSpend * 100) : 0;
   const totalAdReqs = countries.reduce((sum, c) => sum + (c.ad_requests || 0), 0);
@@ -477,6 +480,14 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             </div>
                           </th>
                         )}
+                        {!selectedCountry && activeVisibleCols.cpc && (
+                          <th onClick={() => handleSort('cpc')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>CPC<br/>(Ads)</span>
+                              {renderSortIndicator('cpc')}
+                            </div>
+                          </th>
+                        )}
                         {activeVisibleCols.revenue && (
                           <th onClick={() => handleSort('revenue')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                             <div className="flex items-center justify-end space-x-1 leading-tight">
@@ -598,6 +609,12 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                 {activeVisibleCols.spend && (
                                   <td className="px-3 py-2.5 text-right font-medium text-rose-400 whitespace-nowrap">
                                     {hasSpend ? formatCurrency(c.spend) : <span className="text-slate-500">-</span>}
+                                  </td>
+                                )}
+
+                                {activeVisibleCols.cpc && (
+                                  <td className="px-3 py-2.5 text-right font-mono text-slate-300 whitespace-nowrap">
+                                    {c.cpc > 0 ? formatCurrency(c.cpc) : <span className="text-slate-500">-</span>}
                                   </td>
                                 )}
 
@@ -822,6 +839,11 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
                           {activeVisibleCols.spend && (
                             <td className="px-3 py-2.5 text-right font-bold text-rose-400 whitespace-nowrap">{formatCurrency(activeSpend)}</td>
+                          )}
+                          {activeVisibleCols.cpc && (
+                            <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-300 whitespace-nowrap">
+                              {avgOverallCpc > 0 ? formatCurrency(avgOverallCpc) : '-'}
+                            </td>
                           )}
                           {activeVisibleCols.revenue && (
                             <td className="px-3 py-2.5 text-right font-bold text-emerald-400 whitespace-nowrap">{formatCurrency(activeRev)}</td>

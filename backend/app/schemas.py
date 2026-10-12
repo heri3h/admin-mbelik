@@ -82,6 +82,7 @@ class SiteBreakdownItem(BaseModel):
     domain: str
     total_revenue: float
     total_spend: float = 0.0
+    cpc: float = 0.0
     net_profit: float = 0.0
     roi: float = 0.0
     profit_margin: float = 0.0
@@ -128,6 +129,8 @@ class CountryBreakdownItem(BaseModel):
     country_code: str
     flag_emoji: str = "🌐"
     spend: float
+    cpc: float = 0.0
+    clicks_ads: int = 0
     revenue: float
     net_profit: float
     roi: float

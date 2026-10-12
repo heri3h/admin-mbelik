@@ -671,13 +671,19 @@ def get_sites_breakdown(
 
         assigned_cids = domain_cids_map.get(domain_name, [])
         site_spend = 0.0
+        site_clicks = 0
         prev_sp = 0.0
         if assigned_cids:
-            site_spend_raw = db.query(func.sum(GoogleAdsMetric.spend)).filter(
+            gads_row_raw = db.query(
+                func.sum(GoogleAdsMetric.spend).label("spend"),
+                func.sum(GoogleAdsMetric.clicks).label("clicks")
+            ).filter(
                 GoogleAdsMetric.date >= d_start,
                 GoogleAdsMetric.date <= d_end,
                 GoogleAdsMetric.customer_id.in_(assigned_cids)
-            ).scalar() or 0.0
+            ).first()
+            site_spend_raw = (gads_row_raw.spend or 0.0) if gads_row_raw else 0.0
+            site_clicks_raw = (gads_row_raw.clicks or 0) if gads_row_raw else 0
 
             prev_sp_raw = db.query(func.sum(GoogleAdsMetric.spend)).filter(
                 GoogleAdsMetric.date >= prev_start,
@@ -693,13 +699,17 @@ def get_sites_breakdown(
                 ).first() is not None
 
                 if has_s_dev:
-                    s_dev_sp = db.query(func.sum(GoogleAdsDeviceMetric.spend)).filter(
+                    s_dev_row = db.query(
+                        func.sum(GoogleAdsDeviceMetric.spend).label("spend"),
+                        func.sum(GoogleAdsDeviceMetric.clicks).label("clicks")
+                    ).filter(
                         GoogleAdsDeviceMetric.date >= d_start,
                         GoogleAdsDeviceMetric.date <= d_end,
                         GoogleAdsDeviceMetric.customer_id.in_(assigned_cids),
                         GoogleAdsDeviceMetric.device_category == dev_filter
-                    ).scalar()
-                    site_spend = s_dev_sp or 0.0
+                    ).first()
+                    site_spend = (s_dev_row.spend or 0.0) if s_dev_row else 0.0
+                    site_clicks = (s_dev_row.clicks or 0) if s_dev_row else 0
                 else:
                     s_all_imps = db.query(func.sum(GAMMetric.impressions)).filter(
                         GAMMetric.date >= d_start, GAMMetric.date <= d_end,
@@ -708,6 +718,7 @@ def get_sites_breakdown(
                     s_dev_imps = tot_imps
                     s_ratio = (s_dev_imps / s_all_imps) if s_all_imps > 0 else 1.0
                     site_spend = site_spend_raw * s_ratio
+                    site_clicks = int(site_clicks_raw * s_ratio)
 
                 has_p_dev = db.query(GoogleAdsDeviceMetric.id).filter(
                     GoogleAdsDeviceMetric.date >= prev_start,
@@ -737,7 +748,10 @@ def get_sites_breakdown(
                     prev_sp = prev_sp_raw * intraday_factor * p_ratio
             else:
                 site_spend = site_spend_raw
+                site_clicks = site_clicks_raw
                 prev_sp = prev_sp_raw * intraday_factor
+
+        site_cpc = (site_spend / site_clicks) if site_clicks > 0 else 0.0
 
 
         net_prof = tot_rev - site_spend
@@ -779,6 +793,7 @@ def get_sites_breakdown(
             domain=domain_name,
             total_revenue=round(tot_rev, 2),
             total_spend=round(site_spend, 2),
+            cpc=round(site_cpc, 2),
             net_profit=round(net_prof, 2),
             roi=round(site_roi, 2),
             profit_margin=round(site_margin, 2),
@@ -1173,6 +1188,7 @@ def get_site_countries_breakdown(
     cids = [a.customer_id for a in db_accounts]
     tot_spend = 0.0
     gads_country_spend_map = {}
+    gads_country_clicks_map = {}
     gads_country_orig_name_map = {}
 
     if cids:
@@ -1223,7 +1239,8 @@ def get_site_countries_breakdown(
 
         gads_c_q = db.query(
             GoogleAdsCountryMetric.country,
-            func.sum(GoogleAdsCountryMetric.spend).label("spend")
+            func.sum(GoogleAdsCountryMetric.spend).label("spend"),
+            func.sum(GoogleAdsCountryMetric.clicks).label("clicks")
         ).filter(
             GoogleAdsCountryMetric.customer_id.in_(cids),
             GoogleAdsCountryMetric.date >= d_start,
@@ -1240,6 +1257,7 @@ def get_site_countries_breakdown(
             c_code = c_meta.get("code") or "XX"
             c_key = c_code.upper()
             gads_country_spend_map[c_key] = gads_country_spend_map.get(c_key, 0.0) + (g_row.spend or 0.0)
+            gads_country_clicks_map[c_key] = gads_country_clicks_map.get(c_key, 0) + (g_row.clicks or 0)
             gads_country_orig_name_map[c_key] = raw_c_name
 
     # Include countries that had Google Ads spend but zero GAM revenue
@@ -1290,6 +1308,9 @@ def get_site_countries_breakdown(
         else:
             c_spend = 0.0
 
+        c_clicks_ads = gads_country_clicks_map.get(c_code_key, 0)
+        c_cpc = (c_spend / c_clicks_ads) if c_clicks_ads > 0 else 0.0
+
         c_profit = c_rev - c_spend
         c_roi = (c_rev / c_spend * 100.0) if c_spend > 0 else 0.0
         c_ecpm = (c_rev / c_imps * 1000.0) if c_imps > 0 else 0.0
@@ -1308,6 +1329,8 @@ def get_site_countries_breakdown(
             country_code=c_code,
             flag_emoji=c_flag,
             spend=round(c_spend, 2),
+            cpc=round(c_cpc, 2),
+            clicks_ads=int(c_clicks_ads),
             revenue=round(c_rev, 2),
             net_profit=round(c_profit, 2),
             roi=round(c_roi, 2),
