@@ -85,6 +85,20 @@ export default function SitesTable({ sites, startDate, endDate }) {
     }).format(val || 0);
   };
 
+  const formatCompactBalance = (val) => {
+    if (val === null || val === undefined || isNaN(val)) return '';
+    const num = Number(val);
+    if (num >= 1000000) {
+      const formatted = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+      return `${formatted}M`;
+    }
+    if (num >= 1000) {
+      const formatted = (num / 1000).toFixed(1).replace(/\.0$/, '');
+      return `${formatted}K`;
+    }
+    return `${Math.round(num)}`;
+  };
+
   const handleSort = (col) => {
     if (sortColumn === col) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -319,11 +333,36 @@ export default function SitesTable({ sites, startDate, endDate }) {
                         </button>
 
                         {site.assigned_customer_ids && site.assigned_customer_ids.length > 0 ? (
-                          <div className="flex items-center space-x-1 pl-4">
+                          <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5 pl-4">
                             <LinkIcon className="w-3 h-3 text-sky-400 shrink-0" />
-                            <span className="text-[10px] font-mono text-sky-300">
-                              Ads ID: {site.assigned_customer_ids.join(', ')}
-                            </span>
+                            {site.assigned_accounts && site.assigned_accounts.length > 0 ? (
+                              site.assigned_accounts.map((acc, aIdx) => {
+                                const bal = acc.balance;
+                                const hasBal = bal !== null && bal !== undefined && !isNaN(bal);
+                                const isLow = hasBal && bal < 30000;
+                                const isCritical = hasBal && bal <= 0;
+                                const balColor = isCritical ? 'text-rose-400 font-bold' : (isLow ? 'text-amber-400 font-semibold' : 'text-sky-300 font-medium');
+
+                                return (
+                                  <span
+                                    key={acc.customer_id || aIdx}
+                                    title={hasBal ? `Remaining Balance: Rp ${Math.round(bal).toLocaleString('id-ID')}` : `Google Ads ID: ${acc.customer_id}`}
+                                    className="text-[10px] font-mono inline-flex items-center space-x-1"
+                                  >
+                                    <span className="text-slate-300">{acc.customer_id}</span>
+                                    {hasBal && (
+                                      <span className={balColor}>
+                                        ({formatCompactBalance(bal)})
+                                      </span>
+                                    )}
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="text-[10px] font-mono text-sky-300">
+                                {site.assigned_customer_ids.join(', ')}
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-[10px] text-slate-500 pl-4 italic">

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import date as DateType, datetime
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 
 # Auth Schemas
 class Token(BaseModel):
@@ -94,6 +94,7 @@ class SiteBreakdownItem(BaseModel):
     ecpm: float = 0.0
     ad_unit_count: int = 1
     assigned_customer_ids: List[str] = []
+    assigned_accounts: List[Dict[str, Any]] = []
     revenue_change_pct: Optional[float] = None
     spend_change_pct: Optional[float] = None
     profit_change_pct: Optional[float] = None

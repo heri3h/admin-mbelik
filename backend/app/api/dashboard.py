@@ -611,6 +611,8 @@ def get_sites_breakdown(
             if acc.customer_id not in domain_cids_map[acc.assigned_domain]:
                 domain_cids_map[acc.assigned_domain].append(acc.customer_id)
 
+    cid_balance_map = {acc.customer_id: (acc.remaining_balance or 0.0) for acc in db_accounts}
+
     # Previous period GAM revenue by domain
     prev_q = db.query(
         GAMMetric.domain,
@@ -805,6 +807,10 @@ def get_sites_breakdown(
             ecpm=round(ecpm, 2),
             ad_unit_count=(row.ad_unit_count or 1) if row else 1,
             assigned_customer_ids=assigned_cids,
+            assigned_accounts=[
+                {"customer_id": cid, "balance": cid_balance_map.get(cid, 0.0)}
+                for cid in assigned_cids
+            ],
             revenue_change_pct=rev_change,
             spend_change_pct=sp_change,
             profit_change_pct=prof_change,

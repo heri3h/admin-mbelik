@@ -71,6 +71,7 @@ class GoogleAdsAccount(Base):
     customer_id = Column(String(50), unique=True, index=True, nullable=False)
     account_name = Column(String(100), nullable=True)
     assigned_domain = Column(String(100), nullable=True, index=True)
+    remaining_balance = Column(Float, default=0.0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class JSONExportTarget(Base):

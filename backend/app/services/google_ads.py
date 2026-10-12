@@ -487,6 +487,62 @@ class GoogleAdsService:
             curr_date += timedelta(days=1)
         return results
 
+    def fetch_account_balances(self, customer_ids: List[str] = None) -> Dict[str, float]:
+        """
+        Fetch real-time remaining account budget balance (adjusted_limit - amount_served)
+        from Google Ads API account_budget resource for approved budgets.
+        """
+        if self.use_mock or not settings.is_google_ads_configured:
+            return {}
+
+        from google.ads.googleads.client import GoogleAdsClient
+        
+        credentials = {
+            "developer_token": settings.GOOGLE_ADS_DEVELOPER_TOKEN,
+            "client_id": settings.GOOGLE_ADS_CLIENT_ID,
+            "client_secret": settings.GOOGLE_ADS_CLIENT_SECRET,
+            "refresh_token": settings.GOOGLE_ADS_REFRESH_TOKEN,
+            "use_proto_plus": True
+        }
+        if settings.GOOGLE_ADS_LOGIN_CUSTOMER_ID:
+            credentials["login_customer_id"] = settings.GOOGLE_ADS_LOGIN_CUSTOMER_ID.replace("-", "")
+
+        try:
+            client = GoogleAdsClient.load_from_dict(credentials)
+            ga_service = client.get_service("GoogleAdsService")
+        except Exception as e:
+            logger.error(f"Failed initializing GoogleAdsClient for balances: {e}")
+            return {}
+
+        cids = self._get_effective_cids(ga_service, customer_ids=customer_ids)
+        query = """
+            SELECT
+                account_budget.id,
+                account_budget.status,
+                account_budget.approved_spending_limit_micros,
+                account_budget.adjusted_spending_limit_micros,
+                account_budget.amount_served_micros
+            FROM account_budget
+            WHERE account_budget.status = 'APPROVED'
+        """
+
+        balances = {}
+        for cid in cids:
+            clean_cid = cid.replace("-", "")
+            try:
+                res = ga_service.search(customer_id=clean_cid, query=query)
+                for r in res:
+                    b = r.account_budget
+                    limit = (b.adjusted_spending_limit_micros or b.approved_spending_limit_micros or 0) / 1000000.0
+                    served = (b.amount_served_micros or 0) / 1000000.0
+                    balances[cid] = round(max(0.0, limit - served), 2)
+                    break
+            except Exception as ex:
+                logger.warning(f"Notice fetching account_budget for CID {cid}: {ex}")
+                continue
+
+        return balances
+
 google_ads_service = GoogleAdsService()
 
 

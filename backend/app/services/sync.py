@@ -299,6 +299,19 @@ class SyncService:
             db.rollback()
             logger.warning(f"GoogleAdsMetric commit notice: {e}")
 
+        # 1c. Update real-time remaining account budgets
+        try:
+            balances_map = google_ads_service.fetch_account_balances(customer_ids=cids)
+            if balances_map:
+                for cid, bal in balances_map.items():
+                    acc = db.query(GoogleAdsAccount).filter(GoogleAdsAccount.customer_id == cid).first()
+                    if acc:
+                        acc.remaining_balance = bal
+                db.commit()
+        except Exception as ex:
+            db.rollback()
+            logger.warning(f"Notice updating remaining account balances: {ex}")
+
         # 1b. Deduplicate & Upsert Google Ads Country metrics (Apply +11% tax adjustment)
 
         try:
