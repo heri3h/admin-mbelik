@@ -80,7 +80,7 @@ class JSONExportTarget(Base):
     id = Column(Integer, primary_key=True, index=True)
     domain = Column(String(100), nullable=False, index=True)
     target_filepath = Column(String(255), nullable=False)
-    start_hour = Column(Integer, default=10)
+    start_hour = Column(Integer, default=0)
     end_hour = Column(Integer, default=23)
     is_active = Column(Boolean, default=True)
 

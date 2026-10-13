@@ -507,7 +507,7 @@ def export_site_today_json(
     db: Session,
     domain: str = "spotgames.top",
     target_filepath: str = "/home/mbummm/web/spotgames.top/public_html/current_pricing.json",
-    start_hour: int = 10,
+    start_hour: int = 0,
     end_hour: int = 23,
     force: bool = False
 ):
@@ -525,10 +525,11 @@ def export_site_today_json(
         return
 
     today_date = wib_now.date()
+    yesterday_date = today_date - timedelta(days=1)
     today_str = today_date.strftime("%Y-%m-%d")
 
-    # Fetch GAM metrics for domain today
-    gam_row = db.query(
+    # Fetch GAM metrics for domain today to assess current volume
+    gam_row_today = db.query(
         func.sum(GAMMetric.revenue).label("revenue"),
         func.sum(GAMMetric.impressions).label("impressions"),
         func.sum(GAMMetric.clicks).label("clicks"),
@@ -538,6 +539,54 @@ def export_site_today_json(
     ).filter(
         GAMMetric.domain == domain,
         GAMMetric.date == today_date
+    ).first()
+
+    today_ad_reqs = (gam_row_today.ad_requests or 0) if gam_row_today else 0
+    today_imps = (gam_row_today.impressions or 0) if gam_row_today else 0
+
+    # 4-Quadrant Adaptive Matrix:
+    # 1. Subuh (< 06:00 WIB) & < 200 reqs -> Data kemarin (-20% diskon) + Soft Target
+    # 2. Subuh (< 06:00 WIB) & >= 200 reqs -> Data hari ini + Soft Target
+    # 3. Normal (>= 06:00 WIB) & >= 200 reqs -> Data hari ini normal (Dynamic)
+    # 4. Normal (>= 06:00 WIB) & < 200 reqs -> Fallback data kemarin + Soft Target
+    is_dawn_period = (0 <= current_hour < 6)
+    has_sufficient_traffic = (today_ad_reqs >= 200 or today_imps >= 50)
+
+    if is_dawn_period:
+        if has_sufficient_traffic:
+            source_date = today_date
+            apply_dawn_discount = False
+            force_soft_target = True
+            decision_mode = "Subuh + Trafik Cukup (>=200 reqs): Data Hari Ini + Soft Target"
+        else:
+            source_date = yesterday_date
+            apply_dawn_discount = True
+            force_soft_target = True
+            decision_mode = "Subuh + Trafik Awal (<200 reqs): Data Kemarin (-20% diskon) + Soft Target"
+    else:
+        if has_sufficient_traffic:
+            source_date = today_date
+            apply_dawn_discount = False
+            force_soft_target = False
+            decision_mode = "Normal (>=200 reqs): Data Hari Ini Penuh"
+        else:
+            source_date = yesterday_date
+            apply_dawn_discount = False
+            force_soft_target = True
+            decision_mode = "Normal + Trafik Rendah (<200 reqs): Fallback Data Kemarin + Soft Target"
+
+    logger.info(f"[{domain}] AutoPricing: {decision_mode} (Hour: {current_hour}:00 WIB, Today Reqs: {today_ad_reqs}, Imps: {today_imps}, Source Date: {source_date})")
+
+    gam_row = gam_row_today if (source_date == today_date and gam_row_today and (gam_row_today.impressions or 0) > 0) else db.query(
+        func.sum(GAMMetric.revenue).label("revenue"),
+        func.sum(GAMMetric.impressions).label("impressions"),
+        func.sum(GAMMetric.clicks).label("clicks"),
+        func.sum(GAMMetric.ad_requests).label("ad_requests"),
+        func.sum(GAMMetric.matched_requests).label("matched_requests"),
+        func.avg(GAMMetric.match_rate).label("match_rate")
+    ).filter(
+        GAMMetric.domain == domain,
+        GAMMetric.date == source_date
     ).first()
 
     tot_rev = (gam_row.revenue or 0.0) if gam_row else 0.0
@@ -561,6 +610,10 @@ def export_site_today_json(
         tot_ad_reqs = int(tot_matched_reqs / (domain_mr / 100.0)) if domain_mr > 0 else int(tot_matched_reqs * 2.8)
 
     ecpm = round((tot_rev / tot_imps * 1000.0), 2) if tot_imps > 0 else 0.0
+    if apply_dawn_discount and ecpm > 0:
+        ecpm = round(ecpm * 0.80, 2)
+    if force_soft_target and domain_mr > 55.0:
+        domain_mr = 55.0
 
     d_start_7d = today_date - timedelta(days=7)
 
@@ -765,18 +818,34 @@ def export_site_today_json(
                     f_ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else base_ecpm
                     out_dev[fmt] = {"match_rate": f_mr, "ecpm": f_ecpm}
                 elif f_hist_dev.get(fmt) and (f_hist_dev[fmt].get("match_rate", 0) > 0 or f_hist_dev[fmt].get("ecpm", 0) > 0):
-                    out_dev[fmt] = f_hist_dev[fmt]
+                    out_dev[fmt] = dict(f_hist_dev[fmt])
                 elif country_fallback and country_fallback.get(dev) and country_fallback[dev].get(fmt):
-                    out_dev[fmt] = country_fallback[dev][fmt]
+                    out_dev[fmt] = dict(country_fallback[dev][fmt])
                 elif summary_fallback and summary_fallback.get(dev) and summary_fallback[dev].get(fmt):
-                    out_dev[fmt] = summary_fallback[dev][fmt]
+                    out_dev[fmt] = dict(summary_fallback[dev][fmt])
                 else:
                     out_dev[fmt] = {"match_rate": base_mr, "ecpm": base_ecpm}
+
+            # Apply dawn discount (-20%) if active
+            if apply_dawn_discount:
+                if out_dev.get("ecpm", 0.0) > 0:
+                    out_dev["ecpm"] = round(out_dev["ecpm"] * 0.80, 2)
+                for fmt in ["int", "anc", "bnr"]:
+                    if out_dev.get(fmt, {}).get("ecpm", 0.0) > 0:
+                        out_dev[fmt]["ecpm"] = round(out_dev[fmt]["ecpm"] * 0.80, 2)
+
+            # Enforce Soft Target mode (cap match_rate under hard floor threshold) if active
+            if force_soft_target:
+                if out_dev.get("match_rate", 0.0) > 55.0:
+                    out_dev["match_rate"] = 55.0
+                for fmt in ["int", "anc", "bnr"]:
+                    if out_dev.get(fmt, {}).get("match_rate", 0.0) > 55.0:
+                        out_dev[fmt]["match_rate"] = 55.0
 
             out[dev] = out_dev
         return out
 
-    # Today format breakdown summary query
+    # Format breakdown summary query
     summary_fmt_today_rows = db.query(
         GAMMetric.device_category,
         GAMMetric.ad_unit,
@@ -786,7 +855,7 @@ def export_site_today_json(
         func.sum(GAMMetric.matched_requests).label("matched_requests")
     ).filter(
         GAMMetric.domain == domain,
-        GAMMetric.date == today_date
+        GAMMetric.date == source_date
     ).group_by(GAMMetric.device_category, GAMMetric.ad_unit).all()
 
     summary_fmt_today_map = {}
@@ -812,7 +881,7 @@ def export_site_today_json(
         func.sum(GAMMetric.matched_requests).label("matched_requests")
     ).filter(
         GAMMetric.domain == domain,
-        GAMMetric.date == today_date
+        GAMMetric.date == source_date
     ).group_by(GAMMetric.device_category).all()
 
     summary_devices_raw = {}
@@ -836,7 +905,7 @@ def export_site_today_json(
     )
 
     # Query real GAM country metrics from DB for the specified domain
-    target_c_date = today_date
+    target_c_date = source_date
     db_country_rows = db.query(
         GAMCountryMetric.country,
         GAMCountryMetric.country_code,
@@ -848,7 +917,7 @@ def export_site_today_json(
         func.sum(GAMCountryMetric.matched_requests).label("matched_requests")
     ).filter(
         func.lower(GAMCountryMetric.domain) == domain.lower(),
-        GAMCountryMetric.date == today_date
+        GAMCountryMetric.date == source_date
     ).group_by(GAMCountryMetric.country, GAMCountryMetric.country_code, GAMCountryMetric.pricing_rule_name).all()
 
     if not db_country_rows:
@@ -1019,6 +1088,10 @@ def export_site_today_json(
 
             c_mr = round((c_matched_reqs / c_ad_reqs * 100.0), 1) if c_ad_reqs > 0 else 0.0
             c_ecpm = round((c_rev / c_imps * 1000.0), 2) if c_imps > 0 else 0.0
+            if apply_dawn_discount and c_ecpm > 0:
+                c_ecpm = round(c_ecpm * 0.80, 2)
+            if force_soft_target and c_mr > 55.0:
+                c_mr = 55.0
 
             c_dev_dict = ensure_devices(
                 country_device_map.get(c_name, {}),
@@ -1067,7 +1140,7 @@ def export_site_today_json(
         func.sum(GAMMetric.matched_requests).label("matched_requests")
     ).filter(
         GAMMetric.domain == domain,
-        GAMMetric.date == today_date
+        GAMMetric.date == source_date
     ).group_by(GAMMetric.ad_unit, GAMMetric.device_category).all()
 
     placement_device_map = {}
@@ -1096,7 +1169,7 @@ def export_site_today_json(
         func.sum(GAMMetric.matched_requests).label("matched_requests")
     ).filter(
         GAMMetric.domain == domain,
-        GAMMetric.date == today_date
+        GAMMetric.date == source_date
     ).group_by(GAMMetric.ad_unit).all()
 
     placements_list = []
@@ -1107,6 +1180,10 @@ def export_site_today_json(
         p_matched_reqs = pr.matched_requests or 0
         p_ecpm = round((p_rev / p_imps * 1000.0), 2) if p_imps > 0 else 0.0
         p_mr = round((p_matched_reqs / p_ad_reqs * 100.0), 1) if p_ad_reqs > 0 else domain_mr
+        if apply_dawn_discount and p_ecpm > 0:
+            p_ecpm = round(p_ecpm * 0.80, 2)
+        if force_soft_target and p_mr > 55.0:
+            p_mr = 55.0
 
         placements_list.append({
             "ad_unit": pr.ad_unit,
@@ -1127,6 +1204,8 @@ def export_site_today_json(
     data_payload = {
         "domain": domain,
         "date": today_str,
+        "source_date": source_date.strftime("%Y-%m-%d"),
+        "pricing_strategy": decision_mode,
         "updated_at": wib_now.strftime("%Y-%m-%d %H:%M:%S WIB"),
         "summary": summary_devices,
         "countries": countries_compressed
