@@ -269,9 +269,10 @@ async def unified_sync_and_pricing_task():
 
             await asyncio.to_thread(run_worker_cycle)
             logger.info(f"[UnifiedWorker] Cycle {cycle} finished successfully. current_pricing.json updated.")
-            cycle += 1
         except Exception as e:
             logger.error(f"[UnifiedWorker] Error in cycle {cycle}: {e}", exc_info=True)
+        finally:
+            cycle += 1
 
         # Sleep exactly 30 minutes (1800s) until next cycle
         await asyncio.sleep(1800)
