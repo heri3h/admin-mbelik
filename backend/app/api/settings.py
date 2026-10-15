@@ -77,6 +77,34 @@ def get_settings_status(
     )
 
 # Google Ads Accounts & Domain Mapping CRUD
+DEFAULT_OCIDS = {
+    "255-105-1790": "6677093661",
+    "794-665-9174": "1350300855",
+    "858-142-9480": "1201608932",
+    "421-878-4427": "1238372556",
+    "808-296-3952": "1295632265",
+    "324-608-5080": "1353856964",
+    "795-987-6337": "1195291415",
+    "241-049-6062": "6818109511",
+    "741-470-4445": "6451875796",
+    "717-875-2215": "1472492541",
+    "997-936-0093": "1465263575",
+    "437-274-1623": "1264979705",
+    "830-281-7458": "6462534234",
+    "742-590-8186": "1523436617",
+    "881-243-1778": "6579788316",
+    "463-389-1978": "1591594469",
+    "500-750-3327": "1385744343",
+    "698-749-4193": "7686315760",
+    "990-153-8358": "1584780477",
+    "951-848-4329": "1384552733",
+    "839-143-9756": "7107757889",
+    "257-312-4470": "6586647543",
+    "639-202-3042": "1410139644",
+    "556-016-8891": "1145366603",
+    "682-994-0913": "6534459274",
+}
+
 @router.get("/google-ads-accounts", response_model=List[GoogleAdsAccountResponse])
 def get_google_ads_accounts(
     db: Session = Depends(get_db),
@@ -90,10 +118,17 @@ def get_google_ads_accounts(
         added = False
         for cid in effective_cids:
             if cid not in existing_cids and cid != "default":
+                clean_cid = cid.replace("-", "").strip()
+                def_ocid = None
+                for target_cid, o_val in DEFAULT_OCIDS.items():
+                    if target_cid == cid or target_cid.replace("-", "") == clean_cid:
+                        def_ocid = o_val
+                        break
                 acc = GoogleAdsAccount(
                     customer_id=cid,
                     account_name=f"Google Ads ({cid})",
-                    assigned_domain="All / Unassigned"
+                    assigned_domain="All / Unassigned",
+                    ocid=def_ocid
                 )
                 db.add(acc)
                 added = True
@@ -102,6 +137,23 @@ def get_google_ads_accounts(
             accounts = db.query(GoogleAdsAccount).all()
     except Exception as e:
         logger.warning(f"Auto-populate MCC CIDs notice: {e}")
+
+    # Auto-fill verified default OCIDs if account currently has no OCID
+    ocid_updated = False
+    for acc in accounts:
+        if not acc.ocid:
+            clean_cid = acc.customer_id.replace("-", "").strip()
+            for target_cid, o_val in DEFAULT_OCIDS.items():
+                if target_cid == acc.customer_id or target_cid.replace("-", "") == clean_cid:
+                    acc.ocid = o_val
+                    ocid_updated = True
+                    break
+    if ocid_updated:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
     return accounts
 
 @router.post("/google-ads-accounts", response_model=GoogleAdsAccountResponse)

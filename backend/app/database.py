@@ -47,15 +47,19 @@ def auto_migrate_db():
                     conn.execute(text("DROP TABLE IF EXISTS gam_country_metrics;"))
                     conn.commit()
 
-                # Ensure remaining_balance column exists in google_ads_accounts
+                # Ensure remaining_balance and ocid columns exist in google_ads_accounts
                 try:
                     cols = [row[1] for row in conn.execute(text("PRAGMA table_info(google_ads_accounts);")).fetchall()]
                     if "remaining_balance" not in cols and len(cols) > 0:
                         print("Adding remaining_balance column to google_ads_accounts...")
                         conn.execute(text("ALTER TABLE google_ads_accounts ADD COLUMN remaining_balance FLOAT DEFAULT 0.0;"))
                         conn.commit()
+                    if "ocid" not in cols and len(cols) > 0:
+                        print("Adding ocid column to google_ads_accounts...")
+                        conn.execute(text("ALTER TABLE google_ads_accounts ADD COLUMN ocid VARCHAR(50);"))
+                        conn.commit()
                 except Exception as ex:
-                    print(f"Notice checking remaining_balance column: {ex}")
+                    print(f"Notice checking remaining_balance/ocid columns: {ex}")
 
         Base.metadata.create_all(bind=engine)
     except Exception as e:
