@@ -1270,7 +1270,7 @@ DEFAULT_PRICING_CONFIG = {
         "high_mr_threshold": 85.0,
         "high_mr_boost_pct": 25.0,
         "med_mr_threshold": 50.0,
-        "med_mr_boost_pct": 32.5,
+        "med_mr_boost_pct": 10.0,
         "low_mr_threshold": 40.0,
         "low_mr_penalty_pct": -15.0
     },
