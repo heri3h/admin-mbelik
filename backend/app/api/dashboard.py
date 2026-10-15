@@ -469,10 +469,14 @@ def get_accounts_breakdown(
         for acc in ads_accounts if acc.assigned_domain
     }
     cid_to_ocid_map = {}
+    cid_balance_map = {}
     for acc in ads_accounts:
-        if acc.ocid:
-            cid_to_ocid_map[acc.customer_id] = acc.ocid
-            cid_to_ocid_map[acc.customer_id.replace('-', '')] = acc.ocid
+        if acc.customer_id:
+            cid_balance_map[acc.customer_id] = acc.remaining_balance or 0.0
+            cid_balance_map[acc.customer_id.replace('-', '')] = acc.remaining_balance or 0.0
+            if acc.ocid:
+                cid_to_ocid_map[acc.customer_id] = acc.ocid
+                cid_to_ocid_map[acc.customer_id.replace('-', '')] = acc.ocid
 
     prev_spend_rows = db.query(
         GoogleAdsMetric.customer_id,
@@ -539,10 +543,12 @@ def get_accounts_breakdown(
         prev_sp = prev_spend_map.get(row.customer_id, 0.0)
         sp_change = round(((tot_spend - prev_sp) / prev_sp * 100.0), 2) if prev_sp > 0 else (100.0 if tot_spend > 0 else 0.0)
 
+        clean_cid = row.customer_id.replace('-', '') if row.customer_id else ''
         items.append(AccountBreakdownItem(
             customer_id=row.customer_id,
             account_name=row.account_name,
-            ocid=cid_to_ocid_map.get(row.customer_id) or cid_to_ocid_map.get(row.customer_id.replace('-', '')),
+            ocid=cid_to_ocid_map.get(row.customer_id) or (cid_to_ocid_map.get(clean_cid) if clean_cid else None),
+            remaining_balance=cid_balance_map.get(row.customer_id) or (cid_balance_map.get(clean_cid) if clean_cid else 0.0),
             total_spend=round(tot_spend, 2),
             impressions=tot_imps,
             clicks=tot_clicks,
@@ -619,10 +625,10 @@ def get_sites_breakdown(
             if acc.customer_id not in domain_cids_map[acc.assigned_domain]:
                 domain_cids_map[acc.assigned_domain].append(acc.customer_id)
 
-    cid_balance_map = {acc.customer_id: (acc.remaining_balance or 0.0) for acc in db_accounts}
+    cid_balance_map = {acc.customer_id: (acc.remaining_balance or 0.0) for acc in db_accounts if acc.customer_id}
     cid_ocid_map = {}
     for acc in db_accounts:
-        if acc.ocid:
+        if acc.ocid and acc.customer_id:
             cid_ocid_map[acc.customer_id] = acc.ocid
             cid_ocid_map[acc.customer_id.replace('-', '')] = acc.ocid
 
@@ -824,7 +830,7 @@ def get_sites_breakdown(
                 {
                     "customer_id": cid,
                     "balance": cid_balance_map.get(cid, 0.0),
-                    "ocid": cid_ocid_map.get(cid) or cid_ocid_map.get(cid.replace('-', ''))
+                    "ocid": cid_ocid_map.get(cid) or (cid_ocid_map.get(cid.replace('-', '')) if cid else None)
                 }
                 for cid in assigned_cids
             ],

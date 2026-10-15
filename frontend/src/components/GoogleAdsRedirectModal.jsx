@@ -151,8 +151,8 @@ export default function GoogleAdsRedirectModal({
 
   useEffect(() => {
     if (!customerId) return;
-    if (ocid) {
-      setAccountOcid(ocid);
+    if (ocid !== undefined) {
+      setAccountOcid(ocid || '');
     } else {
       try {
         const savedMappings = JSON.parse(localStorage.getItem('gads_ocid_mappings') || '{}');

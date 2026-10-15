@@ -61,6 +61,7 @@ class AccountBreakdownItem(BaseModel):
     customer_id: str
     account_name: str
     ocid: Optional[str] = None
+    remaining_balance: Optional[float] = None
     total_spend: float
     impressions: int
     clicks: int

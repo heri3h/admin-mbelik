@@ -138,22 +138,6 @@ def get_google_ads_accounts(
     except Exception as e:
         logger.warning(f"Auto-populate MCC CIDs notice: {e}")
 
-    # Auto-fill verified default OCIDs if account currently has no OCID
-    ocid_updated = False
-    for acc in accounts:
-        if not acc.ocid:
-            clean_cid = acc.customer_id.replace("-", "").strip()
-            for target_cid, o_val in DEFAULT_OCIDS.items():
-                if target_cid == acc.customer_id or target_cid.replace("-", "") == clean_cid:
-                    acc.ocid = o_val
-                    ocid_updated = True
-                    break
-    if ocid_updated:
-        try:
-            db.commit()
-        except Exception:
-            db.rollback()
-
     return accounts
 
 @router.post("/google-ads-accounts", response_model=GoogleAdsAccountResponse)
@@ -171,7 +155,7 @@ def create_google_ads_account(
         customer_id=clean_cid,
         account_name=acc_data.account_name or f"Google Ads ({clean_cid})",
         assigned_domain=acc_data.assigned_domain or "All / Unassigned",
-        ocid=acc_data.ocid.strip() if acc_data.ocid else None
+        ocid=acc_data.ocid.strip() if acc_data.ocid and acc_data.ocid.strip() else None
     )
     db.add(new_acc)
     db.commit()
@@ -189,12 +173,17 @@ def update_google_ads_account(
     if not acc:
         raise HTTPException(status_code=404, detail="Google Ads Account tidak ditemukan.")
 
-    if acc_data.account_name is not None:
+    fields_set = getattr(acc_data, "model_fields_set", getattr(acc_data, "__fields_set__", set()))
+
+    if "account_name" in fields_set:
         acc.account_name = acc_data.account_name
-    if acc_data.assigned_domain is not None:
+    if "assigned_domain" in fields_set:
         acc.assigned_domain = acc_data.assigned_domain
-    if acc_data.ocid is not None:
-        acc.ocid = acc_data.ocid.strip() if acc_data.ocid.strip() else None
+    if "ocid" in fields_set:
+        if acc_data.ocid and acc_data.ocid.strip():
+            acc.ocid = acc_data.ocid.strip()
+        else:
+            acc.ocid = None
 
     db.commit()
     db.refresh(acc)
