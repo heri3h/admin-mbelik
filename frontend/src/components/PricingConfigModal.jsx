@@ -41,17 +41,17 @@ export default function PricingConfigModal({ isOpen, onClose }) {
   });
 
   const [formatSettings, setFormatSettings] = useState({
-    interstitial: { multiplier: 1.5, high_mr_threshold: 70.0 },
-    anchor: { multiplier: 1.2, high_mr_threshold: 65.0 },
-    banner: { multiplier: 1.0, high_mr_threshold: 85.0 }
+    interstitial: { multiplier: 1.1, high_mr_threshold: 75.0 },
+    anchor: { multiplier: 1.1, high_mr_threshold: 65.0 },
+    banner: { multiplier: 1.1, high_mr_threshold: 65.0 }
   });
 
   const [adjustments, setAdjustments] = useState({
     high_mr_threshold: 85.0,
     high_mr_boost_pct: 25.0,
-    med_mr_threshold: 70.0,
-    med_mr_boost_pct: 10.0,
-    low_mr_threshold: 50.0,
+    med_mr_threshold: 50.0,
+    med_mr_boost_pct: 32.5,
+    low_mr_threshold: 40.0,
     low_mr_penalty_pct: -15.0
   });
 
@@ -91,16 +91,16 @@ export default function PricingConfigModal({ isOpen, onClose }) {
         if (data.format_settings) {
           setFormatSettings({
             interstitial: {
-              multiplier: data.format_settings.interstitial?.multiplier ?? 1.5,
-              high_mr_threshold: data.format_settings.interstitial?.high_mr_threshold ?? 70.0
+              multiplier: data.format_settings.interstitial?.multiplier ?? 1.1,
+              high_mr_threshold: data.format_settings.interstitial?.high_mr_threshold ?? 75.0
             },
             anchor: {
-              multiplier: data.format_settings.anchor?.multiplier ?? 1.2,
+              multiplier: data.format_settings.anchor?.multiplier ?? 1.1,
               high_mr_threshold: data.format_settings.anchor?.high_mr_threshold ?? 65.0
             },
             banner: {
-              multiplier: data.format_settings.banner?.multiplier ?? 1.0,
-              high_mr_threshold: data.format_settings.banner?.high_mr_threshold ?? 85.0
+              multiplier: data.format_settings.banner?.multiplier ?? 1.1,
+              high_mr_threshold: data.format_settings.banner?.high_mr_threshold ?? 65.0
             }
           });
         }
@@ -108,9 +108,9 @@ export default function PricingConfigModal({ isOpen, onClose }) {
           setAdjustments({
             high_mr_threshold: data.adjustments.high_mr_threshold ?? 85.0,
             high_mr_boost_pct: data.adjustments.high_mr_boost_pct ?? 25.0,
-            med_mr_threshold: data.adjustments.med_mr_threshold ?? 70.0,
-            med_mr_boost_pct: data.adjustments.med_mr_boost_pct ?? 10.0,
-            low_mr_threshold: data.adjustments.low_mr_threshold ?? 50.0,
+            med_mr_threshold: data.adjustments.med_mr_threshold ?? 50.0,
+            med_mr_boost_pct: data.adjustments.med_mr_boost_pct ?? 32.5,
+            low_mr_threshold: data.adjustments.low_mr_threshold ?? 40.0,
             low_mr_penalty_pct: data.adjustments.low_mr_penalty_pct ?? -15.0
           });
         }

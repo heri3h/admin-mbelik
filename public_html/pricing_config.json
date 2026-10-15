@@ -2,12 +2,34 @@
   "target_mr": 65.0,
   "emergency_mr_threshold": 15.0,
   "default_pricing": "google_optimize",
+  "device_settings": {
+    "desktop": {
+      "cpm_multiplier": 1.25
+    },
+    "mobile": {
+      "cpm_multiplier": 1.0
+    }
+  },
+  "format_settings": {
+    "interstitial": {
+      "multiplier": 1.1,
+      "high_mr_threshold": 75.0
+    },
+    "anchor": {
+      "multiplier": 1.1,
+      "high_mr_threshold": 65.0
+    },
+    "banner": {
+      "multiplier": 1.1,
+      "high_mr_threshold": 65.0
+    }
+  },
   "adjustments": {
     "high_mr_threshold": 85.0,
     "high_mr_boost_pct": 25.0,
-    "med_mr_threshold": 70.0,
-    "med_mr_boost_pct": 10.0,
-    "low_mr_threshold": 50.0,
+    "med_mr_threshold": 50.0,
+    "med_mr_boost_pct": 32.5,
+    "low_mr_threshold": 40.0,
     "low_mr_penalty_pct": -15.0
   },
   "rules": [
@@ -99,32 +121,52 @@
     {
       "cpm": 70000,
       "target_key": "70000",
-      "floor_key": "f60000"
+      "floor_key": "f65000"
     },
     {
       "cpm": 75000,
       "target_key": "75000",
-      "floor_key": "f60000"
+      "floor_key": "f70000"
     },
     {
       "cpm": 80000,
       "target_key": "80000",
-      "floor_key": "f60000"
+      "floor_key": "f75000"
     },
     {
       "cpm": 100000,
       "target_key": "100000",
-      "floor_key": "f60000"
+      "floor_key": "f80000"
     },
     {
       "cpm": 130000,
       "target_key": "130000",
-      "floor_key": "f60000"
+      "floor_key": "f100000"
     },
     {
       "cpm": 155000,
       "target_key": "155000",
-      "floor_key": "f60000"
+      "floor_key": "f125000"
+    },
+    {
+      "cpm": 200000,
+      "target_key": "200000",
+      "floor_key": "f160000"
+    },
+    {
+      "cpm": 350000,
+      "target_key": "350000",
+      "floor_key": "f280000"
+    },
+    {
+      "cpm": 525000,
+      "target_key": "525000",
+      "floor_key": "f420000"
+    },
+    {
+      "cpm": 700000,
+      "target_key": "700000",
+      "floor_key": "f560000"
     }
   ]
 }

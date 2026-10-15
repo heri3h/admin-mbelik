@@ -845,6 +845,18 @@ def export_site_today_json(
                     if out_dev.get(fmt, {}).get("match_rate", 0.0) > 55.0:
                         out_dev[fmt]["match_rate"] = 55.0
 
+            # Interstitial MR >= 75% protection guard:
+            # If Interstitial match rate drops below 75%, cap match_rate at 50.0 to trigger
+            # AdsHeader step-down gap (65 - 50 = 15 > 10 => 2-level drop) and force Soft Target mode (<75.0).
+            # Also apply a gentle -10% discount on interstitial eCPM to recover auction clearing.
+            int_data = out_dev.get("int")
+            if int_data and isinstance(int_data, dict):
+                int_mr = int_data.get("match_rate", 0.0)
+                if 0 < int_mr < 75.0:
+                    int_data["match_rate"] = 50.0
+                    if int_data.get("ecpm", 0.0) > 0:
+                        int_data["ecpm"] = round(int_data["ecpm"] * 0.90, 2)
+
             out[dev] = out_dev
         return out
 
@@ -1188,6 +1200,12 @@ def export_site_today_json(
         if force_soft_target and p_mr > 55.0:
             p_mr = 55.0
 
+        p_fmt = classify_ad_format(pr.ad_unit)
+        if p_fmt == "int" and 0 < p_mr < 75.0:
+            p_mr = 50.0
+            if p_ecpm > 0:
+                p_ecpm = round(p_ecpm * 0.90, 2)
+
         placements_list.append({
             "ad_unit": pr.ad_unit,
             "match_rate": p_mr,
@@ -1222,7 +1240,8 @@ def export_site_today_json(
 
 DEFAULT_PRICING_CONFIG = {
     "target_mr": 65.0,
-    "default_pricing": "f10000",
+    "emergency_mr_threshold": 15.0,
+    "default_pricing": "google_optimize",
     "device_settings": {
         "desktop": {
             "cpm_multiplier": 1.25,
@@ -1235,24 +1254,24 @@ DEFAULT_PRICING_CONFIG = {
     },
     "format_settings": {
         "interstitial": {
-            "multiplier": 1.5,
-            "high_mr_threshold": 70.0
+            "multiplier": 1.1,
+            "high_mr_threshold": 75.0
         },
         "anchor": {
-            "multiplier": 1.2,
+            "multiplier": 1.1,
             "high_mr_threshold": 65.0
         },
         "banner": {
-            "multiplier": 1.0,
-            "high_mr_threshold": 85.0
+            "multiplier": 1.1,
+            "high_mr_threshold": 65.0
         }
     },
     "adjustments": {
         "high_mr_threshold": 85.0,
         "high_mr_boost_pct": 25.0,
-        "med_mr_threshold": 70.0,
-        "med_mr_boost_pct": 10.0,
-        "low_mr_threshold": 50.0,
+        "med_mr_threshold": 50.0,
+        "med_mr_boost_pct": 32.5,
+        "low_mr_threshold": 40.0,
         "low_mr_penalty_pct": -15.0
     },
     "rules": [
@@ -1273,12 +1292,16 @@ DEFAULT_PRICING_CONFIG = {
         { "cpm": 55000,  "target_key": "55000",  "floor_key": "f50000" },
         { "cpm": 60000,  "target_key": "60000",  "floor_key": "f55000" },
         { "cpm": 65000,  "target_key": "65000",  "floor_key": "f60000" },
-        { "cpm": 70000,  "target_key": "70000",  "floor_key": "f60000" },
-        { "cpm": 75000,  "target_key": "75000",  "floor_key": "f60000" },
-        { "cpm": 80000,  "target_key": "80000",  "floor_key": "f60000" },
-        { "cpm": 100000, "target_key": "100000", "floor_key": "f60000" },
-        { "cpm": 130000, "target_key": "130000", "floor_key": "f60000" },
-        { "cpm": 155000, "target_key": "155000", "floor_key": "f60000" }
+        { "cpm": 70000,  "target_key": "70000",  "floor_key": "f65000" },
+        { "cpm": 75000,  "target_key": "75000",  "floor_key": "f70000" },
+        { "cpm": 80000,  "target_key": "80000",  "floor_key": "f75000" },
+        { "cpm": 100000, "target_key": "100000", "floor_key": "f80000" },
+        { "cpm": 130000, "target_key": "130000", "floor_key": "f100000" },
+        { "cpm": 155000, "target_key": "155000", "floor_key": "f125000" },
+        { "cpm": 200000, "target_key": "200000", "floor_key": "f160000" },
+        { "cpm": 350000, "target_key": "350000", "floor_key": "f280000" },
+        { "cpm": 525000, "target_key": "525000", "floor_key": "f420000" },
+        { "cpm": 700000, "target_key": "700000", "floor_key": "f560000" }
     ]
 }
 
