@@ -234,42 +234,33 @@ app = FastAPI(
 async def auto_pricing_background_task():
     """
     Jalur 1 (AutoPricing Exporter):
-    Background worker that runs every 30 minutes (1800s) in a separate thread
-    to update current_pricing.json for all active websites during operational hours.
-    Does NOT call Google Ads API (0% quota impact).
+    Background worker that runs every 30 minutes in a separate thread
+    to pull fresh GAM data for today and update current_pricing.json for all active websites.
+    Does NOT call Google Ads API (sync_gads=False, 0% quota impact).
+    Offset by 1800s (30m) from auto_sync_background_task so they alternate smoothly every 30 minutes.
     """
-    await asyncio.sleep(15)  # Wait 15 seconds after server startup
+    await asyncio.sleep(1800)  # Offset 30 minutes from startup (auto_sync runs at t=10s)
     while True:
         try:
-            logger.info("Executing 30-minute AutoPricing (current_pricing.json) export for all domains...")
+            logger.info("Executing 30-minute AutoPricing: pulling fresh GAM data & exporting current_pricing.json...")
 
             def run_export():
                 db = SessionLocal()
                 try:
-                    from app.models import JSONExportTarget
-                    from app.services.sync import export_site_today_json
-                    targets = db.query(JSONExportTarget).filter(JSONExportTarget.is_active == True).all()
-                    if targets:
-                        for t in targets:
-                            export_site_today_json(
-                                db,
-                                domain=t.domain,
-                                target_filepath=t.target_filepath,
-                                start_hour=t.start_hour,
-                                end_hour=t.end_hour
-                            )
-                    else:
-                        export_site_today_json(db, domain="spotgames.top", target_filepath="/home/mbummm/web/spotgames.top/public_html/current_pricing.json")
+                    today = date.today()
+                    # 1. Pull fresh GAM data for today (skips Google Ads API)
+                    # Note: sync_range already executes export_site_today_json for all active targets
+                    sync_service.sync_range(db, today, today, sync_gads=False)
                 finally:
                     db.close()
 
             await asyncio.to_thread(run_export)
-            logger.info("AutoPricing export finished successfully.")
+            logger.info("AutoPricing sync & export finished successfully.")
         except Exception as e:
             logger.error(f"Error in AutoPricing background export task: {e}")
 
-        # Repeat every 30 minutes (1800 seconds)
-        await asyncio.sleep(1800)
+        # Repeat every 3600 seconds so it alternates at the 30-minute mark of every hour
+        await asyncio.sleep(3600)
 
 
 async def auto_sync_background_task():

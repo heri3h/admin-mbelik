@@ -26,7 +26,12 @@ class SyncService:
         Pull Google Ads & GAM metrics for start_date to end_date, update DB cache tables,
         apply +11% tax on Google Ads spend and -8% deduction on GAM AdX revenue,
         and calculate daily profit summaries.
+        Protected with _sync_lock to prevent concurrent SQLite write locks.
         """
+        with _sync_lock:
+            return self._sync_range_internal(db, start_date, end_date, sync_gads=sync_gads)
+
+    def _sync_range_internal(self, db: Session, start_date: date, end_date: date, sync_gads: bool = True) -> Dict[str, Any]:
         messages = []
         gads_data = []
         gam_data = []
@@ -215,197 +220,195 @@ class SyncService:
                 db.rollback()
                 db_accounts = []
 
-        cids = [acc.customer_id for acc in db_accounts] if db_accounts else None
+            cids = [acc.customer_id for acc in db_accounts] if db_accounts else None
 
-        try:
-            gads_data = google_ads_service.fetch_daily_metrics(start_date, end_date, customer_ids=cids)
-        except Exception as e:
-            err_msg = str(e)
-            logger.error(f"Google Ads API Error: {err_msg}")
-            if "test accounts" in err_msg.lower():
-                messages.append("Google Ads: Developer Token masih level Test Account. Ajukan Basic Access di Google Ads API Center untuk akses akun live.")
-            else:
-                messages.append(f"Google Ads API Error: {err_msg}")
+            try:
+                gads_data = google_ads_service.fetch_daily_metrics(start_date, end_date, customer_ids=cids)
+            except Exception as e:
+                err_msg = str(e)
+                logger.error(f"Google Ads API Error: {err_msg}")
+                if "test accounts" in err_msg.lower():
+                    messages.append("Google Ads: Developer Token masih level Test Account. Ajukan Basic Access di Google Ads API Center untuk akses akun live.")
+                else:
+                    messages.append(f"Google Ads API Error: {err_msg}")
 
-        # 1. Deduplicate & Upsert Google Ads metrics (Apply +11% tax adjustment)
-        try:
-            db.query(GoogleAdsMetric).filter(
-                GoogleAdsMetric.date >= start_date,
-                GoogleAdsMetric.date <= end_date
-            ).delete(synchronize_session=False)
-            db.commit()
-        except Exception:
-            db.rollback()
-
-        aggregated_gads = {}
-        for item in gads_data:
-            key = (item["date"], item["customer_id"], item["campaign_name"])
-            if key not in aggregated_gads:
-                aggregated_gads[key] = {
-                    "date": item["date"],
-                    "customer_id": item["customer_id"],
-                    "account_name": item["account_name"],
-                    "campaign_name": item["campaign_name"],
-                    "spend": 0.0,
-                    "impressions": 0,
-                    "clicks": 0
-                }
-            agg = aggregated_gads[key]
-            agg["spend"] += item.get("spend", 0.0)
-            agg["impressions"] += item.get("impressions", 0)
-            agg["clicks"] += item.get("clicks", 0)
-
-        for item in aggregated_gads.values():
-            raw_spend = item.get("spend", 0.0)
-            adj_spend = round(raw_spend * 1.11, 2)  # Adds 11% PPN tax
-            clicks = item.get("clicks", 0)
-            imps = item.get("impressions", 0)
-            adj_cpc = round(adj_spend / clicks, 2) if clicks > 0 else 0.0
-            ctr = (clicks / imps * 100.0) if imps > 0 else 0.0
-
-            existing = db.query(GoogleAdsMetric).filter(
-                GoogleAdsMetric.date == item["date"],
-                GoogleAdsMetric.customer_id == item["customer_id"],
-                GoogleAdsMetric.campaign_name == item["campaign_name"]
-            ).first()
-
-            if existing:
-                existing.account_name = item["account_name"]
-                existing.spend = adj_spend
-                existing.impressions = imps
-                existing.clicks = clicks
-                existing.cpc = adj_cpc
-                existing.ctr = ctr
-                existing.synced_at = datetime.utcnow()
-            else:
-                new_metric = GoogleAdsMetric(
-                    date=item["date"],
-                    customer_id=item["customer_id"],
-                    account_name=item["account_name"],
-                    campaign_name=item["campaign_name"],
-                    spend=adj_spend,
-                    impressions=imps,
-                    clicks=clicks,
-                    cpc=adj_cpc,
-                    ctr=ctr,
-                    synced_at=datetime.utcnow()
-                )
-                db.add(new_metric)
-            records_synced += 1
-
-        try:
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            logger.warning(f"GoogleAdsMetric commit notice: {e}")
-
-        # 1c. Update real-time remaining account budgets
-        try:
-            balances_map = google_ads_service.fetch_account_balances(customer_ids=cids)
-            if balances_map:
-                for cid, bal in balances_map.items():
-                    acc = db.query(GoogleAdsAccount).filter(GoogleAdsAccount.customer_id == cid).first()
-                    if acc:
-                        acc.remaining_balance = bal
+            # 1. Deduplicate & Upsert Google Ads metrics (Apply +11% tax adjustment)
+            try:
+                db.query(GoogleAdsMetric).filter(
+                    GoogleAdsMetric.date >= start_date,
+                    GoogleAdsMetric.date <= end_date
+                ).delete(synchronize_session=False)
                 db.commit()
-        except Exception as ex:
-            db.rollback()
-            logger.warning(f"Notice updating remaining account balances: {ex}")
+            except Exception:
+                db.rollback()
 
-        # 1b. Deduplicate & Upsert Google Ads Country metrics (Apply +11% tax adjustment)
-
-        try:
-            gads_country_data = google_ads_service.fetch_country_metrics(start_date, end_date, customer_ids=cids)
-            db.query(GoogleAdsCountryMetric).filter(
-                GoogleAdsCountryMetric.date >= start_date,
-                GoogleAdsCountryMetric.date <= end_date
-            ).delete(synchronize_session=False)
-            db.commit()
-
-            aggregated_gads_country = {}
-            for item in gads_country_data:
-                dev_cat = item.get("device_category", "mobile")
-                key = (item["date"], item["customer_id"], item["country"], dev_cat)
-                if key not in aggregated_gads_country:
-                    aggregated_gads_country[key] = {
+            aggregated_gads = {}
+            for item in gads_data:
+                key = (item["date"], item["customer_id"], item["campaign_name"])
+                if key not in aggregated_gads:
+                    aggregated_gads[key] = {
                         "date": item["date"],
                         "customer_id": item["customer_id"],
-                        "country": item["country"],
-                        "country_code": item.get("country_code", "ID"),
-                        "device_category": dev_cat,
+                        "account_name": item["account_name"],
+                        "campaign_name": item["campaign_name"],
                         "spend": 0.0,
                         "impressions": 0,
                         "clicks": 0
                     }
-                agg = aggregated_gads_country[key]
+                agg = aggregated_gads[key]
                 agg["spend"] += item.get("spend", 0.0)
                 agg["impressions"] += item.get("impressions", 0)
                 agg["clicks"] += item.get("clicks", 0)
 
-            for item in aggregated_gads_country.values():
+            for item in aggregated_gads.values():
                 raw_spend = item.get("spend", 0.0)
                 adj_spend = round(raw_spend * 1.11, 2)  # Adds 11% PPN tax
-                new_c_gads = GoogleAdsCountryMetric(
-                    date=item["date"],
-                    customer_id=item["customer_id"],
-                    country=item["country"],
-                    country_code=item["country_code"],
-                    device_category=item["device_category"],
-                    spend=adj_spend,
-                    impressions=item["impressions"],
-                    clicks=item["clicks"],
-                    synced_at=datetime.utcnow()
-                )
-                db.add(new_c_gads)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            logger.warning(f"Sync Google Ads Country Metrics notice: {e}")
+                clicks = item.get("clicks", 0)
+                imps = item.get("impressions", 0)
+                adj_cpc = round(adj_spend / clicks, 2) if clicks > 0 else 0.0
+                ctr = (clicks / imps * 100.0) if imps > 0 else 0.0
 
+                existing = db.query(GoogleAdsMetric).filter(
+                    GoogleAdsMetric.date == item["date"],
+                    GoogleAdsMetric.customer_id == item["customer_id"],
+                    GoogleAdsMetric.campaign_name == item["campaign_name"]
+                ).first()
 
-        # 1c. Deduplicate & Upsert Google Ads Device metrics (Apply +11% tax adjustment)
-        try:
-            gads_device_data = google_ads_service.fetch_device_metrics(start_date, end_date, customer_ids=cids)
-            db.query(GoogleAdsDeviceMetric).filter(
-                GoogleAdsDeviceMetric.date >= start_date,
-                GoogleAdsDeviceMetric.date <= end_date
-            ).delete(synchronize_session=False)
-            db.commit()
+                if existing:
+                    existing.account_name = item["account_name"]
+                    existing.spend = adj_spend
+                    existing.impressions = imps
+                    existing.clicks = clicks
+                    existing.cpc = adj_cpc
+                    existing.ctr = ctr
+                    existing.synced_at = datetime.utcnow()
+                else:
+                    new_metric = GoogleAdsMetric(
+                        date=item["date"],
+                        customer_id=item["customer_id"],
+                        account_name=item["account_name"],
+                        campaign_name=item["campaign_name"],
+                        spend=adj_spend,
+                        impressions=imps,
+                        clicks=clicks,
+                        cpc=adj_cpc,
+                        ctr=ctr,
+                        synced_at=datetime.utcnow()
+                    )
+                    db.add(new_metric)
+                records_synced += 1
 
-            aggregated_gads_device = {}
-            for item in gads_device_data:
-                key = (item["date"], item["customer_id"], item["device_category"])
-                if key not in aggregated_gads_device:
-                    aggregated_gads_device[key] = {
-                        "date": item["date"],
-                        "customer_id": item["customer_id"],
-                        "device_category": item["device_category"],
-                        "spend": 0.0,
-                        "impressions": 0,
-                        "clicks": 0
-                    }
-                agg = aggregated_gads_device[key]
-                agg["spend"] += item.get("spend", 0.0)
-                agg["impressions"] += item.get("impressions", 0)
-                agg["clicks"] += item.get("clicks", 0)
+            try:
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.warning(f"GoogleAdsMetric commit notice: {e}")
 
-            for item in aggregated_gads_device.values():
-                raw_spend = item.get("spend", 0.0)
-                adj_spend = round(raw_spend * 1.11, 2)  # Adds 11% PPN tax
-                new_d_gads = GoogleAdsDeviceMetric(
-                    date=item["date"],
-                    customer_id=item["customer_id"],
-                    device_category=item["device_category"],
-                    spend=adj_spend,
-                    impressions=item["impressions"],
-                    clicks=item["clicks"],
-                    synced_at=datetime.utcnow()
-                )
-                db.add(new_d_gads)
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            logger.warning(f"Sync Google Ads Device Metrics notice: {e}")
+            # 1c. Update real-time remaining account budgets
+            try:
+                balances_map = google_ads_service.fetch_account_balances(customer_ids=cids)
+                if balances_map:
+                    for cid, bal in balances_map.items():
+                        acc = db.query(GoogleAdsAccount).filter(GoogleAdsAccount.customer_id == cid).first()
+                        if acc:
+                            acc.remaining_balance = bal
+                    db.commit()
+            except Exception as ex:
+                db.rollback()
+                logger.warning(f"Notice updating remaining account balances: {ex}")
+
+            # 1b. Deduplicate & Upsert Google Ads Country metrics (Apply +11% tax adjustment)
+            try:
+                gads_country_data = google_ads_service.fetch_country_metrics(start_date, end_date, customer_ids=cids)
+                db.query(GoogleAdsCountryMetric).filter(
+                    GoogleAdsCountryMetric.date >= start_date,
+                    GoogleAdsCountryMetric.date <= end_date
+                ).delete(synchronize_session=False)
+                db.commit()
+
+                aggregated_gads_country = {}
+                for item in gads_country_data:
+                    dev_cat = item.get("device_category", "mobile")
+                    key = (item["date"], item["customer_id"], item["country"], dev_cat)
+                    if key not in aggregated_gads_country:
+                        aggregated_gads_country[key] = {
+                            "date": item["date"],
+                            "customer_id": item["customer_id"],
+                            "country": item["country"],
+                            "country_code": item.get("country_code", "ID"),
+                            "device_category": dev_cat,
+                            "spend": 0.0,
+                            "impressions": 0,
+                            "clicks": 0
+                        }
+                    agg = aggregated_gads_country[key]
+                    agg["spend"] += item.get("spend", 0.0)
+                    agg["impressions"] += item.get("impressions", 0)
+                    agg["clicks"] += item.get("clicks", 0)
+
+                for item in aggregated_gads_country.values():
+                    raw_spend = item.get("spend", 0.0)
+                    adj_spend = round(raw_spend * 1.11, 2)  # Adds 11% PPN tax
+                    new_c_gads = GoogleAdsCountryMetric(
+                        date=item["date"],
+                        customer_id=item["customer_id"],
+                        country=item["country"],
+                        country_code=item["country_code"],
+                        device_category=item["device_category"],
+                        spend=adj_spend,
+                        impressions=item["impressions"],
+                        clicks=item["clicks"],
+                        synced_at=datetime.utcnow()
+                    )
+                    db.add(new_c_gads)
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.warning(f"Sync Google Ads Country Metrics notice: {e}")
+
+            # 1c. Deduplicate & Upsert Google Ads Device metrics (Apply +11% tax adjustment)
+            try:
+                gads_device_data = google_ads_service.fetch_device_metrics(start_date, end_date, customer_ids=cids)
+                db.query(GoogleAdsDeviceMetric).filter(
+                    GoogleAdsDeviceMetric.date >= start_date,
+                    GoogleAdsDeviceMetric.date <= end_date
+                ).delete(synchronize_session=False)
+                db.commit()
+
+                aggregated_gads_device = {}
+                for item in gads_device_data:
+                    key = (item["date"], item["customer_id"], item["device_category"])
+                    if key not in aggregated_gads_device:
+                        aggregated_gads_device[key] = {
+                            "date": item["date"],
+                            "customer_id": item["customer_id"],
+                            "device_category": item["device_category"],
+                            "spend": 0.0,
+                            "impressions": 0,
+                            "clicks": 0
+                        }
+                    agg = aggregated_gads_device[key]
+                    agg["spend"] += item.get("spend", 0.0)
+                    agg["impressions"] += item.get("impressions", 0)
+                    agg["clicks"] += item.get("clicks", 0)
+
+                for item in aggregated_gads_device.values():
+                    raw_spend = item.get("spend", 0.0)
+                    adj_spend = round(raw_spend * 1.11, 2)  # Adds 11% PPN tax
+                    new_d_gads = GoogleAdsDeviceMetric(
+                        date=item["date"],
+                        customer_id=item["customer_id"],
+                        device_category=item["device_category"],
+                        spend=adj_spend,
+                        impressions=item["impressions"],
+                        clicks=item["clicks"],
+                        synced_at=datetime.utcnow()
+                    )
+                    db.add(new_d_gads)
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.warning(f"Sync Google Ads Device Metrics notice: {e}")
 
 
         # 3. Calculate daily profit summaries per date in the range

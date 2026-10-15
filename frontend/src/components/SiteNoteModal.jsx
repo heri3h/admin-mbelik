@@ -19,10 +19,12 @@ export default function SiteNoteModal({ domain, initialNote, onClose, onSaveSucc
         domain: domain,
         note: note
       });
-      onSaveSuccess(domain, note);
+      if (onSaveSuccess) {
+        onSaveSuccess(domain, note);
+      }
       onClose();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to save note');
+      setError(err.response?.data?.detail || 'Failed to save optimization note');
     } finally {
       setSaving(false);
     }
@@ -38,7 +40,7 @@ export default function SiteNoteModal({ domain, initialNote, onClose, onSaveSucc
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Catatan Optimasi Iklan</h3>
+              <h3 className="font-bold text-white text-base">Site Optimization Notes</h3>
               <p className="text-xs text-sky-400 font-mono font-medium">{domain}</p>
             </div>
           </div>
@@ -60,13 +62,13 @@ export default function SiteNoteModal({ domain, initialNote, onClose, onSaveSucc
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-2">
-              Catatan Strategi & Optimasi (Google Ads / GAM)
+              Optimization & Strategy Notes (Google Ads / GAM)
             </label>
             <textarea
               rows={6}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Contoh: Target India Display, Max CPC Rp 3, Target CPA Rp 2.500, ECPC OFF..."
+              placeholder="e.g. Target India Display, Max CPC Rp 3, Target CPA Rp 2.500, ECPC OFF..."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all font-sans leading-relaxed"
               autoFocus
             />
@@ -80,7 +82,7 @@ export default function SiteNoteModal({ domain, initialNote, onClose, onSaveSucc
             onClick={onClose}
             className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
           >
-            Batal
+            Cancel
           </button>
           <button
             type="button"
@@ -91,12 +93,12 @@ export default function SiteNoteModal({ domain, initialNote, onClose, onSaveSucc
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Menyimpan...</span>
+                <span>Saving...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>Simpan Catatan</span>
+                <span>Save Note</span>
               </>
             )}
           </button>
