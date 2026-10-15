@@ -357,7 +357,8 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
                                         setRedirectModalData({
                                           customerId: acc.customer_id,
                                           domain: site.domain,
-                                          balance: bal
+                                          balance: bal,
+                                          ocid: acc.ocid
                                         });
                                       }}
                                       title={hasBal ? `Remaining Balance: Rp ${Math.round(bal).toLocaleString('id-ID')} — Click to open Google Ads campaigns` : `Google Ads ID: ${acc.customer_id} — Click to open campaigns`}
@@ -530,6 +531,7 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
           customerId={redirectModalData.customerId}
           domain={redirectModalData.domain}
           balance={redirectModalData.balance}
+          ocid={redirectModalData.ocid}
           mccId={mccId}
         />
       )}

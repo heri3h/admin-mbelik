@@ -118,7 +118,8 @@ def create_google_ads_account(
     new_acc = GoogleAdsAccount(
         customer_id=clean_cid,
         account_name=acc_data.account_name or f"Google Ads ({clean_cid})",
-        assigned_domain=acc_data.assigned_domain or "All / Unassigned"
+        assigned_domain=acc_data.assigned_domain or "All / Unassigned",
+        ocid=acc_data.ocid.strip() if acc_data.ocid else None
     )
     db.add(new_acc)
     db.commit()
@@ -140,6 +141,8 @@ def update_google_ads_account(
         acc.account_name = acc_data.account_name
     if acc_data.assigned_domain is not None:
         acc.assigned_domain = acc_data.assigned_domain
+    if acc_data.ocid is not None:
+        acc.ocid = acc_data.ocid.strip() if acc_data.ocid.strip() else None
 
     db.commit()
     db.refresh(acc)

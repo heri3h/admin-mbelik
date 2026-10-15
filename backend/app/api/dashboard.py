@@ -463,10 +463,16 @@ def get_accounts_breakdown(
 
     comp_label = "vs yesterday same time" if is_today_only else ("vs yesterday" if num_days == 1 else f"vs previous {num_days} days")
 
+    ads_accounts = db.query(GoogleAdsAccount).all()
     cid_to_domain_map = {
         acc.customer_id: acc.assigned_domain
-        for acc in db.query(GoogleAdsAccount).all() if acc.assigned_domain
+        for acc in ads_accounts if acc.assigned_domain
     }
+    cid_to_ocid_map = {}
+    for acc in ads_accounts:
+        if acc.ocid:
+            cid_to_ocid_map[acc.customer_id] = acc.ocid
+            cid_to_ocid_map[acc.customer_id.replace('-', '')] = acc.ocid
 
     prev_spend_rows = db.query(
         GoogleAdsMetric.customer_id,
@@ -536,6 +542,7 @@ def get_accounts_breakdown(
         items.append(AccountBreakdownItem(
             customer_id=row.customer_id,
             account_name=row.account_name,
+            ocid=cid_to_ocid_map.get(row.customer_id) or cid_to_ocid_map.get(row.customer_id.replace('-', '')),
             total_spend=round(tot_spend, 2),
             impressions=tot_imps,
             clicks=tot_clicks,
@@ -613,6 +620,11 @@ def get_sites_breakdown(
                 domain_cids_map[acc.assigned_domain].append(acc.customer_id)
 
     cid_balance_map = {acc.customer_id: (acc.remaining_balance or 0.0) for acc in db_accounts}
+    cid_ocid_map = {}
+    for acc in db_accounts:
+        if acc.ocid:
+            cid_ocid_map[acc.customer_id] = acc.ocid
+            cid_ocid_map[acc.customer_id.replace('-', '')] = acc.ocid
 
     # Previous period GAM revenue by domain
     prev_q = db.query(
@@ -809,7 +821,11 @@ def get_sites_breakdown(
             ad_unit_count=(row.ad_unit_count or 1) if row else 1,
             assigned_customer_ids=assigned_cids,
             assigned_accounts=[
-                {"customer_id": cid, "balance": cid_balance_map.get(cid, 0.0)}
+                {
+                    "customer_id": cid,
+                    "balance": cid_balance_map.get(cid, 0.0),
+                    "ocid": cid_ocid_map.get(cid) or cid_ocid_map.get(cid.replace('-', ''))
+                }
                 for cid in assigned_cids
             ],
             revenue_change_pct=rev_change,

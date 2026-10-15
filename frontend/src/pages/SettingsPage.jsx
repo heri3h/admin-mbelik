@@ -31,11 +31,13 @@ export default function SettingsPage({ onOpenPricingModal }) {
   const [newCid, setNewCid] = useState('');
   const [newAccName, setNewAccName] = useState('');
   const [newDomain, setNewDomain] = useState('All / Unassigned');
+  const [newOcid, setNewOcid] = useState('');
 
   // Edit Account State
   const [editingId, setEditingId] = useState(null);
   const [editAccName, setEditAccName] = useState('');
   const [editDomain, setEditDomain] = useState('');
+  const [editOcid, setEditOcid] = useState('');
 
   // JSON Export Targets State
   const [exportTargets, setExportTargets] = useState([]);
@@ -339,12 +341,14 @@ export default function SettingsPage({ onOpenPricingModal }) {
       await dashboardService.addGoogleAdsAccount({
         customer_id: newCid.trim(),
         account_name: newAccName.trim() || `Google Ads (${newCid.trim()})`,
-        assigned_domain: newDomain
+        assigned_domain: newDomain,
+        ocid: newOcid.trim() || null
       });
       setGadsSuccess(`Google Ads Account ${newCid.trim()} added successfully!`);
       setNewCid('');
       setNewAccName('');
       setNewDomain('All / Unassigned');
+      setNewOcid('');
       fetchGadsAccounts();
       fetchStatus();
     } catch (err) {
@@ -356,6 +360,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
     setEditingId(acc.id);
     setEditAccName(acc.account_name || '');
     setEditDomain(acc.assigned_domain || 'All / Unassigned');
+    setEditOcid(acc.ocid || '');
   };
 
   const handleSaveEdit = async (id) => {
@@ -364,7 +369,8 @@ export default function SettingsPage({ onOpenPricingModal }) {
     try {
       await dashboardService.updateGoogleAdsAccount(id, {
         account_name: editAccName,
-        assigned_domain: editDomain
+        assigned_domain: editDomain,
+        ocid: editOcid.trim() || null
       });
       setGadsSuccess('Account mapping updated successfully!');
       setEditingId(null);
@@ -622,7 +628,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
             <Plus className="w-4 h-4" />
             <span>Add New Google Ads ID</span>
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-slate-400 mb-1">Google Ads Customer ID *</label>
               <input
@@ -677,6 +683,16 @@ export default function SettingsPage({ onOpenPricingModal }) {
                 />
               )}
             </div>
+            <div>
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">Google Ads OCID (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. 1353856964"
+                value={newOcid}
+                onChange={(e) => setNewOcid(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-mono"
+              />
+            </div>
           </div>
           <button
             type="submit"
@@ -696,6 +712,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
                 <th className="px-4 py-3">Customer ID</th>
                 <th className="px-4 py-3">Account Name</th>
                 <th className="px-4 py-3">Connected Domain</th>
+                <th className="px-4 py-3">OCID (Optional)</th>
                 <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
@@ -739,6 +756,25 @@ export default function SettingsPage({ onOpenPricingModal }) {
                         </span>
                       )}
                     </td>
+                    <td className="px-4 py-3">
+                      {editingId === acc.id ? (
+                        <input
+                          type="text"
+                          placeholder="Optional OCID"
+                          value={editOcid}
+                          onChange={(e) => setEditOcid(e.target.value)}
+                          className="w-28 px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-sky-500"
+                        />
+                      ) : (
+                        acc.ocid ? (
+                          <span className="font-mono text-sky-400 bg-sky-950/40 px-2 py-0.5 rounded border border-sky-800/40 text-[11px]">
+                            {acc.ocid}
+                          </span>
+                        ) : (
+                          <span className="text-slate-600 text-xs">-</span>
+                        )
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right space-x-2">
                       {editingId === acc.id ? (
                         <button
@@ -769,7 +805,7 @@ export default function SettingsPage({ onOpenPricingModal }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-4 py-6 text-center text-slate-500 italic">
+                  <td colSpan="6" className="px-4 py-6 text-center text-slate-500 italic">
                     No Google Ads Accounts registered yet.
                   </td>
                 </tr>

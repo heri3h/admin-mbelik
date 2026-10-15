@@ -114,6 +114,7 @@ export default function GoogleAdsRedirectModal({
   customerId,
   domain,
   balance,
+  ocid,
   mccId = '440-015-1880'
 }) {
   const cleanCid = customerId ? String(customerId).replace(/\D/g, '') : '';
@@ -150,18 +151,22 @@ export default function GoogleAdsRedirectModal({
 
   useEffect(() => {
     if (!customerId) return;
-    try {
-      const savedMappings = JSON.parse(localStorage.getItem('gads_ocid_mappings') || '{}');
-      const found = savedMappings[formattedCid] || savedMappings[cleanCid] || BUILTIN_OCID_MAPPINGS[formattedCid] || BUILTIN_OCID_MAPPINGS[cleanCid] || '';
-      setAccountOcid(found);
-    } catch (e) {
-      const found = BUILTIN_OCID_MAPPINGS[formattedCid] || BUILTIN_OCID_MAPPINGS[cleanCid] || '';
-      setAccountOcid(found);
+    if (ocid) {
+      setAccountOcid(ocid);
+    } else {
+      try {
+        const savedMappings = JSON.parse(localStorage.getItem('gads_ocid_mappings') || '{}');
+        const found = savedMappings[formattedCid] || savedMappings[cleanCid] || BUILTIN_OCID_MAPPINGS[formattedCid] || BUILTIN_OCID_MAPPINGS[cleanCid] || '';
+        setAccountOcid(found);
+      } catch (e) {
+        const found = BUILTIN_OCID_MAPPINGS[formattedCid] || BUILTIN_OCID_MAPPINGS[cleanCid] || '';
+        setAccountOcid(found);
+      }
     }
     setPasteInput('');
     setPasteSuccess(false);
     setShowConfig(false);
-  }, [customerId, isOpen]);
+  }, [customerId, ocid, isOpen]);
 
   // If specific OCID is known for this account, deep link with MCC context and account OCID
   // Otherwise, fallback directly to Customer ID ocid

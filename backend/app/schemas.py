@@ -60,6 +60,7 @@ class DailyTrendItem(BaseModel):
 class AccountBreakdownItem(BaseModel):
     customer_id: str
     account_name: str
+    ocid: Optional[str] = None
     total_spend: float
     impressions: int
     clicks: int
@@ -169,16 +170,19 @@ class GoogleAdsAccountCreate(BaseModel):
     customer_id: str
     account_name: Optional[str] = None
     assigned_domain: Optional[str] = None
+    ocid: Optional[str] = None
 
 class GoogleAdsAccountUpdate(BaseModel):
     account_name: Optional[str] = None
     assigned_domain: Optional[str] = None
+    ocid: Optional[str] = None
 
 class GoogleAdsAccountResponse(BaseModel):
     id: int
     customer_id: str
     account_name: Optional[str] = None
     assigned_domain: Optional[str] = None
+    ocid: Optional[str] = None
     created_at: datetime
 
     class Config:

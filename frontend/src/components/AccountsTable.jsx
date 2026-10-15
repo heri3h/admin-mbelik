@@ -224,7 +224,8 @@ export default function AccountsTable({ accounts, mccId }) {
                         onClick={() => setRedirectModalData({
                           customerId: acc.customer_id,
                           domain: acc.account_name,
-                          balance: acc.remaining_balance
+                          balance: acc.remaining_balance,
+                          ocid: acc.ocid
                         })}
                         title={`Click to open Google Ads campaigns (${acc.customer_id})`}
                         className="text-slate-300 hover:text-sky-300 hover:underline inline-flex items-center gap-1 transition-colors cursor-pointer group/link"
@@ -269,6 +270,7 @@ export default function AccountsTable({ accounts, mccId }) {
           customerId={redirectModalData.customerId}
           domain={redirectModalData.domain}
           balance={redirectModalData.balance}
+          ocid={redirectModalData.ocid}
           mccId={mccId}
         />
       )}
