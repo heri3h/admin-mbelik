@@ -13,7 +13,7 @@ const ALL_COLUMNS = [
   { key: 'ctr', label: 'CTR (%)' },
 ];
 
-export default function AccountsTable({ accounts }) {
+export default function AccountsTable({ accounts, mccId }) {
   const [sortColumn, setSortColumn] = useState('total_spend');
   const [sortDirection, setSortDirection] = useState('desc');
   const [redirectModalData, setRedirectModalData] = useState(null);
@@ -269,6 +269,7 @@ export default function AccountsTable({ accounts }) {
           customerId={redirectModalData.customerId}
           domain={redirectModalData.domain}
           balance={redirectModalData.balance}
+          mccId={mccId}
         />
       )}
     </div>

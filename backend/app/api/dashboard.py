@@ -321,7 +321,8 @@ def get_summary(
         comparison_period_label=comp_label,
         gads_status=gads_status_val,
         gam_status="live",
-        gads_quota_used_pct=google_ads_service.quota_used_pct
+        gads_quota_used_pct=google_ads_service.quota_used_pct,
+        gads_login_customer_id=settings.GOOGLE_ADS_LOGIN_CUSTOMER_ID
     )
 
 @router.get("/trend", response_model=List[DailyTrendItem])

@@ -228,9 +228,21 @@ export default function DashboardPage() {
             </div>
 
             {/* Active Report Table Display */}
-            {activeReportTab === 'sites' && <SitesTable sites={sites} startDate={startDate} endDate={endDate} />}
+            {activeReportTab === 'sites' && (
+              <SitesTable
+                sites={sites}
+                startDate={startDate}
+                endDate={endDate}
+                mccId={summary?.gads_login_customer_id || '440-015-1880'}
+              />
+            )}
             {activeReportTab === 'placements' && <PlacementsTable placements={placements} />}
-            {activeReportTab === 'accounts' && <AccountsTable accounts={accounts} />}
+            {activeReportTab === 'accounts' && (
+              <AccountsTable
+                accounts={accounts}
+                mccId={summary?.gads_login_customer_id || '440-015-1880'}
+              />
+            )}
           </div>
         </div>
       )}

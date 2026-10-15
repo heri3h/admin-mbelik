@@ -19,7 +19,7 @@ const ALL_COLUMNS = [
   { key: 'note', label: 'Note' },
 ];
 
-export default function SitesTable({ sites, startDate, endDate }) {
+export default function SitesTable({ sites, startDate, endDate, mccId }) {
   const isSingleDay = Boolean(startDate && endDate && startDate === endDate);
 
   const [localSites, setLocalSites] = useState(sites || []);
@@ -530,6 +530,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
           customerId={redirectModalData.customerId}
           domain={redirectModalData.domain}
           balance={redirectModalData.balance}
+          mccId={mccId}
         />
       )}
     </div>
