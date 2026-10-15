@@ -7,8 +7,9 @@ const DEFAULT_AUTHUSER = '0';
 
 // Known account mappings
 const BUILTIN_C_MAPPINGS = {
-  '255-105-1790': '5549233089',
-  '2551051790': '5549233089',
+  // 'enew' account (324-608-5080)
+  '324-608-5080': '5549233089',
+  '3246085080': '5549233089',
 };
 
 export default function GoogleAdsRedirectModal({
@@ -55,6 +56,12 @@ export default function GoogleAdsRedirectModal({
     if (!customerId) return;
     try {
       const savedMappings = JSON.parse(localStorage.getItem('gads_c_mappings') || '{}');
+      // Clean up previous erroneous mapping where 255-105-1790 was mistakenly linked to enew
+      if (savedMappings['255-105-1790'] === '5549233089' || savedMappings['2551051790'] === '5549233089') {
+        delete savedMappings['255-105-1790'];
+        delete savedMappings['2551051790'];
+        localStorage.setItem('gads_c_mappings', JSON.stringify(savedMappings));
+      }
       const found = savedMappings[formattedCid] || savedMappings[cleanCid] || BUILTIN_C_MAPPINGS[formattedCid] || BUILTIN_C_MAPPINGS[cleanCid] || '';
       setInternalC(found);
     } catch (e) {
@@ -66,9 +73,11 @@ export default function GoogleAdsRedirectModal({
     setShowConfig(false);
   }, [customerId, isOpen]);
 
+  // If internal __c is mapped, use MCC deep link.
+  // Otherwise, target the specific Customer ID via ocid to avoid getting stuck on the last-viewed account (enew).
   const targetUrl = internalC
     ? `https://ads.google.com/aw/campaigns?ocid=${ocid}&ascid=${ocid}&authuser=${authUser}&__u=${userId}&__c=${internalC}`
-    : `https://ads.google.com/aw/overview?ocid=${ocid}&ascid=${ocid}&authuser=${authUser}&__u=${userId}`;
+    : `https://ads.google.com/aw/campaigns?ocid=${cleanCid}&authuser=${authUser}`;
 
   useEffect(() => {
     if (!isOpen) return;
