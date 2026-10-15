@@ -80,9 +80,13 @@ auto_migrate_db()
 
 import asyncio
 import logging
-from datetime import date
+from datetime import date, timedelta
 from app.services.sync import sync_service
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Auto-seed default admin user if database was recreated
@@ -231,95 +235,59 @@ app = FastAPI(
     version="1.0.0"
 )
 
-async def auto_pricing_background_task():
+async def unified_sync_and_pricing_task():
     """
-    Jalur 1 (AutoPricing Exporter):
-    Background worker that runs every 30 minutes in a separate thread
-    to pull fresh GAM data for today and update current_pricing.json for all active websites.
-    Does NOT call Google Ads API (sync_gads=False, 0% quota impact).
-    Offset by 1800s (30m) from auto_sync_background_task so they alternate smoothly every 30 minutes.
-    """
-    await asyncio.sleep(1800)  # Offset 30 minutes from startup (auto_sync runs at t=10s)
-    while True:
-        try:
-            logger.info("Executing 30-minute AutoPricing: pulling fresh GAM data & exporting current_pricing.json...")
-
-            def run_export():
-                db = SessionLocal()
-                try:
-                    today = date.today()
-                    # 1. Pull fresh GAM data for today (skips Google Ads API)
-                    # Note: sync_range already executes export_site_today_json for all active targets
-                    sync_service.sync_range(db, today, today, sync_gads=False)
-                finally:
-                    db.close()
-
-            await asyncio.to_thread(run_export)
-            logger.info("AutoPricing sync & export finished successfully.")
-        except Exception as e:
-            logger.error(f"Error in AutoPricing background export task: {e}")
-
-        # Repeat every 3600 seconds so it alternates at the 30-minute mark of every hour
-        await asyncio.sleep(3600)
-
-
-async def auto_sync_background_task():
-    """
-    Jalur 2 (Full Auto-Sync):
-    Background worker that runs every 1 hour (3600s) in a separate thread
-    to automatically sync Google Ads & GAM metrics into SQLite DB.
+    Unified Sync & AutoPricing Worker:
+    Runs every 30 minutes (1800s).
+    - Every 30 minutes: Pulls fresh GAM data for today and exports current_pricing.json (0ms impact on web).
+    - Every 60 minutes (every 2nd cycle: 0, 2, 4...): Also pulls Google Ads spend (protects GAds quota).
+    - Every 12 hours (every 24th cycle: 0, 24, 48...): Re-syncs yesterday's data for complete audit reconciliation.
     """
     await asyncio.sleep(10)  # Wait 10 seconds after server startup
-    sync_count = 0
+    cycle = 0
     while True:
         try:
             today = date.today()
             yesterday = today - timedelta(days=1)
-            
-            # Sync yesterday on first run or every 12 hours (sync_count % 12 == 0)
-            sync_yesterday = (sync_count % 12 == 0)
-            
-            # Sync Google Ads spend every 1 hour (sync_gads=True on every hourly run)
-            should_sync_gads = True
 
-            if sync_yesterday:
-                logger.info(f"Executing background sync (GAds: {should_sync_gads}) for Yesterday & Today...")
-            else:
-                logger.info(f"Executing background sync (GAds: {should_sync_gads}) for Today...")
+            # Sync Google Ads spend every 1 hour (cycle 0, 2, 4...)
+            should_sync_gads = (cycle % 2 == 0)
 
-            def run_sync():
+            # Sync yesterday on first run or every 12 hours (cycle 0, 24, 48...)
+            sync_yesterday = (cycle % 24 == 0)
+            start_d = yesterday if sync_yesterday else today
+
+            date_label = f"Yesterday ({yesterday}) & Today ({today})" if sync_yesterday else f"Today ({today})"
+            logger.info(f"[UnifiedWorker] Starting cycle {cycle}: GAM=True, GAds={should_sync_gads}, Range={date_label}...")
+
+            def run_worker_cycle():
                 db = SessionLocal()
                 try:
-                    start_d = yesterday if sync_yesterday else today
                     sync_service.sync_range(db, start_d, today, sync_gads=should_sync_gads)
                 finally:
                     db.close()
 
-            await asyncio.to_thread(run_sync)
-            logger.info("Automatic background sync finished successfully.")
-            sync_count += 1
+            await asyncio.to_thread(run_worker_cycle)
+            logger.info(f"[UnifiedWorker] Cycle {cycle} finished successfully. current_pricing.json updated.")
+            cycle += 1
         except Exception as e:
-            logger.error(f"Error in automatic background sync task: {e}")
+            logger.error(f"[UnifiedWorker] Error in cycle {cycle}: {e}", exc_info=True)
 
-        # Repeat every 1 hour (3600 seconds)
-        await asyncio.sleep(3600)
+        # Sleep exactly 30 minutes (1800s) until next cycle
+        await asyncio.sleep(1800)
 
-_auto_sync_task = None
-_auto_pricing_task = None
+_unified_sync_task = None
 
 @app.on_event("startup")
 def start_background_tasks():
-    global _auto_sync_task, _auto_pricing_task
-    _auto_sync_task = asyncio.create_task(auto_sync_background_task())
-    _auto_pricing_task = asyncio.create_task(auto_pricing_background_task())
+    global _unified_sync_task
+    _unified_sync_task = asyncio.create_task(unified_sync_and_pricing_task())
 
 @app.on_event("shutdown")
 def stop_background_tasks():
-    global _auto_sync_task, _auto_pricing_task
-    if _auto_sync_task:
-        _auto_sync_task.cancel()
-    if _auto_pricing_task:
-        _auto_pricing_task.cancel()
+    global _unified_sync_task
+    if _unified_sync_task:
+        _unified_sync_task.cancel()
 
 
 # CORS Configuration

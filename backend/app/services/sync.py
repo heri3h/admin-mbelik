@@ -18,7 +18,7 @@ import threading
 
 logger = logging.getLogger(__name__)
 
-_sync_lock = threading.Lock()
+_sync_lock = threading.RLock()
 
 class SyncService:
     def sync_range(self, db: Session, start_date: date, end_date: date, sync_gads: bool = True) -> Dict[str, Any]:
