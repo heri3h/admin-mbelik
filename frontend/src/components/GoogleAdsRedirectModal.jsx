@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, ShieldCheck, Wallet, Globe, Check, Link as LinkIcon } from 'lucide-react';
 
-const DEFAULT_OCID = '1353856964';
-const DEFAULT_USER_ID = '3429262417';
+const SHARED_MCC_C = '5549233089';
+const SHARED_USER_ID = '3429262417';
 const DEFAULT_AUTHUSER = '0';
 
-// Known account mappings
-const BUILTIN_C_MAPPINGS = {
-  // 'enew' account (324-608-5080)
-  '324-608-5080': '5549233089',
-  '3246085080': '5549233089',
+// Known account OCID mappings
+const BUILTIN_OCID_MAPPINGS = {
+  // 'enew' (324-608-5080)
+  '324-608-5080': '1353856964',
+  '3246085080': '1353856964',
+
+  // 'glee' (808-296-3952)
+  '808-296-3952': '1295632265',
+  '8082963952': '1295632265',
 };
 
 export default function GoogleAdsRedirectModal({
@@ -23,19 +27,19 @@ export default function GoogleAdsRedirectModal({
   const cleanCid = customerId ? String(customerId).replace(/\D/g, '') : '';
   const formattedCid = customerId ? String(customerId).trim() : '';
 
-  const [ocid, setOcid] = useState(() => {
+  const [mccC, setMccC] = useState(() => {
     try {
-      return localStorage.getItem('gads_mcc_ocid') || DEFAULT_OCID;
+      return localStorage.getItem('gads_mcc_c') || SHARED_MCC_C;
     } catch (e) {
-      return DEFAULT_OCID;
+      return SHARED_MCC_C;
     }
   });
 
   const [userId, setUserId] = useState(() => {
     try {
-      return localStorage.getItem('gads_mcc_userid') || DEFAULT_USER_ID;
+      return localStorage.getItem('gads_mcc_userid') || SHARED_USER_ID;
     } catch (e) {
-      return DEFAULT_USER_ID;
+      return SHARED_USER_ID;
     }
   });
 
@@ -47,7 +51,7 @@ export default function GoogleAdsRedirectModal({
     }
   });
 
-  const [internalC, setInternalC] = useState('');
+  const [accountOcid, setAccountOcid] = useState('');
   const [showConfig, setShowConfig] = useState(false);
   const [pasteInput, setPasteInput] = useState('');
   const [pasteSuccess, setPasteSuccess] = useState(false);
@@ -55,28 +59,22 @@ export default function GoogleAdsRedirectModal({
   useEffect(() => {
     if (!customerId) return;
     try {
-      const savedMappings = JSON.parse(localStorage.getItem('gads_c_mappings') || '{}');
-      // Clean up previous erroneous mapping where 255-105-1790 was mistakenly linked to enew
-      if (savedMappings['255-105-1790'] === '5549233089' || savedMappings['2551051790'] === '5549233089') {
-        delete savedMappings['255-105-1790'];
-        delete savedMappings['2551051790'];
-        localStorage.setItem('gads_c_mappings', JSON.stringify(savedMappings));
-      }
-      const found = savedMappings[formattedCid] || savedMappings[cleanCid] || BUILTIN_C_MAPPINGS[formattedCid] || BUILTIN_C_MAPPINGS[cleanCid] || '';
-      setInternalC(found);
+      const savedMappings = JSON.parse(localStorage.getItem('gads_ocid_mappings') || '{}');
+      const found = savedMappings[formattedCid] || savedMappings[cleanCid] || BUILTIN_OCID_MAPPINGS[formattedCid] || BUILTIN_OCID_MAPPINGS[cleanCid] || '';
+      setAccountOcid(found);
     } catch (e) {
-      const found = BUILTIN_C_MAPPINGS[formattedCid] || BUILTIN_C_MAPPINGS[cleanCid] || '';
-      setInternalC(found);
+      const found = BUILTIN_OCID_MAPPINGS[formattedCid] || BUILTIN_OCID_MAPPINGS[cleanCid] || '';
+      setAccountOcid(found);
     }
     setPasteInput('');
     setPasteSuccess(false);
     setShowConfig(false);
   }, [customerId, isOpen]);
 
-  // If internal __c is mapped, use MCC deep link.
-  // Otherwise, target the specific Customer ID via ocid to avoid getting stuck on the last-viewed account (enew).
-  const targetUrl = internalC
-    ? `https://ads.google.com/aw/campaigns?ocid=${ocid}&ascid=${ocid}&authuser=${authUser}&__u=${userId}&__c=${internalC}`
+  // If specific OCID is known for this account, deep link with MCC context and account OCID
+  // Otherwise, fallback directly to Customer ID ocid
+  const targetUrl = accountOcid
+    ? `https://ads.google.com/aw/campaigns?ocid=${accountOcid}&ascid=${accountOcid}&authuser=${authUser}&__u=${userId}&__c=${mccC}`
     : `https://ads.google.com/aw/campaigns?ocid=${cleanCid}&authuser=${authUser}`;
 
   useEffect(() => {
@@ -110,30 +108,29 @@ export default function GoogleAdsRedirectModal({
       const urlObj = new URL(raw.trim());
       const p = urlObj.searchParams;
 
-      const extractedC = p.get('__c');
       const extractedOcid = p.get('ocid');
       const extractedU = p.get('__u');
       const extractedAuth = p.get('authuser');
+      const extractedC = p.get('__c');
 
       if (extractedOcid) {
-        setOcid(extractedOcid);
-        localStorage.setItem('gads_mcc_ocid', extractedOcid);
+        setAccountOcid(extractedOcid);
+        const saved = JSON.parse(localStorage.getItem('gads_ocid_mappings') || '{}');
+        saved[formattedCid] = extractedOcid;
+        saved[cleanCid] = extractedOcid;
+        localStorage.setItem('gads_ocid_mappings', JSON.stringify(saved));
       }
       if (extractedU) {
         setUserId(extractedU);
         localStorage.setItem('gads_mcc_userid', extractedU);
       }
+      if (extractedC) {
+        setMccC(extractedC);
+        localStorage.setItem('gads_mcc_c', extractedC);
+      }
       if (extractedAuth) {
         setAuthUser(extractedAuth);
         localStorage.setItem('gads_authuser_idx', extractedAuth);
-      }
-      if (extractedC) {
-        const val = String(extractedC).trim();
-        setInternalC(val);
-        const saved = JSON.parse(localStorage.getItem('gads_c_mappings') || '{}');
-        saved[formattedCid] = val;
-        saved[cleanCid] = val;
-        localStorage.setItem('gads_c_mappings', JSON.stringify(saved));
       }
 
       setPasteSuccess(true);
