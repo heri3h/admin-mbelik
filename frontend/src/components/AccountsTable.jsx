@@ -226,7 +226,7 @@ export default function AccountsTable({ accounts, mccId }) {
                           domain: acc.account_name,
                           balance: acc.remaining_balance
                         })}
-                        title={`Klik untuk membuka Google Ads ${acc.customer_id}`}
+                        title={`Click to open Google Ads campaigns (${acc.customer_id})`}
                         className="text-slate-300 hover:text-sky-300 hover:underline inline-flex items-center gap-1 transition-colors cursor-pointer group/link"
                       >
                         <span>{acc.customer_id}</span>

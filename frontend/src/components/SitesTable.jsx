@@ -360,7 +360,7 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
                                           balance: bal
                                         });
                                       }}
-                                      title={hasBal ? `Sisa Saldo: Rp ${Math.round(bal).toLocaleString('id-ID')} — Klik untuk buka Google Ads` : `Google Ads ID: ${acc.customer_id} — Klik untuk buka`}
+                                      title={hasBal ? `Remaining Balance: Rp ${Math.round(bal).toLocaleString('id-ID')} — Click to open Google Ads campaigns` : `Google Ads ID: ${acc.customer_id} — Click to open campaigns`}
                                       className="text-slate-300 hover:text-sky-300 hover:underline inline-flex items-center gap-0.5 transition-colors cursor-pointer group/link"
                                     >
                                       <span>{acc.customer_id}</span>
