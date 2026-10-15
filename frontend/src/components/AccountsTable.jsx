@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Layers, TrendingUp, TrendingDown } from 'lucide-react';
+import { Layers, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
 import ColumnToggleDropdown from './ColumnToggleDropdown';
+import GoogleAdsRedirectModal from './GoogleAdsRedirectModal';
 
 const ALL_COLUMNS = [
   { key: 'account_name', label: 'Google Ads Account' },
@@ -15,6 +16,7 @@ const ALL_COLUMNS = [
 export default function AccountsTable({ accounts }) {
   const [sortColumn, setSortColumn] = useState('total_spend');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [redirectModalData, setRedirectModalData] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState(() => {
     try {
       const saved = localStorage.getItem('col_vis_accounts');
@@ -216,7 +218,21 @@ export default function AccountsTable({ accounts }) {
                     </td>
                   )}
                   {visibleColumns.customer_id && (
-                    <td className="px-3 py-2.5 font-mono text-slate-400 whitespace-nowrap">{acc.customer_id}</td>
+                    <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => setRedirectModalData({
+                          customerId: acc.customer_id,
+                          domain: acc.account_name,
+                          balance: acc.remaining_balance
+                        })}
+                        title={`Klik untuk membuka Google Ads ${acc.customer_id}`}
+                        className="text-slate-300 hover:text-sky-300 hover:underline inline-flex items-center gap-1 transition-colors cursor-pointer group/link"
+                      >
+                        <span>{acc.customer_id}</span>
+                        <ExternalLink className="w-2.5 h-2.5 opacity-40 group-hover/link:opacity-100 transition-opacity" />
+                      </button>
+                    </td>
                   )}
 
                   {visibleColumns.total_spend && (
@@ -246,6 +262,15 @@ export default function AccountsTable({ accounts }) {
           </tbody>
         </table>
       </div>
+      {redirectModalData && (
+        <GoogleAdsRedirectModal
+          isOpen={Boolean(redirectModalData)}
+          onClose={() => setRedirectModalData(null)}
+          customerId={redirectModalData.customerId}
+          domain={redirectModalData.domain}
+          balance={redirectModalData.balance}
+        />
+      )}
     </div>
   );
 }

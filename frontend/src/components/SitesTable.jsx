@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Search, Link as LinkIcon, TrendingUp, TrendingDown, ChevronRight, FileText } from 'lucide-react';
+import { Globe, Search, Link as LinkIcon, TrendingUp, TrendingDown, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import CountryBreakdownModal from './CountryBreakdownModal';
 import ColumnToggleDropdown from './ColumnToggleDropdown';
 import SiteNoteModal from './SiteNoteModal';
+import GoogleAdsRedirectModal from './GoogleAdsRedirectModal';
 
 const ALL_COLUMNS = [
   { key: 'domain', label: 'Site / Domain' },
@@ -28,6 +29,7 @@ export default function SitesTable({ sites, startDate, endDate }) {
   const [sortDirection, setSortDirection] = useState('desc');
   const [editingNoteDomain, setEditingNoteDomain] = useState(null);
   const [editingNoteContent, setEditingNoteContent] = useState('');
+  const [redirectModalData, setRedirectModalData] = useState(null);
 
   useEffect(() => {
     setLocalSites(sites || []);
@@ -346,10 +348,24 @@ export default function SitesTable({ sites, startDate, endDate }) {
                                 return (
                                   <span
                                     key={acc.customer_id || aIdx}
-                                    title={hasBal ? `Remaining Balance: Rp ${Math.round(bal).toLocaleString('id-ID')}` : `Google Ads ID: ${acc.customer_id}`}
                                     className="text-[10px] font-mono inline-flex items-center space-x-1"
                                   >
-                                    <span className="text-slate-300">{acc.customer_id}</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setRedirectModalData({
+                                          customerId: acc.customer_id,
+                                          domain: site.domain,
+                                          balance: bal
+                                        });
+                                      }}
+                                      title={hasBal ? `Sisa Saldo: Rp ${Math.round(bal).toLocaleString('id-ID')} — Klik untuk buka Google Ads` : `Google Ads ID: ${acc.customer_id} — Klik untuk buka`}
+                                      className="text-slate-300 hover:text-sky-300 hover:underline inline-flex items-center gap-0.5 transition-colors cursor-pointer group/link"
+                                    >
+                                      <span>{acc.customer_id}</span>
+                                      <ExternalLink className="w-2.5 h-2.5 opacity-40 group-hover/link:opacity-100 transition-opacity" />
+                                    </button>
                                     {hasBal && (
                                       <span className={balColor}>
                                         ({formatCompactBalance(bal)})
@@ -359,9 +375,27 @@ export default function SitesTable({ sites, startDate, endDate }) {
                                 );
                               })
                             ) : (
-                              <span className="text-[10px] font-mono text-sky-300">
-                                {site.assigned_customer_ids.join(', ')}
-                              </span>
+                              <div className="flex items-center flex-wrap gap-1 text-[10px] font-mono">
+                                {site.assigned_customer_ids.map((cid, cIdx) => (
+                                  <button
+                                    key={cIdx}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setRedirectModalData({
+                                        customerId: cid,
+                                        domain: site.domain,
+                                        balance: null
+                                      });
+                                    }}
+                                    title={`Buka Google Ads: ${cid}`}
+                                    className="text-sky-300 hover:text-sky-200 hover:underline inline-flex items-center gap-0.5 transition-colors cursor-pointer group/link"
+                                  >
+                                    <span>{cid}</span>
+                                    <ExternalLink className="w-2.5 h-2.5 opacity-40 group-hover/link:opacity-100 transition-opacity" />
+                                  </button>
+                                ))}
+                              </div>
                             )}
                           </div>
                         ) : (
@@ -486,6 +520,16 @@ export default function SitesTable({ sites, startDate, endDate }) {
           initialNote={editingNoteContent}
           onClose={() => setEditingNoteDomain(null)}
           onSaveSuccess={handleNoteSaveSuccess}
+        />
+      )}
+
+      {redirectModalData && (
+        <GoogleAdsRedirectModal
+          isOpen={Boolean(redirectModalData)}
+          onClose={() => setRedirectModalData(null)}
+          customerId={redirectModalData.customerId}
+          domain={redirectModalData.domain}
+          balance={redirectModalData.balance}
         />
       )}
     </div>
