@@ -46,13 +46,13 @@ const formatDisplayDate = (startStr, endStr) => {
   const formatSingle = (s) => {
     const [y, m, d] = s.split('-').map(Number);
     const dt = new Date(y, m - 1, d);
-    return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   if (startStr === endStr) {
     const formatted = formatSingle(startStr);
-    if (startStr === todayStr) return `${formatted} (Hari Ini)`;
-    if (startStr === yesterdayStr) return `${formatted} (Kemarin)`;
+    if (startStr === todayStr) return `${formatted} (Today)`;
+    if (startStr === yesterdayStr) return `${formatted} (Yesterday)`;
     return formatted;
   }
 
@@ -208,7 +208,7 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
                 type="button"
                 onClick={handlePrevDay}
                 disabled={isPrevDisabled}
-                title="Hari Sebelumnya (H-1)"
+                title="Previous Day"
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -223,7 +223,7 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
                 type="button"
                 onClick={handleNextDay}
                 disabled={isNextDisabled}
-                title={isAtToday ? "Sudah hari ini" : "Hari Berikutnya (H+1)"}
+                title={isAtToday ? "Already on today" : "Next Day"}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />

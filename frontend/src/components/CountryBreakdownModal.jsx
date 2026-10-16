@@ -61,13 +61,13 @@ const formatDisplayDate = (startStr, endStr) => {
   const formatSingle = (s) => {
     const [y, m, d] = s.split('-').map(Number);
     const dt = new Date(y, m - 1, d);
-    return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   if (startStr === endStr) {
     const formatted = formatSingle(startStr);
-    if (startStr === todayStr) return `${formatted} (Hari Ini)`;
-    if (startStr === yesterdayStr) return `${formatted} (Kemarin)`;
+    if (startStr === todayStr) return `${formatted} (Today)`;
+    if (startStr === yesterdayStr) return `${formatted} (Yesterday)`;
     return formatted;
   }
 
@@ -432,18 +432,13 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                 <button
                   type="button"
                   onClick={() => setShowNoteModal(true)}
-                  title={`Klik untuk melihat / mengedit catatan optimasi untuk ${domain}`}
+                  title={`View or edit optimization notes for ${domain}`}
                   className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer"
                 >
                   <Globe className="w-3 h-3 text-emerald-400" />
                   <span className="font-semibold">{domain}</span>
                   <FileText className="w-3 h-3 text-emerald-400" />
                 </button>
-                {siteNote && (
-                  <span className="text-[11px] text-slate-400 truncate max-w-sm italic">
-                    "{siteNote}"
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -456,7 +451,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                 type="button"
                 onClick={handlePrevDay}
                 disabled={isPrevDisabled}
-                title="Hari Sebelumnya (H-1)"
+                title="Previous Day"
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -471,7 +466,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                 type="button"
                 onClick={handleNextDay}
                 disabled={isNextDisabled}
-                title={isAtToday ? "Sudah hari ini" : "Hari Berikutnya (H+1)"}
+                title={isAtToday ? "Already on today" : "Next Day"}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -552,7 +547,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                 </div>
                 <div
                   onClick={handleOpenGAds}
-                  title={primaryAccount ? `Buka Google Ads Campaigns (${primaryAccount.customer_id}${primaryAccount.ocid ? ` • OCID: ${primaryAccount.ocid}` : ''}) di tab baru` : "Buka Google Ads Campaigns di tab baru"}
+                  title={primaryAccount ? `Open Google Ads Campaigns (${primaryAccount.customer_id}${primaryAccount.ocid ? ` • OCID: ${primaryAccount.ocid}` : ''}) in new tab` : "Open Google Ads Campaigns in new tab"}
                   className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-rose-500/50 p-4 rounded-xl transition-all cursor-pointer group shadow-sm hover:shadow-md hover:shadow-rose-500/10 flex flex-col justify-between"
                 >
                   <div>
@@ -576,7 +571,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         </span>
                       ) : (
                         <span className="text-[9px] text-slate-500">
-                          (Klik untuk buka)
+                          (Click to open)
                         </span>
                       )}
                     </div>

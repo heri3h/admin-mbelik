@@ -93,7 +93,7 @@ export default function DateFilter({ startDate, endDate, onFilterChange }) {
           <button
             type="button"
             onClick={handlePrevDay}
-            title="Hari Sebelumnya (H-1)"
+            title="Previous Day"
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
@@ -102,7 +102,7 @@ export default function DateFilter({ startDate, endDate, onFilterChange }) {
             type="button"
             onClick={handleNextDay}
             disabled={isAtToday}
-            title={isAtToday ? "Sudah hari ini" : "Hari Berikutnya (H+1)"}
+            title={isAtToday ? "Already on today" : "Next Day"}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             <ChevronRight className="w-3.5 h-3.5" />
