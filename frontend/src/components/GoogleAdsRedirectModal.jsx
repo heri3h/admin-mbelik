@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, ShieldCheck, Wallet, Globe, Check, Link as LinkIcon } from 'lucide-react';
 
-const SHARED_MCC_C = '5549233089';
-const SHARED_USER_ID = '3429262417';
-const DEFAULT_AUTHUSER = '0';
+export const SHARED_MCC_C = '5549233089';
+export const SHARED_USER_ID = '3429262417';
+export const DEFAULT_AUTHUSER = '0';
 
 // Complete built-in account OCID mappings for all 25 accounts
-const BUILTIN_OCID_MAPPINGS = {
+export const BUILTIN_OCID_MAPPINGS = {
   // fun4kids (255-105-1790)
   '255-105-1790': '6677093661',
   '2551051790': '6677093661',

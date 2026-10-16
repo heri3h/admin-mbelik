@@ -170,6 +170,8 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
           endDate={endDate}
           onClose={() => setSelectedDomain(null)}
           onNoteUpdate={handleNoteSaveSuccess}
+          mccId={mccId}
+          siteData={sites.find(s => s.domain === selectedDomain)}
         />
       )}
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Globe, TrendingUp, TrendingDown, Search, ArrowLeft, Loader2, Layers, FileText, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { X, Globe, TrendingUp, TrendingDown, Search, ArrowLeft, Loader2, Layers, FileText, ChevronLeft, ChevronRight, Calendar, ExternalLink } from 'lucide-react';
 import api, { dashboardService } from '../services/api';
 import ColumnToggleDropdown from './ColumnToggleDropdown';
 import SiteNoteModal from './SiteNoteModal';
+import GoogleAdsRedirectModal, { BUILTIN_OCID_MAPPINGS } from './GoogleAdsRedirectModal';
 
 const LEVEL1_COLUMNS = [
   { key: 'name', label: 'Country' },
@@ -73,13 +74,15 @@ const formatDisplayDate = (startStr, endStr) => {
   return `${formatSingle(startStr)} - ${formatSingle(endStr)}`;
 };
 
-export default function CountryBreakdownModal({ domain, startDate, endDate, onClose, onNoteUpdate }) {
+export default function CountryBreakdownModal({ domain, startDate, endDate, onClose, onNoteUpdate, mccId, siteData }) {
   const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentStartDate, setCurrentStartDate] = useState(startDate);
   const [currentEndDate, setCurrentEndDate] = useState(endDate);
   const [showNoteModal, setShowNoteModal] = useState(false);
-  const [siteNote, setSiteNote] = useState('');
+  const [siteNote, setSiteNote] = useState(siteData?.note || '');
+  const [siteObj, setSiteObj] = useState(siteData || null);
+  const [redirectModalData, setRedirectModalData] = useState(null);
 
   useEffect(() => {
     setCurrentStartDate(startDate);
@@ -87,23 +90,82 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   }, [startDate, endDate]);
 
   useEffect(() => {
-    const fetchNote = async () => {
+    if (siteData) {
+      setSiteObj(siteData);
+      if (siteData.note) setSiteNote(siteData.note);
+    }
+  }, [siteData]);
+
+  useEffect(() => {
+    const fetchSiteInfo = async () => {
       try {
         const res = await api.get('/api/dashboard/sites', {
           params: { start_date: currentStartDate, end_date: currentEndDate }
         });
         if (res.data && Array.isArray(res.data)) {
           const matched = res.data.find(s => s.domain === domain);
-          if (matched && matched.note) {
-            setSiteNote(matched.note);
+          if (matched) {
+            setSiteObj(matched);
+            if (matched.note) {
+              setSiteNote(matched.note);
+            }
           }
         }
       } catch (e) {}
     };
     if (domain) {
-      fetchNote();
+      fetchSiteInfo();
     }
   }, [domain, currentStartDate, currentEndDate]);
+
+  const getGAdsUrl = (account) => {
+    if (!account || !account.customer_id) {
+      return 'https://ads.google.com/aw/campaigns';
+    }
+    const cid = account.customer_id;
+    const cleanCid = cid.replace(/-/g, '');
+    let ocid = account.ocid;
+    if (!ocid) {
+      try {
+        const savedMappings = JSON.parse(localStorage.getItem('gads_ocid_mappings') || '{}');
+        ocid = savedMappings[cid] || savedMappings[cleanCid] || BUILTIN_OCID_MAPPINGS[cid] || BUILTIN_OCID_MAPPINGS[cleanCid] || '';
+      } catch (e) {
+        ocid = BUILTIN_OCID_MAPPINGS[cid] || BUILTIN_OCID_MAPPINGS[cleanCid] || '';
+      }
+    }
+
+    const authUser = localStorage.getItem('gads_authuser_idx') || '0';
+    const userId = localStorage.getItem('gads_u_id') || '3429262417';
+    const mccC = localStorage.getItem('gads_mcc_c') || '5549233089';
+
+    if (ocid) {
+      return `https://ads.google.com/aw/campaigns?ocid=${ocid}&ascid=${ocid}&authuser=${authUser}&__u=${userId}&__c=${mccC}`;
+    }
+    return `https://ads.google.com/aw/campaigns?ocid=${cleanCid}&authuser=${authUser}`;
+  };
+
+  const primaryAccount = siteObj?.assigned_accounts?.[0] || (siteObj?.assigned_customer_ids?.[0] ? { customer_id: siteObj.assigned_customer_ids[0] } : null);
+
+  const handleOpenGAds = () => {
+    const accounts = siteObj?.assigned_accounts || [];
+    if (accounts.length === 1) {
+      const url = getGAdsUrl(accounts[0]);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else if (accounts.length > 1) {
+      setRedirectModalData({
+        customerId: accounts[0].customer_id,
+        domain: domain,
+        balance: accounts[0].balance,
+        ocid: accounts[0].ocid
+      });
+    } else if (siteObj?.assigned_customer_ids?.length > 0) {
+      const cid = siteObj.assigned_customer_ids[0];
+      const url = getGAdsUrl({ customer_id: cid });
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      window.open('https://ads.google.com/aw/campaigns', '_blank', 'noopener,noreferrer');
+    }
+  };
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deviceFilter, setDeviceFilter] = useState('all');
@@ -361,40 +423,28 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 {selectedCountry ? (
-                  <>
-                    <span>Ad Unit Performance Report - {selectedCountry.flag_emoji} {selectedCountry.country}</span>
-                    <button
-                      type="button"
-                      onClick={() => setShowNoteModal(true)}
-                      title={`Click to view/edit optimization notes for ${domain}`}
-                      className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center space-x-1 cursor-pointer"
-                    >
-                      <span>{domain}</span>
-                      <FileText className="w-3 h-3 text-emerald-400" />
-                    </button>
-                  </>
+                  <span>Ad Unit Performance Report - {selectedCountry.flag_emoji} {selectedCountry.country}</span>
                 ) : (
-                  <>
-                    <span>Domain Country Performance Breakdown</span>
-                    <button
-                      type="button"
-                      onClick={() => setShowNoteModal(true)}
-                      title={`Click to view/edit optimization notes for ${domain}`}
-                      className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all flex items-center space-x-1 cursor-pointer"
-                    >
-                      <span>{domain}</span>
-                      <FileText className="w-3 h-3 text-emerald-400" />
-                    </button>
-                  </>
+                  <span>Domain Country Performance Breakdown</span>
                 )}
               </h2>
-              <p className="text-slate-400 text-xs mt-0.5">
-                {selectedCountry ? (
-                  <span>Ad Unit details for country <strong className="text-white">{selectedCountry.country}</strong> &bull; <span className="text-sky-300 font-medium">{formatDisplayDate(currentStartDate, currentEndDate)}</span></span>
-                ) : (
-                  <span>Click on any country row to view ad unit breakdown &bull; <span className="text-sky-300 font-medium">{formatDisplayDate(currentStartDate, currentEndDate)}</span></span>
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowNoteModal(true)}
+                  title={`Klik untuk melihat / mengedit catatan optimasi untuk ${domain}`}
+                  className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer"
+                >
+                  <Globe className="w-3 h-3 text-emerald-400" />
+                  <span className="font-semibold">{domain}</span>
+                  <FileText className="w-3 h-3 text-emerald-400" />
+                </button>
+                {siteNote && (
+                  <span className="text-[11px] text-slate-400 truncate max-w-sm italic">
+                    "{siteNote}"
+                  </span>
                 )}
-              </p>
+              </div>
             </div>
           </div>
 
@@ -500,9 +550,37 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                   <span className="text-slate-400 text-[11px] font-semibold uppercase">Total Revenue</span>
                   <p className="text-lg font-extrabold text-emerald-400 mt-1">{formatCurrency(activeRev)}</p>
                 </div>
-                <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl">
-                  <span className="text-slate-400 text-[11px] font-semibold uppercase">Total Spend</span>
-                  <p className="text-lg font-extrabold text-rose-400 mt-1">{formatCurrency(activeSpend)}</p>
+                <div
+                  onClick={handleOpenGAds}
+                  title={primaryAccount ? `Buka Google Ads Campaigns (${primaryAccount.customer_id}${primaryAccount.ocid ? ` • OCID: ${primaryAccount.ocid}` : ''}) di tab baru` : "Buka Google Ads Campaigns di tab baru"}
+                  className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-rose-500/50 p-4 rounded-xl transition-all cursor-pointer group shadow-sm hover:shadow-md hover:shadow-rose-500/10 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 text-[11px] font-semibold uppercase flex items-center gap-1">
+                        <span>Total Spend</span>
+                        <span className="text-[10px] text-rose-400/80 font-normal lowercase">(Google Ads)</span>
+                      </span>
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-rose-400 transition-colors shrink-0" />
+                    </div>
+                    <p className="text-lg font-extrabold text-rose-400 mt-1">{formatCurrency(activeSpend)}</p>
+                  </div>
+                  {primaryAccount && (
+                    <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-slate-700/40 text-[10px] text-slate-400 font-mono">
+                      <span className="group-hover:text-sky-300 transition-colors underline decoration-dotted">
+                        {primaryAccount.customer_id}
+                      </span>
+                      {primaryAccount.ocid ? (
+                        <span className="px-1.5 py-0.5 rounded bg-sky-950/80 text-sky-300 border border-sky-800/50 text-[9px] font-bold">
+                          OCID: {primaryAccount.ocid}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-slate-500">
+                          (Klik untuk buka)
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl">
                   <span className="text-slate-400 text-[11px] font-semibold uppercase">Net Profit</span>
@@ -1034,6 +1112,18 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
               onNoteUpdate(dom, newNote);
             }
           }}
+        />
+      )}
+
+      {redirectModalData && (
+        <GoogleAdsRedirectModal
+          isOpen={Boolean(redirectModalData)}
+          onClose={() => setRedirectModalData(null)}
+          customerId={redirectModalData.customerId}
+          domain={redirectModalData.domain}
+          balance={redirectModalData.balance}
+          ocid={redirectModalData.ocid}
+          mccId={mccId}
         />
       )}
     </div>
