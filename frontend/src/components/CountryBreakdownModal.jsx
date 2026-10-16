@@ -423,7 +423,12 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
             <div>
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 {selectedCountry ? (
-                  <span>Ad Unit Performance Report - {selectedCountry.flag_emoji} {selectedCountry.country}</span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span>Ad Unit Performance Report</span>
+                    <span className="text-xs px-2.5 py-0.5 font-medium rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      {selectedCountry.flag_emoji} {selectedCountry.country}
+                    </span>
+                  </span>
                 ) : (
                   <span>Domain Country Performance Breakdown</span>
                 )}
@@ -509,10 +514,11 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
             {selectedCountry && (
               <button
                 onClick={handleBackToCountries}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white transition-all border border-emerald-500/30 flex items-center space-x-1.5 cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700 flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                title="Back to Country Breakdown"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>← Back to Country List</span>
+                <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Back to Countries</span>
               </button>
             )}
 

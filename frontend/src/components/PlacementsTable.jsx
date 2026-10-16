@@ -188,17 +188,23 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
   return (
     <div className="-mx-1.5 sm:mx-0 bg-slate-800 border-x-0 sm:border-x border-y border-slate-700/60 rounded-none sm:rounded-2xl shadow-sm">
       <div className="px-3 py-3.5 sm:p-5 border-b border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
             <LayoutGrid className="w-5 h-5 text-indigo-400" />
-            <span>Performance Report by Placement (Ad Unit)</span>
-          </h3>
-          <p className="text-slate-400 text-xs mt-0.5">
-            Ad Exchange earnings, eCPM, and impressions per specific ad placement
-            {startDate && endDate && (
-              <> &bull; <span className="text-indigo-300 font-medium">{formatDisplayDate(startDate, endDate)}</span></>
-            )}
-          </p>
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Ad Unit Performance Report
+              </h3>
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full shrink-0">
+                {filteredPlacements.length} Units
+              </span>
+            </div>
+            <p className="text-slate-400 text-xs mt-0.5">
+              Ad Exchange earnings, eCPM, and impressions breakdown
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
@@ -235,10 +241,10 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
             <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search placement..."
+              placeholder="Search ad unit..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg focus:outline-none focus:border-sky-500 w-full sm:w-48"
+              className="bg-slate-900 border border-slate-700 text-xs text-white pl-8 pr-3 py-1.5 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 w-full sm:w-48 transition-all"
             />
           </div>
 
@@ -248,10 +254,6 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
             onToggleColumn={handleToggleColumn}
             onResetColumns={handleResetColumns}
           />
-
-          <span className="text-xs font-semibold px-2.5 py-1 bg-slate-700 text-slate-300 rounded-lg shrink-0">
-            {filteredPlacements.length} Placements
-          </span>
         </div>
       </div>
 
