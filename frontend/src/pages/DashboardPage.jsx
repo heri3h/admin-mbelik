@@ -236,7 +236,15 @@ export default function DashboardPage() {
                 mccId={summary?.gads_login_customer_id || '440-015-1880'}
               />
             )}
-            {activeReportTab === 'placements' && <PlacementsTable placements={placements} />}
+            {activeReportTab === 'placements' && (
+              <PlacementsTable
+                placements={placements}
+                startDate={startDate}
+                endDate={endDate}
+                onDateChange={handleFilterChange}
+                loading={isRefreshing}
+              />
+            )}
             {activeReportTab === 'accounts' && (
               <AccountsTable
                 accounts={accounts}

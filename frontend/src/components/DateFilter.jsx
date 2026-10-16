@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Filter } from 'lucide-react';
+import { Calendar, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function DateFilter({ startDate, endDate, onFilterChange }) {
   const [preset, setPreset] = useState('yesterday'); // 'today', 'yesterday', '7d', '30d', 'month', 'custom'
@@ -11,6 +11,35 @@ export default function DateFilter({ startDate, endDate, onFilterChange }) {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = formatLocalDate(new Date());
+  const isAtToday = endDate >= todayStr;
+
+  const handlePrevDay = () => {
+    const parts = (startDate || todayStr).split('-').map(Number);
+    const baseDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    baseDate.setDate(baseDate.getDate() - 1);
+    const dStr = formatLocalDate(baseDate);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = formatLocalDate(yesterday);
+    setPreset(dStr === yStr ? 'yesterday' : 'custom');
+    setCustomStart(dStr);
+    setCustomEnd(dStr);
+    onFilterChange(dStr, dStr);
+  };
+
+  const handleNextDay = () => {
+    if (isAtToday) return;
+    const parts = (endDate || todayStr).split('-').map(Number);
+    const baseDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    baseDate.setDate(baseDate.getDate() + 1);
+    const dStr = formatLocalDate(baseDate);
+    setPreset(dStr === todayStr ? 'today' : 'custom');
+    setCustomStart(dStr);
+    setCustomEnd(dStr);
+    onFilterChange(dStr, dStr);
   };
 
   const handlePresetSelect = (selectedPreset) => {
@@ -59,6 +88,27 @@ export default function DateFilter({ startDate, endDate, onFilterChange }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        {/* Daily Navigation Stepper */}
+        <div className="flex items-center bg-slate-900/90 border border-slate-700/80 rounded-xl p-0.5 text-xs shadow-sm">
+          <button
+            type="button"
+            onClick={handlePrevDay}
+            title="Hari Sebelumnya (H-1)"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleNextDay}
+            disabled={isAtToday}
+            title={isAtToday ? "Sudah hari ini" : "Hari Berikutnya (H+1)"}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
         <button
           onClick={() => handlePresetSelect('today')}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${

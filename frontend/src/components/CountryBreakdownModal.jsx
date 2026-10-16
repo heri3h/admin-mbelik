@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Globe, TrendingUp, TrendingDown, Search, ArrowLeft, Loader2, Layers, FileText } from 'lucide-react';
+import { X, Globe, TrendingUp, TrendingDown, Search, ArrowLeft, Loader2, Layers, FileText, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import api, { dashboardService } from '../services/api';
 import ColumnToggleDropdown from './ColumnToggleDropdown';
 import SiteNoteModal from './SiteNoteModal';
@@ -37,17 +37,60 @@ const formatPricingRuleName = (rule) => {
   return rule;
 };
 
+const parseYMD = (str) => {
+  if (!str) return new Date();
+  const parts = str.split('-').map(Number);
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+};
+
+const formatYMD = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatDisplayDate = (startStr, endStr) => {
+  if (!startStr) return '';
+  const todayStr = formatYMD(new Date());
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = formatYMD(yesterday);
+
+  const formatSingle = (s) => {
+    const [y, m, d] = s.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  if (startStr === endStr) {
+    const formatted = formatSingle(startStr);
+    if (startStr === todayStr) return `${formatted} (Hari Ini)`;
+    if (startStr === yesterdayStr) return `${formatted} (Kemarin)`;
+    return formatted;
+  }
+
+  return `${formatSingle(startStr)} - ${formatSingle(endStr)}`;
+};
+
 export default function CountryBreakdownModal({ domain, startDate, endDate, onClose, onNoteUpdate }) {
   const [countries, setCountries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentStartDate, setCurrentStartDate] = useState(startDate);
+  const [currentEndDate, setCurrentEndDate] = useState(endDate);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [siteNote, setSiteNote] = useState('');
+
+  useEffect(() => {
+    setCurrentStartDate(startDate);
+    setCurrentEndDate(endDate);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     const fetchNote = async () => {
       try {
         const res = await api.get('/api/dashboard/sites', {
-          params: { start_date: startDate, end_date: endDate }
+          params: { start_date: currentStartDate, end_date: currentEndDate }
         });
         if (res.data && Array.isArray(res.data)) {
           const matched = res.data.find(s => s.domain === domain);
@@ -60,7 +103,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     if (domain) {
       fetchNote();
     }
-  }, [domain, startDate, endDate]);
+  }, [domain, currentStartDate, currentEndDate]);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deviceFilter, setDeviceFilter] = useState('all');
@@ -134,12 +177,34 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     }
   };
 
+  const todayStr = formatYMD(new Date());
+  const isAtToday = currentEndDate >= todayStr;
+  const isNextDisabled = isAtToday || loading || loadingAdUnits;
+  const isPrevDisabled = loading || loadingAdUnits;
+
+  const handlePrevDay = () => {
+    const d = parseYMD(currentStartDate);
+    d.setDate(d.getDate() - 1);
+    const newStr = formatYMD(d);
+    setCurrentStartDate(newStr);
+    setCurrentEndDate(newStr);
+  };
+
+  const handleNextDay = () => {
+    if (isAtToday) return;
+    const d = parseYMD(currentEndDate);
+    d.setDate(d.getDate() + 1);
+    const newStr = formatYMD(d);
+    setCurrentStartDate(newStr);
+    setCurrentEndDate(newStr);
+  };
+
   useEffect(() => {
     const fetchCountryData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await dashboardService.getSiteCountries(domain, startDate, endDate, deviceFilter);
+        const data = await dashboardService.getSiteCountries(domain, currentStartDate, currentEndDate, deviceFilter);
         setCountries(data || []);
       } catch (err) {
         console.error('Failed fetching site country metrics', err);
@@ -152,7 +217,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     if (domain) {
       fetchCountryData();
     }
-  }, [domain, startDate, endDate, deviceFilter]);
+  }, [domain, currentStartDate, currentEndDate, deviceFilter]);
 
   useEffect(() => {
     const fetchAdUnits = async () => {
@@ -162,7 +227,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
       }
       setLoadingAdUnits(true);
       try {
-        const data = await dashboardService.getSiteCountryPlacements(domain, selectedCountry.country, startDate, endDate, deviceFilter);
+        const data = await dashboardService.getSiteCountryPlacements(domain, selectedCountry.country, currentStartDate, currentEndDate, deviceFilter);
         setAdUnits(data || []);
       } catch (err) {
         console.error('Failed fetching ad unit placement data', err);
@@ -173,7 +238,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     };
 
     fetchAdUnits();
-  }, [selectedCountry, domain, startDate, endDate, deviceFilter]);
+  }, [selectedCountry, domain, currentStartDate, currentEndDate, deviceFilter]);
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('id-ID', {
@@ -325,16 +390,44 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
               </h2>
               <p className="text-slate-400 text-xs mt-0.5">
                 {selectedCountry ? (
-                  <span>Ad Unit details for country <strong className="text-white">{selectedCountry.country}</strong> ({startDate} to {endDate})</span>
+                  <span>Ad Unit details for country <strong className="text-white">{selectedCountry.country}</strong> &bull; <span className="text-sky-300 font-medium">{formatDisplayDate(currentStartDate, currentEndDate)}</span></span>
                 ) : (
-                  <span>Click on any country row to view ad unit breakdown for that country. ({startDate} to {endDate})</span>
+                  <span>Click on any country row to view ad unit breakdown &bull; <span className="text-sky-300 font-medium">{formatDisplayDate(currentStartDate, currentEndDate)}</span></span>
                 )}
               </p>
             </div>
           </div>
 
           {/* Top Actions Header */}
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Daily Date Navigation Stepper with icons */}
+            <div className="flex items-center bg-slate-900/90 border border-slate-700/70 rounded-xl p-0.5 text-xs shadow-sm">
+              <button
+                type="button"
+                onClick={handlePrevDay}
+                disabled={isPrevDisabled}
+                title="Hari Sebelumnya (H-1)"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center space-x-1.5 px-2.5 py-0.5 font-mono text-xs font-semibold text-slate-200">
+                <Calendar className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                <span className="whitespace-nowrap">{formatDisplayDate(currentStartDate, currentEndDate)}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNextDay}
+                disabled={isNextDisabled}
+                title={isAtToday ? "Sudah hari ini" : "Hari Berikutnya (H+1)"}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
             <div className="flex items-center space-x-1 bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 text-xs">
               <button
                 onClick={() => setDeviceFilter('all')}

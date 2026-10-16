@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutGrid, Search, TrendingUp, TrendingDown } from 'lucide-react';
+import { LayoutGrid, Search, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import ColumnToggleDropdown from './ColumnToggleDropdown';
 
 const ALL_COLUMNS = [
@@ -23,7 +23,43 @@ const formatPricingRuleName = (rule) => {
   return rule;
 };
 
-export default function PlacementsTable({ placements }) {
+const parseYMD = (str) => {
+  if (!str) return new Date();
+  const parts = str.split('-').map(Number);
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+};
+
+const formatYMD = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatDisplayDate = (startStr, endStr) => {
+  if (!startStr) return '';
+  const todayStr = formatYMD(new Date());
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = formatYMD(yesterday);
+
+  const formatSingle = (s) => {
+    const [y, m, d] = s.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  if (startStr === endStr) {
+    const formatted = formatSingle(startStr);
+    if (startStr === todayStr) return `${formatted} (Hari Ini)`;
+    if (startStr === yesterdayStr) return `${formatted} (Kemarin)`;
+    return formatted;
+  }
+
+  return `${formatSingle(startStr)} - ${formatSingle(endStr)}`;
+};
+
+export default function PlacementsTable({ placements, startDate, endDate, onDateChange, loading }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState('total_revenue');
   const [sortDirection, setSortDirection] = useState('desc');
@@ -40,6 +76,27 @@ export default function PlacementsTable({ placements }) {
     } catch (e) {}
     return ALL_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
   });
+
+  const todayStr = formatYMD(new Date());
+  const isAtToday = endDate >= todayStr;
+  const isNextDisabled = isAtToday || loading;
+  const isPrevDisabled = loading;
+
+  const handlePrevDay = () => {
+    if (!onDateChange || !startDate) return;
+    const d = parseYMD(startDate);
+    d.setDate(d.getDate() - 1);
+    const newDate = formatYMD(d);
+    onDateChange(newDate, newDate);
+  };
+
+  const handleNextDay = () => {
+    if (!onDateChange || !endDate || isAtToday) return;
+    const d = parseYMD(endDate);
+    d.setDate(d.getDate() + 1);
+    const newDate = formatYMD(d);
+    onDateChange(newDate, newDate);
+  };
 
   const handleToggleColumn = (key) => {
     setVisibleColumns(prev => {
@@ -136,10 +193,44 @@ export default function PlacementsTable({ placements }) {
             <LayoutGrid className="w-5 h-5 text-indigo-400" />
             <span>Performance Report by Placement (Ad Unit)</span>
           </h3>
-          <p className="text-slate-400 text-xs mt-0.5">Ad Exchange earnings, eCPM, and impressions per specific ad placement</p>
+          <p className="text-slate-400 text-xs mt-0.5">
+            Ad Exchange earnings, eCPM, and impressions per specific ad placement
+            {startDate && endDate && (
+              <> &bull; <span className="text-indigo-300 font-medium">{formatDisplayDate(startDate, endDate)}</span></>
+            )}
+          </p>
         </div>
 
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {startDate && endDate && onDateChange && (
+            <div className="flex items-center bg-slate-900/90 border border-slate-700/70 rounded-xl p-0.5 text-xs shadow-sm">
+              <button
+                type="button"
+                onClick={handlePrevDay}
+                disabled={isPrevDisabled}
+                title="Hari Sebelumnya (H-1)"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center space-x-1.5 px-2.5 py-0.5 font-mono text-xs font-semibold text-slate-200">
+                <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="whitespace-nowrap">{formatDisplayDate(startDate, endDate)}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNextDay}
+                disabled={isNextDisabled}
+                title={isAtToday ? "Sudah hari ini" : "Hari Berikutnya (H+1)"}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <div className="relative flex-1 sm:flex-initial">
             <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
             <input
