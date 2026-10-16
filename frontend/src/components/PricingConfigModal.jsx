@@ -43,7 +43,7 @@ export default function PricingConfigModal({ isOpen, onClose }) {
   const [formatSettings, setFormatSettings] = useState({
     interstitial: { multiplier: 1.1, high_mr_threshold: 75.0 },
     anchor: { multiplier: 1.1, high_mr_threshold: 65.0 },
-    banner: { multiplier: 1.1, high_mr_threshold: 65.0 }
+    banner: { multiplier: 1.05, high_mr_threshold: 70.0 }
   });
 
   const [adjustments, setAdjustments] = useState({
@@ -99,8 +99,8 @@ export default function PricingConfigModal({ isOpen, onClose }) {
               high_mr_threshold: data.format_settings.anchor?.high_mr_threshold ?? 65.0
             },
             banner: {
-              multiplier: data.format_settings.banner?.multiplier ?? 1.1,
-              high_mr_threshold: data.format_settings.banner?.high_mr_threshold ?? 65.0
+              multiplier: data.format_settings.banner?.multiplier ?? 1.05,
+              high_mr_threshold: data.format_settings.banner?.high_mr_threshold ?? 70.0
             }
           });
         }
@@ -448,13 +448,13 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                       <label className="block text-[10px] font-semibold text-slate-300 mb-1">CPM Multiplier</label>
                       <input
                         type="number"
-                        step="0.1"
+                        step="0.05"
                         min="0.5"
                         max="3.0"
-                        value={formatSettings.anchor?.multiplier ?? 1.2}
+                        value={formatSettings.anchor?.multiplier ?? 1.1}
                         onChange={(e) => setFormatSettings({
                           ...formatSettings,
-                          anchor: { ...formatSettings.anchor, multiplier: parseFloat(e.target.value) || 1.0 }
+                          anchor: { ...formatSettings.anchor, multiplier: parseFloat(e.target.value) || 1.1 }
                         })}
                         className="w-full px-2.5 py-1 bg-slate-950 border border-emerald-500/50 rounded-lg text-xs text-emerald-300 font-mono font-bold focus:outline-none focus:border-emerald-400"
                       />
@@ -486,13 +486,13 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                       <label className="block text-[10px] font-semibold text-slate-300 mb-1">CPM Multiplier</label>
                       <input
                         type="number"
-                        step="0.1"
+                        step="0.05"
                         min="0.5"
                         max="3.0"
-                        value={formatSettings.banner?.multiplier ?? 1.0}
+                        value={formatSettings.banner?.multiplier ?? 1.05}
                         onChange={(e) => setFormatSettings({
                           ...formatSettings,
-                          banner: { ...formatSettings.banner, multiplier: parseFloat(e.target.value) || 1.0 }
+                          banner: { ...formatSettings.banner, multiplier: parseFloat(e.target.value) || 1.05 }
                         })}
                         className="w-full px-2.5 py-1 bg-slate-950 border border-sky-500/50 rounded-lg text-xs text-sky-300 font-mono font-bold focus:outline-none focus:border-sky-400"
                       />
@@ -504,10 +504,10 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                         step="1"
                         min="30"
                         max="95"
-                        value={formatSettings.banner?.high_mr_threshold ?? 85.0}
+                        value={formatSettings.banner?.high_mr_threshold ?? 70.0}
                         onChange={(e) => setFormatSettings({
                           ...formatSettings,
-                          banner: { ...formatSettings.banner, high_mr_threshold: parseFloat(e.target.value) || 85.0 }
+                          banner: { ...formatSettings.banner, high_mr_threshold: parseFloat(e.target.value) || 70.0 }
                         })}
                         className="w-full px-2.5 py-1 bg-slate-950 border border-sky-500/50 rounded-lg text-xs text-sky-300 font-mono font-bold focus:outline-none focus:border-sky-400"
                       />

@@ -1262,8 +1262,8 @@ DEFAULT_PRICING_CONFIG = {
             "high_mr_threshold": 65.0
         },
         "banner": {
-            "multiplier": 1.1,
-            "high_mr_threshold": 65.0
+            "multiplier": 1.05,
+            "high_mr_threshold": 70.0
         }
     },
     "adjustments": {
