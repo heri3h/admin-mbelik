@@ -120,21 +120,21 @@ export default function SettingsPage({ onOpenPricingModal }) {
 
     // 1. Both domain and path match another entry -> BLOCKED
     if (sameDomain && samePath && sameDomain.id === samePath.id) {
-      setExportError(`Target export untuk domain "${cleanDomain}" dengan target path "${cleanPath}" yang sama persis sudah terdaftar.`);
+      setExportError(`Export target for domain "${cleanDomain}" with the exact same target path "${cleanPath}" is already registered.`);
       setEditWarningBypass(false);
       return;
     }
 
     // 2. Exact Domain matches another entry
     if (sameDomain && !editWarningBypass) {
-      setExportError(`⚠️ Peringatan: Domain "${cleanDomain}" sudah terdaftar pada target lain (Path: ${sameDomain.target_filepath}). Klik "Save Changes" sekali lagi jika Anda yakin ingin mengubah ke domain ini.`);
+      setExportError(`⚠️ Warning: Domain "${cleanDomain}" is already registered on another target (Path: ${sameDomain.target_filepath}). Click "Save Changes" once more if you are sure you want to change to this domain.`);
       setEditWarningBypass(true);
       return;
     }
 
     // 3. Exact Target Path matches another entry
     if (samePath && !editWarningBypass) {
-      setExportError(`⚠️ Peringatan: Target path "${cleanPath}" sudah digunakan oleh domain "${samePath.domain}". File JSON di lokasi ini akan tertindih. Klik "Save Changes" sekali lagi jika Anda yakin.`);
+      setExportError(`⚠️ Warning: Target path "${cleanPath}" is already in use by domain "${samePath.domain}". The JSON file at this location will be overwritten. Click "Save Changes" once more if you are sure.`);
       setEditWarningBypass(true);
       return;
     }
@@ -211,21 +211,21 @@ export default function SettingsPage({ onOpenPricingModal }) {
 
     // 1. Both domain and path are identical -> BLOCKED
     if (sameDomain && samePath && sameDomain.id === samePath.id) {
-      setExportError(`Target export untuk domain "${cleanDomain}" dengan target path "${cleanPath}" yang sama persis sudah terdaftar.`);
+      setExportError(`Export target for domain "${cleanDomain}" with the exact same target path "${cleanPath}" is already registered.`);
       setAddWarningBypass(false);
       return;
     }
 
     // 2. Exact Domain matches another entry
     if (sameDomain && !addWarningBypass) {
-      setExportError(`⚠️ Peringatan: Domain "${cleanDomain}" sudah terdaftar pada target lain (Path: ${sameDomain.target_filepath}). Klik "Add Target" sekali lagi jika Anda yakin ingin membuat target kedua untuk domain yang sama ini.`);
+      setExportError(`⚠️ Warning: Domain "${cleanDomain}" is already registered on another target (Path: ${sameDomain.target_filepath}). Click "Add Target" once more if you are sure you want to create a second target for this domain.`);
       setAddWarningBypass(true);
       return;
     }
 
     // 3. Exact Target Path matches another entry
     if (samePath && !addWarningBypass) {
-      setExportError(`⚠️ Peringatan: Target path "${cleanPath}" sudah digunakan oleh domain "${samePath.domain}". File JSON di lokasi ini akan tertindih. Klik "Add Target" sekali lagi jika Anda yakin.`);
+      setExportError(`⚠️ Warning: Target path "${cleanPath}" is already in use by domain "${samePath.domain}". The JSON file at this location will be overwritten. Click "Add Target" once more if you are sure.`);
       setAddWarningBypass(true);
       return;
     }

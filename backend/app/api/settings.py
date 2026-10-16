@@ -29,23 +29,23 @@ def get_settings_status(
     missing = []
 
     if settings.USE_MOCK_DATA:
-        missing.append("USE_MOCK_DATA di .env masih diset ke 'true'")
+        missing.append("USE_MOCK_DATA in .env is still set to 'true'")
 
     # Google Ads checks
     if settings.is_placeholder(settings.GOOGLE_ADS_DEVELOPER_TOKEN):
-        missing.append("GOOGLE_ADS_DEVELOPER_TOKEN belum diisi / masih placeholder")
+        missing.append("GOOGLE_ADS_DEVELOPER_TOKEN is not configured / placeholder")
     if settings.is_placeholder(settings.GOOGLE_ADS_CLIENT_ID):
-        missing.append("GOOGLE_ADS_CLIENT_ID belum diisi / masih placeholder")
+        missing.append("GOOGLE_ADS_CLIENT_ID is not configured / placeholder")
     if settings.is_placeholder(settings.GOOGLE_ADS_CLIENT_SECRET):
-        missing.append("GOOGLE_ADS_CLIENT_SECRET belum diisi / masih placeholder")
+        missing.append("GOOGLE_ADS_CLIENT_SECRET is not configured / placeholder")
     if settings.is_placeholder(settings.GOOGLE_ADS_REFRESH_TOKEN):
-        missing.append("GOOGLE_ADS_REFRESH_TOKEN belum diisi / masih placeholder")
+        missing.append("GOOGLE_ADS_REFRESH_TOKEN is not configured / placeholder")
     if settings.is_placeholder(settings.GOOGLE_ADS_CUSTOMER_IDS):
-        missing.append("GOOGLE_ADS_CUSTOMER_IDS belum diisi / masih placeholder")
+        missing.append("GOOGLE_ADS_CUSTOMER_IDS is not configured / placeholder")
 
     # GAM checks
     if settings.is_placeholder(settings.GAM_NETWORK_CODE):
-        missing.append("GAM_NETWORK_CODE belum diisi / masih placeholder")
+        missing.append("GAM_NETWORK_CODE is not configured / placeholder")
     
     json_path = settings.GAM_JSON_KEY_FILE_PATH
     if json_path and not os.path.isabs(json_path):
@@ -58,7 +58,7 @@ def get_settings_status(
         and not settings.is_placeholder(settings.GAM_REFRESH_TOKEN)
     )
     if not (has_json or has_oauth):
-        missing.append("GAM Service Account JSON file (gam_service_account.json) tidak ditemukan & OAuth GAM belum lengkap")
+        missing.append("GAM Service Account JSON file (gam_service_account.json) not found & GAM OAuth incomplete")
 
     # Combine Customer IDs from DB and .env
     db_accounts = db.query(GoogleAdsAccount).all()
@@ -149,7 +149,7 @@ def create_google_ads_account(
     clean_cid = acc_data.customer_id.strip()
     existing = db.query(GoogleAdsAccount).filter(GoogleAdsAccount.customer_id == clean_cid).first()
     if existing:
-        raise HTTPException(status_code=400, detail=f"Google Ads Account ID {clean_cid} sudah terdaftar.")
+        raise HTTPException(status_code=400, detail=f"Google Ads Account ID {clean_cid} is already registered.")
 
     new_acc = GoogleAdsAccount(
         customer_id=clean_cid,
@@ -171,7 +171,7 @@ def update_google_ads_account(
 ):
     acc = db.query(GoogleAdsAccount).filter(GoogleAdsAccount.id == account_id).first()
     if not acc:
-        raise HTTPException(status_code=404, detail="Google Ads Account tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="Google Ads Account not found.")
 
     fields_set = getattr(acc_data, "model_fields_set", getattr(acc_data, "__fields_set__", set()))
 
@@ -197,11 +197,11 @@ def delete_google_ads_account(
 ):
     acc = db.query(GoogleAdsAccount).filter(GoogleAdsAccount.id == account_id).first()
     if not acc:
-        raise HTTPException(status_code=404, detail="Google Ads Account tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="Google Ads Account not found.")
 
     db.delete(acc)
     db.commit()
-    return {"status": "success", "message": f"Google Ads Account ID {acc.customer_id} berhasil dihapus."}
+    return {"status": "success", "message": f"Google Ads Account ID {acc.customer_id} deleted successfully."}
 
 @router.get("/available-domains", response_model=List[str])
 def get_available_domains(
@@ -281,7 +281,7 @@ def create_export_target(
     if existing_target:
         raise HTTPException(
             status_code=400,
-            detail=f"Target export untuk domain '{clean_domain}' dengan path '{clean_path}' yang sama persis sudah ada."
+            detail=f"Export target for domain '{clean_domain}' with path '{clean_path}' is already registered."
         )
 
     new_target = JSONExportTarget(
@@ -336,7 +336,7 @@ def update_export_target(
 ):
     target = db.query(JSONExportTarget).filter(JSONExportTarget.id == target_id).first()
     if not target:
-        raise HTTPException(status_code=404, detail="JSON Export Target tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="JSON Export Target not found.")
 
     check_domain = target_data.domain.strip() if target_data.domain is not None else target.domain
     check_path = target_data.target_filepath.strip() if target_data.target_filepath is not None else target.target_filepath
@@ -349,7 +349,7 @@ def update_export_target(
     if existing_target:
         raise HTTPException(
             status_code=400,
-            detail=f"Target export untuk domain '{check_domain}' dengan path '{check_path}' yang sama persis sudah ada."
+            detail=f"Export target for domain '{check_domain}' with path '{check_path}' is already registered."
         )
 
     if target_data.domain is not None:
@@ -413,11 +413,11 @@ def delete_export_target(
 ):
     target = db.query(JSONExportTarget).filter(JSONExportTarget.id == target_id).first()
     if not target:
-        raise HTTPException(status_code=404, detail="JSON Export Target tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="JSON Export Target not found.")
 
     db.delete(target)
     db.commit()
-    return {"status": "success", "message": f"Export target untuk {target.domain} berhasil dihapus."}
+    return {"status": "success", "message": f"Export target for {target.domain} deleted successfully."}
 
 @router.post("/export-targets/{target_id}/test")
 def test_export_target(
@@ -428,7 +428,7 @@ def test_export_target(
     from app.services.sync import export_site_today_json
     target = db.query(JSONExportTarget).filter(JSONExportTarget.id == target_id).first()
     if not target:
-        raise HTTPException(status_code=404, detail="JSON Export Target tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="JSON Export Target not found.")
 
     try:
         export_site_today_json(
@@ -439,9 +439,9 @@ def test_export_target(
             end_hour=target.end_hour,
             force=True
         )
-        return {"status": "success", "message": f"Uji coba export JSON untuk {target.domain} berhasil disimpan ke {target.target_filepath}"}
+        return {"status": "success", "message": f"Test JSON export for {target.domain} successfully saved to {target.target_filepath}"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Gagal mengekspor JSON: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export JSON: {str(e)}")
 
 # GAM Auto Pricing Config Endpoints
 @router.get("/pricing-config", response_model=PricingConfigSchema)

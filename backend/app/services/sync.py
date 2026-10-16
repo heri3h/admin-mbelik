@@ -228,7 +228,7 @@ class SyncService:
                 err_msg = str(e)
                 logger.error(f"Google Ads API Error: {err_msg}")
                 if "test accounts" in err_msg.lower():
-                    messages.append("Google Ads: Developer Token masih level Test Account. Ajukan Basic Access di Google Ads API Center untuk akses akun live.")
+                    messages.append("Google Ads: Developer Token is test account level. Apply for Basic Access in Google Ads API Center for live account access.")
                 else:
                     messages.append(f"Google Ads API Error: {err_msg}")
 
@@ -464,7 +464,7 @@ class SyncService:
             logger.warning(f"Error auto-exporting site JSON targets: {e}")
 
         status_str = "warning" if messages else "success"
-        message_str = " | ".join(messages) if messages else f"Berhasil menyinkronkan data dari {start_date} hingga {end_date}"
+        message_str = " | ".join(messages) if messages else f"Successfully synced data from {start_date} to {end_date}"
 
         return {
             "status": status_str,

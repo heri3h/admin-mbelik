@@ -13,7 +13,7 @@ export default function SummaryCards({ data }) {
   };
 
   const isProfitable = data.net_profit >= 0;
-  const compLabel = data.comparison_period_label || 'vs kemarin';
+  const compLabel = data.comparison_period_label || 'vs yesterday';
 
   const renderDeltaBadge = (pct, label, invertColors = false) => {
     if (pct === undefined || pct === null) return null;

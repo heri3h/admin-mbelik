@@ -41,15 +41,15 @@ export default function SyncButton({ startDate, endDate, onSyncSuccess }) {
   const handleClearCache = async () => {
     setIsOpen(false);
     setClearingCache(true);
-    setStatusMsg({ type: 'warning', text: 'Sedang menghapus cache & menarik data baru...' });
+    setStatusMsg({ type: 'warning', text: 'Clearing cache & pulling fresh data...' });
     try {
       const res = await dashboardService.clearCache();
-      setStatusMsg({ type: res.status === 'error' ? 'error' : 'success', text: res.message || 'Cache Berhasil Dihapus & Re-synced' });
+      setStatusMsg({ type: res.status === 'error' ? 'error' : 'success', text: res.message || 'Cache cleared & re-synced successfully' });
       if (onSyncSuccess) {
         await onSyncSuccess();
       }
     } catch (err) {
-      setStatusMsg({ type: 'error', text: 'Gagal menghapus cache & re-sync.' });
+      setStatusMsg({ type: 'error', text: 'Failed to clear cache & re-sync.' });
     } finally {
       setClearingCache(false);
       setTimeout(() => setStatusMsg(null), 6000);
@@ -101,7 +101,7 @@ export default function SyncButton({ startDate, endDate, onSyncSuccess }) {
             </div>
             <div>
               <div className="text-xs font-bold text-slate-200 group-hover:text-sky-300">Sync Data</div>
-              <div className="text-[10px] text-slate-400">Tarik data API terbaru GAM & Google Ads</div>
+              <div className="text-[10px] text-slate-400">Fetch latest API data from GAM & Google Ads</div>
             </div>
           </button>
 
@@ -115,7 +115,7 @@ export default function SyncButton({ startDate, endDate, onSyncSuccess }) {
             </div>
             <div>
               <div className="text-xs font-bold text-slate-200 group-hover:text-rose-300">Clear Cache & Re-sync</div>
-              <div className="text-[10px] text-slate-400">Hapus cache database & muat ulang data</div>
+              <div className="text-[10px] text-slate-400">Clear database cache & reload fresh data</div>
             </div>
           </button>
         </div>

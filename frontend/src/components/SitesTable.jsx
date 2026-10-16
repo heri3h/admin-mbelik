@@ -503,7 +503,7 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
                       <button
                         type="button"
                         onClick={() => handleOpenNoteModal(site.domain, site.note)}
-                        title={site.note ? site.note : "Tambah Catatan Optimasi"}
+                        title={site.note ? site.note : "Add Optimization Note"}
                         className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-700/60 rounded-lg transition-colors cursor-pointer"
                       >
                         <FileText className="w-4 h-4" />

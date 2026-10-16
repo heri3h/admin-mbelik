@@ -35,7 +35,7 @@ def trigger_sync(
     except Exception as e:
         return SyncResponse(
             status="error",
-            message=f"Gagal menyinkronkan data API: {str(e)}",
+            message=f"Failed to sync API data: {str(e)}",
             records_synced=0,
             sync_date_start=d_start.strftime("%Y-%m-%d"),
             sync_date_end=d_end.strftime("%Y-%m-%d"),
@@ -130,7 +130,7 @@ def clear_cache_and_resync(
             
             return SyncResponse(
                 status="success",
-                message=f"Cache berhasil dihapus! {records_count} data 7 hari terakhir telah selesai disinkron ulang dari GAM & Google Ads.",
+                message=f"Cache cleared successfully! {records_count} records for the last 7 days re-synced from GAM & Google Ads.",
                 records_synced=records_count,
                 sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
                 sync_date_end=today.strftime("%Y-%m-%d"),
@@ -141,7 +141,7 @@ def clear_cache_and_resync(
             logger.error(f"Error clearing cache and re-syncing: {e}")
             return SyncResponse(
                 status="error",
-                message=f"Gagal menghapus cache & re-sync: {str(e)}",
+                message=f"Failed to clear cache & re-sync: {str(e)}",
                 records_synced=0,
                 sync_date_start=d_start_7d.strftime("%Y-%m-%d"),
                 sync_date_end=today.strftime("%Y-%m-%d"),
