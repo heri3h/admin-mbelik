@@ -175,9 +175,40 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   const [adUnits, setAdUnits] = useState([]);
   const [loadingAdUnits, setLoadingAdUnits] = useState(false);
 
-  // Table Sort State
-  const [sortColumn, setSortColumn] = useState('revenue');
-  const [sortDirection, setSortDirection] = useState('desc');
+  // Table Sort State for Level 1 (Country) - Persisted in localStorage
+  const [countrySortColumn, setCountrySortColumn] = useState(() => {
+    try {
+      return localStorage.getItem('country_sort_column') || 'revenue';
+    } catch (e) {
+      return 'revenue';
+    }
+  });
+  const [countrySortDirection, setCountrySortDirection] = useState(() => {
+    try {
+      return localStorage.getItem('country_sort_direction') || 'desc';
+    } catch (e) {
+      return 'desc';
+    }
+  });
+
+  // Table Sort State for Level 2 (Ad Unit) - Persisted in localStorage
+  const [adUnitSortColumn, setAdUnitSortColumn] = useState(() => {
+    try {
+      return localStorage.getItem('adunit_sort_column') || 'revenue';
+    } catch (e) {
+      return 'revenue';
+    }
+  });
+  const [adUnitSortDirection, setAdUnitSortDirection] = useState(() => {
+    try {
+      return localStorage.getItem('adunit_sort_direction') || 'desc';
+    } catch (e) {
+      return 'desc';
+    }
+  });
+
+  const activeSortColumn = selectedCountry ? adUnitSortColumn : countrySortColumn;
+  const activeSortDirection = selectedCountry ? adUnitSortDirection : countrySortDirection;
 
   // Column Visibility State (Persisted in localStorage)
   const [level1VisibleCols, setLevel1VisibleCols] = useState(() => {
@@ -311,31 +342,40 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   };
 
   const handleSort = (col) => {
-    if (sortColumn === col) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    if (selectedCountry) {
+      const isSame = adUnitSortColumn === col;
+      const nextDir = isSame ? (adUnitSortDirection === 'asc' ? 'desc' : 'asc') : 'desc';
+      setAdUnitSortColumn(col);
+      setAdUnitSortDirection(nextDir);
+      try {
+        localStorage.setItem('adunit_sort_column', col);
+        localStorage.setItem('adunit_sort_direction', nextDir);
+      } catch (e) {}
     } else {
-      setSortColumn(col);
-      setSortDirection('desc');
+      const isSame = countrySortColumn === col;
+      const nextDir = isSame ? (countrySortDirection === 'asc' ? 'desc' : 'asc') : 'desc';
+      setCountrySortColumn(col);
+      setCountrySortDirection(nextDir);
+      try {
+        localStorage.setItem('country_sort_column', col);
+        localStorage.setItem('country_sort_direction', nextDir);
+      } catch (e) {}
     }
   };
 
   const renderSortIndicator = (col) => {
-    if (sortColumn !== col) return <span className="text-slate-600 ml-1 font-normal opacity-50">↕</span>;
-    return sortDirection === 'asc' ? <span className="text-emerald-400 ml-1 font-bold">↑</span> : <span className="text-emerald-400 ml-1 font-bold">↓</span>;
+    if (activeSortColumn !== col) return <span className="text-slate-600 ml-1 font-normal opacity-50">↕</span>;
+    return activeSortDirection === 'asc' ? <span className="text-emerald-400 ml-1 font-bold">↑</span> : <span className="text-emerald-400 ml-1 font-bold">↓</span>;
   };
 
   const handleCountryClick = (countryObj) => {
     setSelectedCountry(countryObj);
     setSearchTerm('');
-    setSortColumn('revenue');
-    setSortDirection('desc');
   };
 
   const handleBackToCountries = () => {
     setSelectedCountry(null);
     setSearchTerm('');
-    setSortColumn('revenue');
-    setSortDirection('desc');
   };
 
   // Calculations for Summary Cards
@@ -361,13 +401,13 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   );
 
   const sortedCountries = [...filteredCountries].sort((a, b) => {
-    let colKey = sortColumn === 'name' ? 'country' : sortColumn;
+    let colKey = countrySortColumn === 'name' ? 'country' : countrySortColumn;
     let aVal = a[colKey] ?? 0;
     let bVal = b[colKey] ?? 0;
     if (typeof aVal === 'string') {
-      return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      return countrySortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
-    return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    return countrySortDirection === 'asc' ? aVal - bVal : bVal - aVal;
   });
 
   // Level 2: Filter & Sort Ad Units within Selected Country
@@ -383,13 +423,13 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   );
 
   const sortedAdUnits = [...filteredAdUnits].sort((a, b) => {
-    let colKey = sortColumn === 'name' ? 'ad_unit' : sortColumn;
+    let colKey = adUnitSortColumn === 'name' ? 'ad_unit' : adUnitSortColumn;
     let aVal = a[colKey] ?? 0;
     let bVal = b[colKey] ?? 0;
     if (typeof aVal === 'string') {
-      return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      return adUnitSortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
-    return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    return adUnitSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
   });
 
   // Calculate active summary metrics based on Level 1 (All Countries) or Level 2 (Selected Country)
