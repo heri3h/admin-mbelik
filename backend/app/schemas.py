@@ -46,6 +46,8 @@ class SummaryMetrics(BaseModel):
     gam_status: Optional[str] = "live"
     gads_quota_used_pct: Optional[float] = 0.0
     gads_login_customer_id: Optional[str] = None
+    is_full_sync: Optional[bool] = True
+    sync_cycle_type: Optional[str] = "full"
 
 
 

@@ -121,8 +121,23 @@ export default function DashboardPage() {
           </div>
 
           {summary?.last_synced_at && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-800/90 text-emerald-400 border border-emerald-500/30 shadow-sm whitespace-nowrap">
-              <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border shadow-sm whitespace-nowrap transition-colors ${
+                summary?.is_full_sync === false
+                  ? 'bg-amber-950/30 text-amber-400 border-amber-500/40'
+                  : 'bg-slate-800/90 text-emerald-400 border-emerald-500/30'
+              }`}
+              title={
+                summary?.is_full_sync === false
+                  ? 'Siklus 1: Update GAM saja (Google Ads menunggu siklus berikutnya)'
+                  : 'Siklus Full: GAM & Google Ads keduanya sinkron'
+              }
+            >
+              <Clock
+                className={`w-3.5 h-3.5 shrink-0 ${
+                  summary?.is_full_sync === false ? 'text-amber-400' : 'text-emerald-400'
+                }`}
+              />
               <span>{summary.last_synced_at}</span>
             </span>
           )}

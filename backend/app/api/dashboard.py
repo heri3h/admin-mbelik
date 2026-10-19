@@ -285,9 +285,18 @@ def get_summary(
     profit_change_pct = calc_pct_change(net_profit, prev_profit)
     roi_change_pct = round(roi - prev_roi, 1)
 
-    last_sync_utc = db.query(func.max(GAMMetric.synced_at)).scalar()
-    if not last_sync_utc:
-        last_sync_utc = db.query(func.max(GoogleAdsMetric.synced_at)).scalar()
+    last_gam_sync_utc = db.query(func.max(GAMMetric.synced_at)).scalar()
+    last_gads_sync_utc = db.query(func.max(GoogleAdsMetric.synced_at)).scalar()
+    last_sync_utc = last_gam_sync_utc or last_gads_sync_utc
+
+    is_full_sync = True
+    if last_gam_sync_utc and last_gads_sync_utc:
+        diff_sec = (last_gam_sync_utc - last_gads_sync_utc).total_seconds()
+        # If GAM was synced significantly later than GAds (> 10 minutes), it's Siklus 1 (GAM only)
+        if diff_sec > 600:
+            is_full_sync = False
+    elif last_gam_sync_utc and not last_gads_sync_utc:
+        is_full_sync = False
 
     if last_sync_utc:
         last_sync_wib = last_sync_utc + timedelta(hours=7)
@@ -314,6 +323,8 @@ def get_summary(
         period_end=d_end.strftime("%Y-%m-%d"),
         currency=settings.CURRENCY,
         last_synced_at=last_synced_str,
+        is_full_sync=is_full_sync,
+        sync_cycle_type="full" if is_full_sync else "gam_only",
         spend_change_pct=spend_change_pct,
         revenue_change_pct=revenue_change_pct,
         profit_change_pct=profit_change_pct,
