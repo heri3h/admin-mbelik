@@ -772,7 +772,7 @@ class GAMService:
                         report_job_id = report_job['id']
                         
                         attempts = 0
-                        while attempts < 30:
+                        while attempts < 90:
                             job_status = report_service.getReportJobStatus(report_job_id)
                             if job_status == 'COMPLETED':
                                 break
@@ -781,8 +781,8 @@ class GAMService:
                             time.sleep(1)
                             attempts += 1
 
-                        if attempts >= 30:
-                            raise Exception("GAM Report Job Timed Out after 30s")
+                        if attempts >= 90:
+                            raise Exception("GAM Report Job Timed Out after 90s")
 
                         export_format = 'CSV_DUMP'
                         report_download_url = report_service.getReportDownloadUrlWithOptions(
@@ -1141,6 +1141,9 @@ class GAMService:
                 'dimension_sets': [
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'DEVICE_CATEGORY_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME'],
+                    ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
@@ -1159,10 +1162,10 @@ class GAMService:
             {
                 'dimension_sets': [
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME'],
-                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
+                    ['DATE', 'SITE_NAME', 'COUNTRY_NAME'],
                     ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'COUNTRY_NAME']
                 ],
@@ -1202,7 +1205,7 @@ class GAMService:
                         report_job_id = report_job['id']
 
                         attempts = 0
-                        while attempts < 30:
+                        while attempts < 90:
                             job_status = report_service.getReportJobStatus(report_job_id)
                             if job_status == 'COMPLETED':
                                 break
@@ -1211,8 +1214,8 @@ class GAMService:
                             time.sleep(1)
                             attempts += 1
 
-                        if attempts >= 30:
-                            raise Exception("GAM Country Report Job Timed Out after 30s")
+                        if attempts >= 90:
+                            raise Exception("GAM Country Report Job Timed Out after 90s")
 
                         report_download_url = report_service.getReportDownloadUrlWithOptions(
                             report_job_id, 'CSV_DUMP'
