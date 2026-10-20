@@ -41,9 +41,9 @@ export default function PricingConfigModal({ isOpen, onClose }) {
   });
 
   const [formatSettings, setFormatSettings] = useState({
-    interstitial: { multiplier: 1.1, high_mr_threshold: 75.0 },
-    anchor: { multiplier: 1.1, high_mr_threshold: 65.0 },
-    banner: { multiplier: 1.05, high_mr_threshold: 70.0 }
+    interstitial: { multiplier: 1.1, high_mr_threshold: 75.0, emergency_mr_threshold: 50.0 },
+    anchor: { multiplier: 1.1, high_mr_threshold: 65.0, emergency_mr_threshold: 35.0 },
+    banner: { multiplier: 1.05, high_mr_threshold: 70.0, emergency_mr_threshold: 30.0 }
   });
 
   const [adjustments, setAdjustments] = useState({
@@ -92,15 +92,18 @@ export default function PricingConfigModal({ isOpen, onClose }) {
           setFormatSettings({
             interstitial: {
               multiplier: data.format_settings.interstitial?.multiplier ?? 1.1,
-              high_mr_threshold: data.format_settings.interstitial?.high_mr_threshold ?? 75.0
+              high_mr_threshold: data.format_settings.interstitial?.high_mr_threshold ?? 75.0,
+              emergency_mr_threshold: data.format_settings.interstitial?.emergency_mr_threshold ?? 50.0
             },
             anchor: {
               multiplier: data.format_settings.anchor?.multiplier ?? 1.1,
-              high_mr_threshold: data.format_settings.anchor?.high_mr_threshold ?? 65.0
+              high_mr_threshold: data.format_settings.anchor?.high_mr_threshold ?? 65.0,
+              emergency_mr_threshold: data.format_settings.anchor?.emergency_mr_threshold ?? 35.0
             },
             banner: {
               multiplier: data.format_settings.banner?.multiplier ?? 1.05,
-              high_mr_threshold: data.format_settings.banner?.high_mr_threshold ?? 70.0
+              high_mr_threshold: data.format_settings.banner?.high_mr_threshold ?? 70.0,
+              emergency_mr_threshold: data.format_settings.banner?.emergency_mr_threshold ?? 30.0
             }
           });
         }
@@ -422,21 +425,36 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-300 mb-1">High MR Hard Floor Min (%)</label>
+                      <label className="block text-[10px] font-semibold text-purple-300 mb-1">High MR Hard Floor Min (%)</label>
                       <input
                         type="number"
                         step="1"
                         min="30"
                         max="95"
-                        value={formatSettings.interstitial?.high_mr_threshold ?? 70.0}
+                        value={formatSettings.interstitial?.high_mr_threshold ?? 75.0}
                         onChange={(e) => setFormatSettings({
                           ...formatSettings,
-                          interstitial: { ...formatSettings.interstitial, high_mr_threshold: parseFloat(e.target.value) || 70.0 }
+                          interstitial: { ...formatSettings.interstitial, high_mr_threshold: parseFloat(e.target.value) || 75.0 }
                         })}
                         className="w-full px-2.5 py-1 bg-slate-950 border border-purple-500/50 rounded-lg text-xs text-purple-300 font-mono font-bold focus:outline-none focus:border-purple-400"
                       />
                     </div>
-                    <p className="text-[10px] text-purple-300/70 italic">Blocks google_optimize when MR &ge; threshold</p>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-rose-400 mb-1">🚨 Emergency MR Stepdown (%)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="10"
+                        max="80"
+                        value={formatSettings.interstitial?.emergency_mr_threshold ?? 50.0}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          interstitial: { ...formatSettings.interstitial, emergency_mr_threshold: parseFloat(e.target.value) || 50.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-rose-500/50 rounded-lg text-xs text-rose-300 font-mono font-bold focus:outline-none focus:border-rose-400"
+                      />
+                    </div>
+                    <p className="text-[10px] text-purple-300/70 italic">Fallback ke google_optimize jika MR &lt; ambang darurat</p>
                   </div>
 
                   {/* Anchor Controls */}
@@ -474,7 +492,22 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                         className="w-full px-2.5 py-1 bg-slate-950 border border-emerald-500/50 rounded-lg text-xs text-emerald-300 font-mono font-bold focus:outline-none focus:border-emerald-400"
                       />
                     </div>
-                    <p className="text-[10px] text-emerald-300/70 italic">Moderate boost for sticky bottom slot</p>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-rose-400 mb-1">🚨 Emergency MR Stepdown (%)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="10"
+                        max="80"
+                        value={formatSettings.anchor?.emergency_mr_threshold ?? 35.0}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          anchor: { ...formatSettings.anchor, emergency_mr_threshold: parseFloat(e.target.value) || 35.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-rose-500/50 rounded-lg text-xs text-rose-300 font-mono font-bold focus:outline-none focus:border-rose-400"
+                      />
+                    </div>
+                    <p className="text-[10px] text-emerald-300/70 italic">Fallback ke google_optimize jika MR &lt; ambang darurat</p>
                   </div>
 
                   {/* Banner Controls */}
@@ -512,7 +545,22 @@ export default function PricingConfigModal({ isOpen, onClose }) {
                         className="w-full px-2.5 py-1 bg-slate-950 border border-sky-500/50 rounded-lg text-xs text-sky-300 font-mono font-bold focus:outline-none focus:border-sky-400"
                       />
                     </div>
-                    <p className="text-[10px] text-sky-300/70 italic">High fill rate priority for standard banners</p>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-rose-400 mb-1">🚨 Emergency MR Stepdown (%)</label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="10"
+                        max="80"
+                        value={formatSettings.banner?.emergency_mr_threshold ?? 30.0}
+                        onChange={(e) => setFormatSettings({
+                          ...formatSettings,
+                          banner: { ...formatSettings.banner, emergency_mr_threshold: parseFloat(e.target.value) || 30.0 }
+                        })}
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-rose-500/50 rounded-lg text-xs text-rose-300 font-mono font-bold focus:outline-none focus:border-rose-400"
+                      />
+                    </div>
+                    <p className="text-[10px] text-sky-300/70 italic">Fallback ke google_optimize jika MR &lt; ambang darurat</p>
                   </div>
                 </div>
               </div>

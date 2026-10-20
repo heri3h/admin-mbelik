@@ -1294,15 +1294,18 @@ DEFAULT_PRICING_CONFIG = {
     "format_settings": {
         "interstitial": {
             "multiplier": 1.1,
-            "high_mr_threshold": 75.0
+            "high_mr_threshold": 75.0,
+            "emergency_mr_threshold": 50.0
         },
         "anchor": {
             "multiplier": 1.1,
-            "high_mr_threshold": 65.0
+            "high_mr_threshold": 65.0,
+            "emergency_mr_threshold": 35.0
         },
         "banner": {
             "multiplier": 1.05,
-            "high_mr_threshold": 70.0
+            "high_mr_threshold": 70.0,
+            "emergency_mr_threshold": 30.0
         }
     },
     "adjustments": {
