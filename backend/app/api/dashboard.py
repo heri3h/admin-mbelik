@@ -6,11 +6,12 @@ from typing import List, Optional
 
 from app.config import settings
 from app.database import get_db
-from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, GoogleAdsDeviceMetric, User, GoogleAdsAccount, JSONExportTarget, SiteNote
+from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, GoogleAdsDeviceMetric, User, GoogleAdsAccount, JSONExportTarget, SiteNote, AdUnitPricingConfig
 
 from app.schemas import (
     SummaryMetrics, DailyTrendItem, AccountBreakdownItem, CampaignBreakdownItem,
-    SiteBreakdownItem, PlacementBreakdownItem, CountryBreakdownItem, SiteNoteUpdate
+    SiteBreakdownItem, PlacementBreakdownItem, CountryBreakdownItem, SiteNoteUpdate,
+    PricingOverrideRequest, PricingOverrideResponse
 )
 from app.services.auth import get_current_user
 from app.services.sync import sync_service, _sync_lock
@@ -1518,6 +1519,25 @@ def get_site_country_placements_breakdown(
         elif item["_max_rule_rev"] < 0 and p_rule:
             item["pricing_rule_name"] = p_rule
 
+    from app.models import AdUnitPricingConfig
+    overrides = db.query(AdUnitPricingConfig).filter(
+        func.lower(AdUnitPricingConfig.domain) == domain_name.lower(),
+        func.upper(AdUnitPricingConfig.country_code) == c_code.upper(),
+        AdUnitPricingConfig.is_active == True
+    ).all()
+    override_map = {}
+    for ov in overrides:
+        unit = ov.ad_unit
+        dev = (ov.device_category or "mobile").lower()
+        if unit not in override_map:
+            override_map[unit] = {}
+        override_map[unit][dev] = {
+            "mode": ov.pricing_mode,
+            "target_floor_key": ov.target_floor_key,
+            "target_key": ov.target_key,
+            "target_cpm": ov.target_cpm
+        }
+
     items = []
     for item in unit_map.values():
         tot_rev = item["total_revenue"]
@@ -1535,6 +1555,11 @@ def get_site_country_placements_breakdown(
         mr = round((tot_matched / tot_reqs * 100.0), 2) if tot_reqs > 0 else 0.0
         ctr = round((tot_clicks / tot_imps * 100.0), 2) if tot_imps > 0 else 0.0
 
+        u_ov = override_map.get(item["ad_unit"], {})
+        mob_ov = u_ov.get("mobile", {"mode": "auto"})
+        desk_ov = u_ov.get("desktop", {"mode": "auto"})
+        active_ov = desk_ov if dev_filter == "desktop" else (mob_ov if dev_filter == "mobile" else None)
+
         items.append(PlacementBreakdownItem(
             domain=domain_name,
             ad_unit=item["ad_unit"],
@@ -1547,11 +1572,85 @@ def get_site_country_placements_breakdown(
             matched_requests=tot_matched,
             match_rate=mr,
             ctr=ctr,
-            pricing_rule_name=item["pricing_rule_name"]
+            pricing_rule_name=item["pricing_rule_name"],
+            mobile_override=mob_ov,
+            desktop_override=desk_ov,
+            pricing_override=active_ov
         ))
 
     items.sort(key=lambda x: x.total_revenue, reverse=True)
     return items
+
+@router.post("/pricing-override", response_model=PricingOverrideResponse)
+def set_pricing_override(
+    req: PricingOverrideRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    import logging
+    logger = logging.getLogger(__name__)
+
+    dom = req.domain.strip()
+    cc = req.country_code.strip().upper()
+    dev = req.device_category.strip().lower()
+    if dev not in ["mobile", "desktop"]:
+        dev = "mobile"
+    unit = req.ad_unit.strip()
+    mode = req.pricing_mode.strip().lower()
+
+    existing = db.query(AdUnitPricingConfig).filter(
+        func.lower(AdUnitPricingConfig.domain) == dom.lower(),
+        func.upper(AdUnitPricingConfig.country_code) == cc,
+        AdUnitPricingConfig.device_category == dev,
+        AdUnitPricingConfig.ad_unit == unit
+    ).first()
+
+    if not existing:
+        existing = AdUnitPricingConfig(
+            domain=dom,
+            country_code=cc,
+            device_category=dev,
+            ad_unit=unit,
+            pricing_mode=mode,
+            target_floor_key=req.target_floor_key,
+            target_key=req.target_key,
+            target_cpm=req.target_cpm,
+            is_active=True
+        )
+        db.add(existing)
+    else:
+        existing.pricing_mode = mode
+        existing.target_floor_key = req.target_floor_key
+        existing.target_key = req.target_key
+        existing.target_cpm = req.target_cpm
+        existing.is_active = True
+        existing.updated_at = datetime.utcnow()
+
+    db.commit()
+
+    # Re-export current_pricing.json for this domain immediately
+    try:
+        from app.services.sync import export_site_today_json
+        target = db.query(JSONExportTarget).filter(func.lower(JSONExportTarget.domain) == dom.lower()).first()
+        target_path = target.target_filepath if target else f"/home/mbummm/web/{dom}/public_html/current_pricing.json"
+        export_site_today_json(db, domain=dom, target_filepath=target_path, force=True)
+    except Exception as e:
+        logger.warning(f"Failed to auto re-export JSON on override update for {dom}: {e}")
+
+    return PricingOverrideResponse(
+        status="success",
+        message=f"Override for {unit} ({dev}) updated to {mode}",
+        override={
+            "domain": dom,
+            "country_code": cc,
+            "device_category": dev,
+            "ad_unit": unit,
+            "pricing_mode": mode,
+            "target_floor_key": req.target_floor_key,
+            "target_key": req.target_key,
+            "target_cpm": req.target_cpm
+        }
+    )
 
 @router.post("/sites/note")
 def save_site_note(

@@ -110,6 +110,10 @@ export const dashboardService = {
     const res = await api.get(`/api/dashboard/sites/${encodeURIComponent(domain)}/countries/${encodeURIComponent(country)}/placements`, { params });
     return res.data;
   },
+  setPricingOverride: async (overrideData) => {
+    const res = await api.post('/api/dashboard/pricing-override', overrideData);
+    return res.data;
+  },
   getPlacements: async (startDate, endDate, device) => {
     const params = { _t: Date.now() };
     if (startDate) params.start_date = startDate;

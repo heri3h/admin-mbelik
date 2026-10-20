@@ -1232,6 +1232,35 @@ def export_site_today_json(
         "countries": countries_compressed
     }
 
+    # Fetch Ad-Unit Pricing Overrides for this domain
+    overrides_payload = {}
+    try:
+        from app.models import AdUnitPricingConfig
+        active_overrides = db.query(AdUnitPricingConfig).filter(
+            func.lower(AdUnitPricingConfig.domain) == domain.lower(),
+            AdUnitPricingConfig.is_active == True,
+            AdUnitPricingConfig.pricing_mode != 'auto'
+        ).all()
+        for ov in active_overrides:
+            cc = ov.country_code.upper()
+            unit = ov.ad_unit
+            dev = (ov.device_category or "mobile").lower()
+            key = ov.target_floor_key if ov.pricing_mode == "target_floor" else (ov.target_key or (str(ov.target_cpm) if ov.target_cpm else None))
+            if key:
+                if cc not in overrides_payload:
+                    overrides_payload[cc] = {}
+                if unit not in overrides_payload[cc]:
+                    overrides_payload[cc][unit] = {}
+                overrides_payload[cc][unit][dev] = {
+                    "mode": ov.pricing_mode,
+                    "key": key
+                }
+    except Exception as e:
+        logger.warning(f"Error querying overrides for {domain}: {e}")
+
+    if overrides_payload:
+        data_payload["overrides"] = overrides_payload
+
     try:
         atomic_write_json(target_filepath, data_payload)
         logger.info(f"Auto-exported today's data (atomic) for {domain} to {target_filepath}")

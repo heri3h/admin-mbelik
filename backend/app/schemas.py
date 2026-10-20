@@ -129,6 +129,24 @@ class PlacementBreakdownItem(BaseModel):
     revenue_change_pct: Optional[float] = None
     ecpm_change_pct: Optional[float] = None
     comparison_period_label: Optional[str] = None
+    mobile_override: Optional[Dict[str, Any]] = None
+    desktop_override: Optional[Dict[str, Any]] = None
+    pricing_override: Optional[Dict[str, Any]] = None
+
+class PricingOverrideRequest(BaseModel):
+    domain: str
+    country_code: str
+    device_category: str = "mobile"  # 'mobile' or 'desktop'
+    ad_unit: str
+    pricing_mode: str = "auto"       # 'auto', 'target_floor', 'target_cpm'
+    target_floor_key: Optional[str] = None
+    target_key: Optional[str] = None
+    target_cpm: Optional[int] = None
+
+class PricingOverrideResponse(BaseModel):
+    status: str
+    message: str
+    override: Optional[Dict[str, Any]] = None
 
 class CountryBreakdownItem(BaseModel):
     country: str

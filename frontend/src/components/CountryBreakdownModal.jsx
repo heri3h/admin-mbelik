@@ -30,7 +30,200 @@ const LEVEL2_COLUMNS = [
   { key: 'matched_requests', label: 'Matched Requests' },
   { key: 'pricing_rule_name', label: 'PRICING_RULE_NAME' },
   { key: 'placement_format', label: 'Format Iklan (Placement)' },
+  { key: 'pricing_override', label: 'Override Pricing' },
 ];
+
+const PRICING_FLOOR_OPTIONS = [
+  { key: 'f4000', label: 'f4000 (Rp 4.000)' },
+  { key: 'f7000', label: 'f7000 (Rp 7.000)' },
+  { key: 'f9000', label: 'f9000 (Rp 9.000)' },
+  { key: 'f12000', label: 'f12000 (Rp 12.000)' },
+  { key: 'f15000', label: 'f15000 (Rp 15.000)' },
+  { key: 'f17000', label: 'f17000 (Rp 17.000)' },
+  { key: 'f20000', label: 'f20000 (Rp 20.000)' },
+  { key: 'f23000', label: 'f23000 (Rp 23.000)' },
+  { key: 'f25000', label: 'f25000 (Rp 25.000)' },
+  { key: 'f27000', label: 'f27000 (Rp 27.000)' },
+  { key: 'f30000', label: 'f30000 (Rp 30.000)' },
+  { key: 'f35000', label: 'f35000 (Rp 35.000)' },
+  { key: 'f40000', label: 'f40000 (Rp 40.000)' },
+  { key: 'f45000', label: 'f45000 (Rp 45.000)' },
+  { key: 'f50000', label: 'f50000 (Rp 50.000)' },
+  { key: 'f55000', label: 'f55000 (Rp 55.000)' },
+  { key: 'f60000', label: 'f60000 (Rp 60.000)' },
+  { key: 'f65000', label: 'f65000 (Rp 65.000)' },
+  { key: 'f70000', label: 'f70000 (Rp 70.000)' },
+  { key: 'f75000', label: 'f75000 (Rp 75.000)' },
+  { key: 'f80000', label: 'f80000 (Rp 80.000)' },
+  { key: 'f100000', label: 'f100000 (Rp 100.000)' },
+  { key: 'f125000', label: 'f125000 (Rp 125.000)' },
+  { key: 'f140000', label: 'f140000 (Rp 140.000)' },
+  { key: 'f160000', label: 'f160000 (Rp 160.000)' },
+  { key: 'f190000', label: 'f190000 (Rp 190.000)' },
+  { key: 'f230000', label: 'f230000 (Rp 230.000)' },
+  { key: 'f280000', label: 'f280000 (Rp 280.000)' },
+  { key: 'f340000', label: 'f340000 (Rp 340.000)' },
+  { key: 'f420000', label: 'f420000 (Rp 420.000)' },
+  { key: 'f480000', label: 'f480000 (Rp 480.000)' },
+  { key: 'f560000', label: 'f560000 (Rp 560.000)' },
+  { key: 'f680000', label: 'f680000 (Rp 680.000)' },
+  { key: 'f800000', label: 'f800000 (Rp 800.000)' },
+];
+
+const PRICING_TARGET_OPTIONS = [
+  { key: '5000', label: '5000 (Rp 5.000)' },
+  { key: '7500', label: '7500 (Rp 7.500)' },
+  { key: '10000', label: '10000 (Rp 10.000)' },
+  { key: '12500', label: '12500 (Rp 12.500)' },
+  { key: '15000', label: '15000 (Rp 15.000)' },
+  { key: '17500', label: '17500 (Rp 17.500)' },
+  { key: '20000', label: '20000 (Rp 20.000)' },
+  { key: '22500', label: '22500 (Rp 22.500)' },
+  { key: '25000', label: '25000 (Rp 25.000)' },
+  { key: '30000', label: '30000 (Rp 30.000)' },
+  { key: '35000', label: '35000 (Rp 35.000)' },
+  { key: '40000', label: '40000 (Rp 40.000)' },
+  { key: '45000', label: '45000 (Rp 45.000)' },
+  { key: '50000', label: '50000 (Rp 50.000)' },
+  { key: '55000', label: '55000 (Rp 55.000)' },
+  { key: '60000', label: '60000 (Rp 60.000)' },
+  { key: '65000', label: '65000 (Rp 65.000)' },
+  { key: '70000', label: '70000 (Rp 70.000)' },
+  { key: '75000', label: '75000 (Rp 75.000)' },
+  { key: '80000', label: '80000 (Rp 80.000)' },
+  { key: '100000', label: '100000 (Rp 100.000)' },
+  { key: '130000', label: '130000 (Rp 130.000)' },
+  { key: '155000', label: '155000 (Rp 155.000)' },
+  { key: '175000', label: '175000 (Rp 175.000)' },
+  { key: '200000', label: '200000 (Rp 200.000)' },
+  { key: '240000', label: '240000 (Rp 240.000)' },
+  { key: '290000', label: '290000 (Rp 290.000)' },
+  { key: '350000', label: '350000 (Rp 350.000)' },
+  { key: '430000', label: '430000 (Rp 430.000)' },
+  { key: '525000', label: '525000 (Rp 525.000)' },
+  { key: '600000', label: '600000 (Rp 600.000)' },
+  { key: '700000', label: '700000 (Rp 700.000)' },
+  { key: '850000', label: '850000 (Rp 850.000)' },
+  { key: '1000000', label: '1000000 (Rp 1.000.000)' },
+];
+
+function AdUnitOverrideSelector({ domain, countryCode, deviceCategory, adUnit, override, onSave }) {
+  const [mode, setMode] = useState(override?.pricing_mode || 'auto');
+  const [keyVal, setKeyVal] = useState(
+    override?.pricing_mode === 'target_floor'
+      ? (override?.target_floor_key || 'f15000')
+      : (override?.target_key || (override?.target_cpm ? String(override?.target_cpm) : '15000'))
+  );
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+
+  useEffect(() => {
+    setMode(override?.pricing_mode || 'auto');
+    if (override?.pricing_mode === 'target_floor') {
+      setKeyVal(override?.target_floor_key || 'f15000');
+    } else if (override?.pricing_mode === 'target_cpm') {
+      setKeyVal(override?.target_key || (override?.target_cpm ? String(override?.target_cpm) : '15000'));
+    } else {
+      setKeyVal('f15000');
+    }
+  }, [override, deviceCategory]);
+
+  const handleSave = async (newMode, newKey) => {
+    setSaving(true);
+    try {
+      const floorKey = newMode === 'target_floor' ? newKey : null;
+      const targetKey = newMode === 'target_cpm' ? newKey : null;
+      const targetCpm = newMode === 'target_cpm' && targetKey ? parseInt(targetKey, 10) : null;
+
+      const res = await dashboardService.setPricingOverride({
+        domain,
+        country_code: countryCode,
+        device_category: deviceCategory,
+        ad_unit: adUnit,
+        pricing_mode: newMode,
+        target_floor_key: floorKey,
+        target_key: targetKey,
+        target_cpm: targetCpm
+      });
+
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+      if (onSave) {
+        onSave(res.override);
+      }
+    } catch (err) {
+      console.error('Failed to update pricing override', err);
+      alert('Gagal menyimpan override pricing. Coba lagi.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    if (newMode === 'auto') {
+      handleSave('auto', null);
+    } else if (newMode === 'target_floor') {
+      const initialKey = keyVal && keyVal.startsWith('f') ? keyVal : 'f15000';
+      setKeyVal(initialKey);
+      handleSave('target_floor', initialKey);
+    } else if (newMode === 'target_cpm') {
+      const initialKey = keyVal && !keyVal.startsWith('f') ? keyVal : '15000';
+      setKeyVal(initialKey);
+      handleSave('target_cpm', initialKey);
+    }
+  };
+
+  const handleKeyChange = (newKey) => {
+    setKeyVal(newKey);
+    handleSave(mode, newKey);
+  };
+
+  return (
+    <div className="flex items-center space-x-1.5 justify-end">
+      {saving && <Loader2 className="w-3 h-3 animate-spin text-sky-400 shrink-0" />}
+      {justSaved && !saving && <span className="text-[11px] text-emerald-400 font-bold shrink-0">✓</span>}
+
+      <select
+        value={mode}
+        onChange={(e) => handleModeChange(e.target.value)}
+        disabled={saving}
+        className={`bg-slate-900 border text-[11px] rounded px-1.5 py-0.5 focus:outline-none cursor-pointer ${
+          mode === 'auto'
+            ? 'border-slate-700 text-slate-400'
+            : mode === 'target_floor'
+            ? 'border-purple-500/60 text-purple-300 font-semibold bg-purple-950/30'
+            : 'border-sky-500/60 text-sky-300 font-semibold bg-sky-950/30'
+        }`}
+      >
+        <option value="auto">Auto</option>
+        <option value="target_floor">Floor</option>
+        <option value="target_cpm">Target</option>
+      </select>
+
+      {mode !== 'auto' && (
+        <select
+          value={keyVal}
+          onChange={(e) => handleKeyChange(e.target.value)}
+          disabled={saving}
+          className="bg-slate-900 border border-slate-700 text-slate-200 text-[11px] font-mono rounded px-1.5 py-0.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
+        >
+          {mode === 'target_floor'
+            ? PRICING_FLOOR_OPTIONS.map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label}
+                </option>
+              ))
+            : PRICING_TARGET_OPTIONS.map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label}
+                </option>
+              ))}
+        </select>
+      )}
+    </div>
+  );
+}
 
 const formatPricingRuleName = (rule) => {
   if (!rule || rule === 'All Rules') return 'All Rules';
@@ -239,7 +432,9 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     return LEVEL2_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
   });
 
-  const activeColumns = selectedCountry ? LEVEL2_COLUMNS : LEVEL1_COLUMNS;
+  const isOverrideSupported = domain && domain.toLowerCase() === 'gemol.me';
+  const effectiveLevel2Columns = isOverrideSupported ? LEVEL2_COLUMNS : LEVEL2_COLUMNS.filter(c => c.key !== 'pricing_override');
+  const activeColumns = selectedCountry ? effectiveLevel2Columns : LEVEL1_COLUMNS;
   const activeVisibleCols = selectedCountry ? level2VisibleCols : level1VisibleCols;
 
   const handleToggleColumn = (key) => {
@@ -780,6 +975,13 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             </div>
                           </th>
                         )}
+                        {selectedCountry && isOverrideSupported && activeVisibleCols.pricing_override && (
+                          <th className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right">
+                            <div className="flex items-center justify-end space-x-1 leading-tight">
+                              <span>Override<br/>Pricing</span>
+                            </div>
+                          </th>
+                        )}
                       </tr>
                     </thead>
 
@@ -908,7 +1110,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         /* --- LEVEL 2: AD UNITS WITHIN SELECTED COUNTRY --- */
                         loadingAdUnits ? (
                           <tr>
-                            <td colSpan="8" className="px-3 py-6 text-center text-slate-400">
+                            <td colSpan={Object.values(activeVisibleCols).filter(Boolean).length || 10} className="px-3 py-6 text-center text-slate-400">
                               <div className="flex items-center justify-center space-x-2">
                                 <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
                                 <span>Loading ad unit placements for {selectedCountry.country}...</span>
@@ -917,7 +1119,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           </tr>
                         ) : sortedAdUnits.length === 0 ? (
                           <tr>
-                            <td colSpan="8" className="px-3 py-6 text-center text-slate-400 italic">
+                            <td colSpan={Object.values(activeVisibleCols).filter(Boolean).length || 10} className="px-3 py-6 text-center text-slate-400 italic">
                               No ad unit placement data found for this country.
                             </td>
                           </tr>
@@ -992,6 +1194,68 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                     </span>
                                   </td>
                                 )}
+
+                                {isOverrideSupported && activeVisibleCols.pricing_override && (
+                                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                                    {deviceFilter === 'all' ? (
+                                      <div className="flex items-center space-x-1.5 justify-end">
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeviceFilter('mobile')}
+                                          className="group px-2 py-0.5 rounded text-[10px] font-mono border transition-all flex items-center space-x-1 cursor-pointer bg-slate-800/80 border-slate-700 hover:border-sky-500/50"
+                                          title="Mobile override (Click to switch filter to Mobile and edit)"
+                                        >
+                                          <span>📱</span>
+                                          {p.mobile_override && p.mobile_override.pricing_mode !== 'auto' ? (
+                                            <span className="font-bold text-amber-400">
+                                              {p.mobile_override.pricing_mode === 'target_floor' ? p.mobile_override.target_floor_key : (p.mobile_override.target_key || p.mobile_override.target_cpm)}
+                                            </span>
+                                          ) : (
+                                            <span className="text-slate-400">Auto</span>
+                                          )}
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeviceFilter('desktop')}
+                                          className="group px-2 py-0.5 rounded text-[10px] font-mono border transition-all flex items-center space-x-1 cursor-pointer bg-slate-800/80 border-slate-700 hover:border-sky-500/50"
+                                          title="Desktop override (Click to switch filter to Desktop and edit)"
+                                        >
+                                          <span>💻</span>
+                                          {p.desktop_override && p.desktop_override.pricing_mode !== 'auto' ? (
+                                            <span className="font-bold text-indigo-400">
+                                              {p.desktop_override.pricing_mode === 'target_floor' ? p.desktop_override.target_floor_key : (p.desktop_override.target_key || p.desktop_override.target_cpm)}
+                                            </span>
+                                          ) : (
+                                            <span className="text-slate-400">Auto</span>
+                                          )}
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <AdUnitOverrideSelector
+                                        domain={domain}
+                                        countryCode={selectedCountry.country_code}
+                                        deviceCategory={deviceFilter}
+                                        adUnit={p.ad_unit}
+                                        override={deviceFilter === 'mobile' ? p.mobile_override : p.desktop_override}
+                                        onSave={(updatedOv) => {
+                                          setAdUnits((prev) =>
+                                            prev.map((item) => {
+                                              if (item.ad_unit === p.ad_unit) {
+                                                if (deviceFilter === 'mobile') {
+                                                  return { ...item, mobile_override: updatedOv, pricing_override: updatedOv };
+                                                } else {
+                                                  return { ...item, desktop_override: updatedOv, pricing_override: updatedOv };
+                                                }
+                                              }
+                                              return item;
+                                            })
+                                          );
+                                        }}
+                                      />
+                                    )}
+                                  </td>
+                                )}
                               </tr>
                             );
                           })
@@ -1038,6 +1302,12 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                             <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
                               All Rules
                             </td>
+                          )}
+                          {activeVisibleCols.placement_format && (
+                            <td className="px-3 py-2.5 text-right text-slate-500 font-mono">-</td>
+                          )}
+                          {isOverrideSupported && activeVisibleCols.pricing_override && (
+                            <td className="px-3 py-2.5 text-right text-slate-500 font-mono">-</td>
                           )}
                         </tr>
                       ) : (
