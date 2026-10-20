@@ -1533,9 +1533,11 @@ def get_site_country_placements_breakdown(
             override_map[unit] = {}
         override_map[unit][dev] = {
             "mode": ov.pricing_mode,
+            "pricing_mode": ov.pricing_mode,
             "target_floor_key": ov.target_floor_key,
             "target_key": ov.target_key,
-            "target_cpm": ov.target_cpm
+            "target_cpm": ov.target_cpm,
+            "target_mr": ov.target_mr
         }
 
     items = []
@@ -1615,6 +1617,7 @@ def set_pricing_override(
             target_floor_key=req.target_floor_key,
             target_key=req.target_key,
             target_cpm=req.target_cpm,
+            target_mr=req.target_mr,
             is_active=True
         )
         db.add(existing)
@@ -1623,6 +1626,7 @@ def set_pricing_override(
         existing.target_floor_key = req.target_floor_key
         existing.target_key = req.target_key
         existing.target_cpm = req.target_cpm
+        existing.target_mr = req.target_mr
         existing.is_active = True
         existing.updated_at = datetime.utcnow()
 
@@ -1646,9 +1650,11 @@ def set_pricing_override(
             "device_category": dev,
             "ad_unit": unit,
             "pricing_mode": mode,
+            "mode": mode,
             "target_floor_key": req.target_floor_key,
             "target_key": req.target_key,
-            "target_cpm": req.target_cpm
+            "target_cpm": req.target_cpm,
+            "target_mr": req.target_mr,
         }
     )
 

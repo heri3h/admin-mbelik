@@ -1245,16 +1245,26 @@ def export_site_today_json(
             cc = ov.country_code.upper()
             unit = ov.ad_unit
             dev = (ov.device_category or "mobile").lower()
-            key = ov.target_floor_key if ov.pricing_mode == "target_floor" else (ov.target_key or (str(ov.target_cpm) if ov.target_cpm else None))
-            if key:
+            if ov.pricing_mode == "target_mr":
                 if cc not in overrides_payload:
                     overrides_payload[cc] = {}
                 if unit not in overrides_payload[cc]:
                     overrides_payload[cc][unit] = {}
                 overrides_payload[cc][unit][dev] = {
                     "mode": ov.pricing_mode,
-                    "key": key
+                    "mr": ov.target_mr or 65.0
                 }
+            else:
+                key = ov.target_floor_key if ov.pricing_mode == "target_floor" else (ov.target_key or (str(ov.target_cpm) if ov.target_cpm else None))
+                if key:
+                    if cc not in overrides_payload:
+                        overrides_payload[cc] = {}
+                    if unit not in overrides_payload[cc]:
+                        overrides_payload[cc][unit] = {}
+                    overrides_payload[cc][unit][dev] = {
+                        "mode": ov.pricing_mode,
+                        "key": key
+                    }
     except Exception as e:
         logger.warning(f"Error querying overrides for {domain}: {e}")
 

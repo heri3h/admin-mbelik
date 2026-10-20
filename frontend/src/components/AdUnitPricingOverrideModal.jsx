@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, Loader2, Smartphone, Monitor, Shield, Target, Zap, AlertCircle } from 'lucide-react';
+import { X, Check, Loader2, Smartphone, Monitor, Shield, Target, Zap, Percent, AlertCircle } from 'lucide-react';
 import { dashboardService } from '../services/api';
 
 export const PRICING_FLOOR_OPTIONS = [
@@ -76,6 +76,17 @@ export const PRICING_TARGET_OPTIONS = [
   { key: '1000000', label: 'Rp 1.000.000', code: '1000000' },
 ];
 
+export const PRICING_MR_OPTIONS = [
+  { value: 50.0, label: '50% (Match Rate Rendah - Aggressive Floor)' },
+  { value: 55.0, label: '55% (Match Rate Sedang-Rendah)' },
+  { value: 60.0, label: '60% (Match Rate Sedang)' },
+  { value: 65.0, label: '65% (Standar Target MR)' },
+  { value: 70.0, label: '70% (Match Rate Cukup Tinggi)' },
+  { value: 75.0, label: '75% (Match Rate Tinggi - Safe Fill)' },
+  { value: 80.0, label: '80% (Match Rate Sangat Tinggi)' },
+  { value: 85.0, label: '85% (Maksimal Fill Rate)' },
+];
+
 export default function AdUnitPricingOverrideModal({
   isOpen,
   onClose,
@@ -87,10 +98,12 @@ export default function AdUnitPricingOverrideModal({
   const [mobileMode, setMobileMode] = useState('auto');
   const [mobileFloorKey, setMobileFloorKey] = useState('f15000');
   const [mobileTargetKey, setMobileTargetKey] = useState('15000');
+  const [mobileMr, setMobileMr] = useState(65.0);
 
   const [desktopMode, setDesktopMode] = useState('auto');
   const [desktopFloorKey, setDesktopFloorKey] = useState('f20000');
   const [desktopTargetKey, setDesktopTargetKey] = useState('20000');
+  const [desktopMr, setDesktopMr] = useState(65.0);
 
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -107,11 +120,14 @@ export default function AdUnitPricingOverrideModal({
         setMobileFloorKey(mob.target_floor_key || 'f15000');
       } else if (mob.pricing_mode === 'target_cpm') {
         setMobileTargetKey(mob.target_key || (mob.target_cpm ? String(mob.target_cpm) : '15000'));
+      } else if (mob.pricing_mode === 'target_mr') {
+        setMobileMr(mob.target_mr || 65.0);
       }
     } else {
       setMobileMode('auto');
       setMobileFloorKey('f15000');
       setMobileTargetKey('15000');
+      setMobileMr(65.0);
     }
 
     // Initialize Desktop state
@@ -122,11 +138,14 @@ export default function AdUnitPricingOverrideModal({
         setDesktopFloorKey(desk.target_floor_key || 'f20000');
       } else if (desk.pricing_mode === 'target_cpm') {
         setDesktopTargetKey(desk.target_key || (desk.target_cpm ? String(desk.target_cpm) : '20000'));
+      } else if (desk.pricing_mode === 'target_mr') {
+        setDesktopMr(desk.target_mr || 65.0);
       }
     } else {
       setDesktopMode('auto');
       setDesktopFloorKey('f20000');
       setDesktopTargetKey('20000');
+      setDesktopMr(65.0);
     }
 
     setSavedSuccess(false);
@@ -146,11 +165,13 @@ export default function AdUnitPricingOverrideModal({
       const mobFloor = mobileMode === 'target_floor' ? mobileFloorKey : null;
       const mobTarget = mobileMode === 'target_cpm' ? mobileTargetKey : null;
       const mobCpm = mobileMode === 'target_cpm' && mobTarget ? parseInt(mobTarget, 10) : null;
+      const mobMrVal = mobileMode === 'target_mr' ? mobileMr : null;
 
       // Prepare Desktop Payload
       const deskFloor = desktopMode === 'target_floor' ? desktopFloorKey : null;
       const deskTarget = desktopMode === 'target_cpm' ? desktopTargetKey : null;
       const deskCpm = desktopMode === 'target_cpm' && deskTarget ? parseInt(deskTarget, 10) : null;
+      const deskMrVal = desktopMode === 'target_mr' ? desktopMr : null;
 
       const [mobRes, deskRes] = await Promise.all([
         dashboardService.setPricingOverride({
@@ -162,6 +183,7 @@ export default function AdUnitPricingOverrideModal({
           target_floor_key: mobFloor,
           target_key: mobTarget,
           target_cpm: mobCpm,
+          target_mr: mobMrVal,
         }),
         dashboardService.setPricingOverride({
           domain,
@@ -172,6 +194,7 @@ export default function AdUnitPricingOverrideModal({
           target_floor_key: deskFloor,
           target_key: deskTarget,
           target_cpm: deskCpm,
+          target_mr: deskMrVal,
         }),
       ]);
 
@@ -196,7 +219,7 @@ export default function AdUnitPricingOverrideModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[95vh]">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-700/70 bg-slate-900/90 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -219,7 +242,7 @@ export default function AdUnitPricingOverrideModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -377,6 +400,50 @@ export default function AdUnitPricingOverrideModal({
                       </div>
                     )}
                   </label>
+
+                  {/* Option 4: Target MR */}
+                  <label
+                    onClick={() => setMobileMode('target_mr')}
+                    className={`flex flex-col space-y-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                      mobileMode === 'target_mr'
+                        ? 'bg-amber-500/10 border-amber-500/50 text-white'
+                        : 'bg-slate-900/60 border-slate-700/60 text-slate-300 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-2.5">
+                      <input
+                        type="radio"
+                        name="mobile_mode"
+                        checked={mobileMode === 'target_mr'}
+                        onChange={() => setMobileMode('target_mr')}
+                        className="mt-0.5 text-amber-500 focus:ring-0"
+                      />
+                      <div>
+                        <div className="text-xs font-bold flex items-center gap-1.5">
+                          <Percent className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Target MR (Match Rate)</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Otomatis tentukan floor agar keterisian mencapai target MR.</p>
+                      </div>
+                    </div>
+
+                    {mobileMode === 'target_mr' && (
+                      <div className="pl-6 pt-1">
+                        <span className="text-[10px] font-semibold text-amber-300 block mb-1">Pilih Target Match Rate:</span>
+                        <select
+                          value={mobileMr}
+                          onChange={(e) => setMobileMr(parseFloat(e.target.value))}
+                          className="w-full bg-slate-900 border border-amber-500/50 text-slate-100 text-xs font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        >
+                          {PRICING_MR_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </label>
                 </div>
               </div>
             </div>
@@ -496,6 +563,50 @@ export default function AdUnitPricingOverrideModal({
                           {PRICING_FLOOR_OPTIONS.map((opt) => (
                             <option key={opt.key} value={opt.key}>
                               {opt.label} ({opt.code})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </label>
+
+                  {/* Option 4: Target MR */}
+                  <label
+                    onClick={() => setDesktopMode('target_mr')}
+                    className={`flex flex-col space-y-2 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                      desktopMode === 'target_mr'
+                        ? 'bg-amber-500/10 border-amber-500/50 text-white'
+                        : 'bg-slate-900/60 border-slate-700/60 text-slate-300 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-2.5">
+                      <input
+                        type="radio"
+                        name="desktop_mode"
+                        checked={desktopMode === 'target_mr'}
+                        onChange={() => setDesktopMode('target_mr')}
+                        className="mt-0.5 text-amber-500 focus:ring-0"
+                      />
+                      <div>
+                        <div className="text-xs font-bold flex items-center gap-1.5">
+                          <Percent className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Target MR (Match Rate)</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Otomatis tentukan floor agar keterisian mencapai target MR.</p>
+                      </div>
+                    </div>
+
+                    {desktopMode === 'target_mr' && (
+                      <div className="pl-6 pt-1">
+                        <span className="text-[10px] font-semibold text-amber-300 block mb-1">Pilih Target Match Rate:</span>
+                        <select
+                          value={desktopMr}
+                          onChange={(e) => setDesktopMr(parseFloat(e.target.value))}
+                          className="w-full bg-slate-900 border border-amber-500/50 text-slate-100 text-xs font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        >
+                          {PRICING_MR_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
                             </option>
                           ))}
                         </select>

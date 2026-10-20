@@ -138,10 +138,11 @@ class PricingOverrideRequest(BaseModel):
     country_code: str
     device_category: str = "mobile"  # 'mobile' or 'desktop'
     ad_unit: str
-    pricing_mode: str = "auto"       # 'auto', 'target_floor', 'target_cpm'
+    pricing_mode: str = "auto"       # 'auto', 'target_floor', 'target_cpm', 'target_mr'
     target_floor_key: Optional[str] = None
     target_key: Optional[str] = None
     target_cpm: Optional[int] = None
+    target_mr: Optional[float] = None
 
 class PricingOverrideResponse(BaseModel):
     status: str

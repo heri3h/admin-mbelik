@@ -1013,49 +1013,44 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                       className="group inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono transition-all cursor-pointer shadow-sm bg-slate-800/90 hover:bg-slate-800 border-slate-700/80 hover:border-purple-500/60"
                                       title="Klik untuk membuka modal pengaturan CPM Override Ad Unit"
                                     >
-                                      {deviceFilter === 'mobile' ? (
-                                        p.mobile_override && p.mobile_override.pricing_mode !== 'auto' ? (
-                                          <span className="flex items-center gap-1 font-bold text-sky-400">
-                                            <span>📱</span>
-                                            <span>
-                                              {p.mobile_override.pricing_mode === 'target_floor'
-                                                ? p.mobile_override.target_floor_key
-                                                : (p.mobile_override.target_key || p.mobile_override.target_cpm)}
+                                      {(() => {
+                                        const formatLabel = (ov) => {
+                                          if (!ov || ov.pricing_mode === 'auto') return 'Auto';
+                                          if (ov.pricing_mode === 'target_mr') return `MR ${ov.target_mr || 65}%`;
+                                          if (ov.pricing_mode === 'target_floor') return ov.target_floor_key || 'Floor';
+                                          if (ov.pricing_mode === 'target_cpm') return ov.target_key || ov.target_cpm || 'Target';
+                                          return 'Auto';
+                                        };
+                                        const isAct = (ov) => ov && ov.pricing_mode && ov.pricing_mode !== 'auto';
+
+                                        if (deviceFilter === 'mobile') {
+                                          return (
+                                            <span className={`flex items-center gap-1 ${isAct(p.mobile_override) ? 'font-bold text-sky-400 font-mono' : 'text-slate-400 font-sans'}`}>
+                                              <span>📱</span>
+                                              <span>{formatLabel(p.mobile_override)}</span>
                                             </span>
-                                          </span>
-                                        ) : (
-                                          <span className="flex items-center gap-1 text-slate-400 font-sans">
-                                            <span>📱</span>
-                                            <span>Auto</span>
-                                          </span>
-                                        )
-                                      ) : deviceFilter === 'desktop' ? (
-                                        p.desktop_override && p.desktop_override.pricing_mode !== 'auto' ? (
-                                          <span className="flex items-center gap-1 font-bold text-indigo-400">
-                                            <span>💻</span>
-                                            <span>
-                                              {p.desktop_override.pricing_mode === 'target_floor'
-                                                ? p.desktop_override.target_floor_key
-                                                : (p.desktop_override.target_key || p.desktop_override.target_cpm)}
+                                          );
+                                        }
+                                        if (deviceFilter === 'desktop') {
+                                          return (
+                                            <span className={`flex items-center gap-1 ${isAct(p.desktop_override) ? 'font-bold text-indigo-400 font-mono' : 'text-slate-400 font-sans'}`}>
+                                              <span>💻</span>
+                                              <span>{formatLabel(p.desktop_override)}</span>
                                             </span>
-                                          </span>
-                                        ) : (
-                                          <span className="flex items-center gap-1 text-slate-400 font-sans">
-                                            <span>💻</span>
-                                            <span>Auto</span>
-                                          </span>
-                                        )
-                                      ) : (
-                                        <div className="flex items-center space-x-1.5">
-                                          <span className={p.mobile_override && p.mobile_override.pricing_mode !== 'auto' ? "font-bold text-amber-400" : "text-slate-400"}>
-                                            📱 {p.mobile_override && p.mobile_override.pricing_mode !== 'auto' ? (p.mobile_override.pricing_mode === 'target_floor' ? p.mobile_override.target_floor_key : (p.mobile_override.target_key || p.mobile_override.target_cpm)) : 'Auto'}
-                                          </span>
-                                          <span className="text-slate-600">|</span>
-                                          <span className={p.desktop_override && p.desktop_override.pricing_mode !== 'auto' ? "font-bold text-indigo-400" : "text-slate-400"}>
-                                            💻 {p.desktop_override && p.desktop_override.pricing_mode !== 'auto' ? (p.desktop_override.pricing_mode === 'target_floor' ? p.desktop_override.target_floor_key : (p.desktop_override.target_key || p.desktop_override.target_cpm)) : 'Auto'}
-                                          </span>
-                                        </div>
-                                      )}
+                                          );
+                                        }
+                                        return (
+                                          <div className="flex items-center space-x-1.5 text-[11px] font-mono">
+                                            <span className={isAct(p.mobile_override) ? "font-bold text-amber-400" : "text-slate-400"}>
+                                              📱 {formatLabel(p.mobile_override)}
+                                            </span>
+                                            <span className="text-slate-600">|</span>
+                                            <span className={isAct(p.desktop_override) ? "font-bold text-indigo-400" : "text-slate-400"}>
+                                              💻 {formatLabel(p.desktop_override)}
+                                            </span>
+                                          </div>
+                                        );
+                                      })()}
                                       <span className="text-[10px] text-slate-500 group-hover:text-purple-400 transition-colors ml-0.5">⚙️</span>
                                     </button>
                                   </td>

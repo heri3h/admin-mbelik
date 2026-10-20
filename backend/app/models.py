@@ -183,10 +183,11 @@ class AdUnitPricingConfig(Base):
     country_code = Column(String(10), nullable=False, index=True)
     device_category = Column(String(20), nullable=False, default="mobile")  # 'mobile' or 'desktop'
     ad_unit = Column(String(255), nullable=False)
-    pricing_mode = Column(String(20), nullable=False, default="auto")  # 'auto', 'target_floor', 'target_cpm'
+    pricing_mode = Column(String(20), nullable=False, default="auto")  # 'auto', 'target_floor', 'target_cpm', 'target_mr'
     target_floor_key = Column(String(30), nullable=True)
     target_key = Column(String(30), nullable=True)
     target_cpm = Column(Integer, nullable=True)
+    target_mr = Column(Float, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
