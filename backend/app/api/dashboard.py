@@ -1658,6 +1658,36 @@ def set_pricing_override(
         }
     )
 
+@router.get("/sites/{domain}/pricing-rules", response_model=dict)
+def get_site_pricing_rules(
+    domain: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    import json, os
+    import logging
+    logger = logging.getLogger(__name__)
+    from app.services.sync import load_pricing_config
+
+    dom = domain.strip().lower()
+    target = db.query(JSONExportTarget).filter(func.lower(JSONExportTarget.domain) == dom).first()
+
+    # 1. Try reading directly from target domain's pricing_config.json if target exists
+    if target and target.target_filepath:
+        site_config_path = os.path.join(os.path.dirname(target.target_filepath), "pricing_config.json")
+        if os.path.exists(site_config_path):
+            try:
+                with open(site_config_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict) and "rules" in data and len(data["rules"]) > 0:
+                        return {"domain": dom, "rules": data["rules"]}
+            except Exception as e:
+                logger.warning(f"Failed reading domain pricing_config for {dom}: {e}")
+
+    # 2. Fallback to master pricing config
+    master_cfg = load_pricing_config()
+    return {"domain": dom, "rules": master_cfg.get("rules", [])}
+
 @router.post("/sites/note")
 def save_site_note(
     payload: SiteNoteUpdate,

@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Check, Loader2, Smartphone, Monitor, Shield, Target, Zap, Percent, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Check, Loader2, Smartphone, Monitor, Shield, Target, Zap, Percent, AlertCircle, Sparkles } from 'lucide-react';
 import { dashboardService } from '../services/api';
+
+const domainRulesCache = {};
 
 export const PRICING_FLOOR_OPTIONS = [
   { key: 'f4000', label: 'Rp 4.000', code: 'f4000' },
@@ -108,6 +110,106 @@ export default function AdUnitPricingOverrideModal({
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+
+  // Dynamic pricing rules state
+  const [rules, setRules] = useState(() => (domain && domainRulesCache[domain]) || []);
+  const [loadingRules, setLoadingRules] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !domain) return;
+    if (domainRulesCache[domain] && domainRulesCache[domain].length > 0) {
+      setRules(domainRulesCache[domain]);
+      return;
+    }
+    let isMounted = true;
+    setLoadingRules(true);
+    dashboardService.getSitePricingRules(domain)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res && Array.isArray(res.rules) && res.rules.length > 0) {
+          domainRulesCache[domain] = res.rules;
+          setRules(res.rules);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed fetching dynamic pricing rules for', domain, err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingRules(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, domain]);
+
+  // Dynamically resolve Target CPM options
+  const targetOptions = useMemo(() => {
+    let list = [];
+    if (rules && rules.length > 0) {
+      list = rules.map((r) => {
+        const cpmNum = Number(r.cpm) || parseInt(String(r.target_key).replace(/\D/g, ''), 10) || 0;
+        return {
+          key: String(r.target_key),
+          label: `Rp ${cpmNum.toLocaleString('id-ID')}`,
+          code: String(r.target_key),
+        };
+      });
+    } else {
+      list = [...PRICING_TARGET_OPTIONS];
+    }
+
+    // Ensure selected keys are included even if not in rules
+    const ensureKey = (k) => {
+      if (k && !list.some((o) => o.key === String(k))) {
+        const numMatch = String(k).match(/\d+/);
+        const val = numMatch ? parseInt(numMatch[0], 10) : k;
+        list.push({
+          key: String(k),
+          label: `Rp ${Number(val).toLocaleString('id-ID')}`,
+          code: String(k),
+        });
+      }
+    };
+    ensureKey(mobileTargetKey);
+    ensureKey(desktopTargetKey);
+    return list;
+  }, [rules, mobileTargetKey, desktopTargetKey]);
+
+  // Dynamically resolve Floor options
+  const floorOptions = useMemo(() => {
+    let list = [];
+    if (rules && rules.length > 0) {
+      list = rules
+        .filter((r) => r.floor_key)
+        .map((r) => {
+          const numMatch = String(r.floor_key).match(/\d+/);
+          const floorNum = numMatch ? parseInt(numMatch[0], 10) : (Number(r.cpm) || 0);
+          return {
+            key: String(r.floor_key),
+            label: `Rp ${floorNum.toLocaleString('id-ID')}`,
+            code: String(r.floor_key),
+          };
+        });
+    } else {
+      list = [...PRICING_FLOOR_OPTIONS];
+    }
+
+    // Ensure selected keys are included even if not in rules
+    const ensureKey = (k) => {
+      if (k && !list.some((o) => o.key === String(k))) {
+        const numMatch = String(k).match(/\d+/);
+        const val = numMatch ? parseInt(numMatch[0], 10) : k;
+        list.push({
+          key: String(k),
+          label: `Rp ${Number(val).toLocaleString('id-ID')}`,
+          code: String(k),
+        });
+      }
+    };
+    ensureKey(mobileFloorKey);
+    ensureKey(desktopFloorKey);
+    return list;
+  }, [rules, mobileFloorKey, desktopFloorKey]);
 
   useEffect(() => {
     if (!isOpen || !adUnitItem) return;
@@ -256,7 +358,7 @@ export default function AdUnitPricingOverrideModal({
               <span className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Ad Unit Placement</span>
               <p className="font-mono text-sm font-bold text-slate-100">{adUnitItem.ad_unit}</p>
             </div>
-            <div className="flex items-center gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
               <div className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60">
                 <span className="text-slate-400 text-[10px] block">Format</span>
                 <span className="font-semibold text-cyan-300">{adUnitItem.placement_format || 'Banner'}</span>
@@ -266,6 +368,19 @@ export default function AdUnitPricingOverrideModal({
                 <span className="font-semibold text-sky-400">
                   {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(adUnitItem.ecpm || 0)}
                 </span>
+              </div>
+              <div className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 flex items-center gap-1.5">
+                {loadingRules ? (
+                  <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin shrink-0" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                )}
+                <div>
+                  <span className="text-slate-400 text-[10px] block">Tier Rules</span>
+                  <span className="font-semibold text-indigo-300">
+                    {loadingRules ? 'Memuat...' : `${targetOptions.length} Tiers (${domain})`}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -347,7 +462,7 @@ export default function AdUnitPricingOverrideModal({
                           onChange={(e) => setMobileTargetKey(e.target.value)}
                           className="w-full bg-slate-900 border border-sky-500/50 text-slate-100 text-xs font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-400"
                         >
-                          {PRICING_TARGET_OPTIONS.map((opt) => (
+                          {targetOptions.map((opt) => (
                             <option key={opt.key} value={opt.key}>
                               {opt.label} ({opt.code})
                             </option>
@@ -391,7 +506,7 @@ export default function AdUnitPricingOverrideModal({
                           onChange={(e) => setMobileFloorKey(e.target.value)}
                           className="w-full bg-slate-900 border border-purple-500/50 text-slate-100 text-xs font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400"
                         >
-                          {PRICING_FLOOR_OPTIONS.map((opt) => (
+                          {floorOptions.map((opt) => (
                             <option key={opt.key} value={opt.key}>
                               {opt.label} ({opt.code})
                             </option>
@@ -516,7 +631,7 @@ export default function AdUnitPricingOverrideModal({
                           onChange={(e) => setDesktopTargetKey(e.target.value)}
                           className="w-full bg-slate-900 border border-sky-500/50 text-slate-100 text-xs font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-400"
                         >
-                          {PRICING_TARGET_OPTIONS.map((opt) => (
+                          {targetOptions.map((opt) => (
                             <option key={opt.key} value={opt.key}>
                               {opt.label} ({opt.code})
                             </option>
@@ -560,7 +675,7 @@ export default function AdUnitPricingOverrideModal({
                           onChange={(e) => setDesktopFloorKey(e.target.value)}
                           className="w-full bg-slate-900 border border-purple-500/50 text-slate-100 text-xs font-mono rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-400"
                         >
-                          {PRICING_FLOOR_OPTIONS.map((opt) => (
+                          {floorOptions.map((opt) => (
                             <option key={opt.key} value={opt.key}>
                               {opt.label} ({opt.code})
                             </option>
