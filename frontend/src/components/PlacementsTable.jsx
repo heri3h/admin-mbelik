@@ -187,7 +187,7 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
 
   return (
     <div className="-mx-1.5 sm:mx-0 bg-slate-800 border-x-0 sm:border-x border-y border-slate-700/60 rounded-none sm:rounded-2xl shadow-sm">
-      <div className="px-3 py-3.5 sm:p-5 border-b border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="sticky top-[124px] z-20 bg-slate-800 px-3 py-3.5 sm:p-5 border-b border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-t-none sm:rounded-t-2xl shadow-sm">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
             <LayoutGrid className="w-5 h-5 text-indigo-400" />
@@ -257,7 +257,7 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
         </div>
       </div>
 
-      <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60">
+      <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60 relative z-10">
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
           <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] tracking-wider select-none shadow-md">
             <tr>

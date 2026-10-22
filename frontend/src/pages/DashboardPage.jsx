@@ -145,12 +145,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Date & Device Filter Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      {/* Date & Device Filter Bar (Sticky Level 1: below Navbar) */}
+      <div className="sticky top-16 z-30 bg-slate-950/95 backdrop-blur-md py-2 -my-2 border-b border-slate-800/80 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <DateFilter startDate={startDate} endDate={endDate} onFilterChange={handleFilterChange} />
         
         {/* Device Selector Pills (Opsi 1) */}
-        <div className="flex items-center space-x-1 bg-slate-800 p-1.5 rounded-2xl border border-slate-700/60 shadow-sm self-start md:self-auto">
+        <div className="flex items-center space-x-1 bg-slate-800 p-1.5 rounded-2xl border border-slate-700/60 shadow-sm self-start md:self-auto shrink-0">
           <button
             onClick={() => setDeviceFilter('all')}
             className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1.5 cursor-pointer ${

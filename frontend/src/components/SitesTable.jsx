@@ -175,7 +175,7 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
         />
       )}
 
-      <div className="px-3 py-3.5 sm:p-5 border-b border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="sticky top-[124px] z-20 bg-slate-800 px-3 py-3.5 sm:p-5 border-b border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-t-none sm:rounded-t-2xl shadow-sm">
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Globe className="w-5 h-5 text-emerald-400" />
@@ -215,7 +215,7 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
         </div>
       </div>
 
-      <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60">
+      <div className="overflow-auto max-h-[calc(100vh-220px)] min-h-[350px] w-full max-w-full rounded-b-2xl border-t border-slate-700/60 relative z-10">
         <table className="w-full text-left text-xs text-slate-300 border-separate border-spacing-0">
           <thead className="bg-slate-900 text-slate-400 uppercase font-semibold text-[10px] tracking-wider select-none shadow-md">
             <tr>
