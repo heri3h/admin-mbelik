@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DateFilter from '../components/DateFilter';
 import SummaryCards from '../components/SummaryCards';
 import TrendChart from '../components/TrendChart';
@@ -62,9 +62,33 @@ export default function DashboardPage() {
     }
   };
 
+  const filterBarRef = useRef(null);
+
   useEffect(() => {
     loadDashboardData();
   }, [startDate, endDate, deviceFilter]);
+
+  // Dynamically calculate exact sticky offset for Level 2 tables
+  useEffect(() => {
+    const el = filterBarRef.current;
+    if (!el) return;
+
+    const updateOffset = () => {
+      const rect = el.getBoundingClientRect();
+      const offset = Math.round(64 + rect.height);
+      document.documentElement.style.setProperty('--filter-bar-offset', `${offset}px`);
+    };
+
+    updateOffset();
+    const ro = new ResizeObserver(updateOffset);
+    ro.observe(el);
+    window.addEventListener('resize', updateOffset);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateOffset);
+    };
+  }, []);
 
   const handleFilterChange = (newStart, newEnd) => {
     setStartDate(newStart);
@@ -146,7 +170,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Date & Device Filter Bar (Sticky Level 1: below Navbar) */}
-      <div className="sticky top-16 z-30 bg-slate-950/95 backdrop-blur-md py-2 -my-2 border-b border-slate-800/80 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div 
+        ref={filterBarRef}
+        className="sticky top-16 z-30 bg-slate-950/95 backdrop-blur-md py-2 -my-2 border-b border-slate-800/80 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
+      >
         <DateFilter startDate={startDate} endDate={endDate} onFilterChange={handleFilterChange} />
         
         {/* Device Selector Pills (Opsi 1) */}

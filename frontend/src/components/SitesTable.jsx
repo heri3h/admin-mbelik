@@ -175,7 +175,10 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
         />
       )}
 
-      <div className="sticky top-[124px] z-20 bg-slate-800 px-3 py-3.5 sm:p-5 border-b border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-t-none sm:rounded-t-2xl shadow-sm">
+      <div 
+        style={{ top: 'var(--filter-bar-offset, 138px)' }}
+        className="sticky z-20 bg-slate-800 px-3 py-3.5 sm:p-5 border-b border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
+      >
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Globe className="w-5 h-5 text-emerald-400" />
