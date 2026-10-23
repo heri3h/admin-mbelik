@@ -175,6 +175,13 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   
   // Level 1: Country list | Level 2: Selected Country (Shows Ad Units inside that country)
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [lastViewedCountry, setLastViewedCountry] = useState(() => {
+    try {
+      return sessionStorage.getItem(`last_viewed_country_${domain}`) || null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [adUnits, setAdUnits] = useState([]);
   const [loadingAdUnits, setLoadingAdUnits] = useState(false);
 
@@ -375,6 +382,13 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
 
   const handleCountryClick = (countryObj) => {
     setSelectedCountry(countryObj);
+    const cKey = countryObj.country_code || countryObj.country;
+    setLastViewedCountry(cKey);
+    try {
+      if (domain && cKey) {
+        sessionStorage.setItem(`last_viewed_country_${domain}`, cKey);
+      }
+    } catch (e) {}
     setSearchTerm('');
   };
 
@@ -840,17 +854,24 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           sortedCountries.map((c, idx) => {
                             const hasSpend = c.spend > 0;
                             const isProfitable = c.net_profit >= 0;
+                            const isLastViewed = (c.country_code && c.country_code === lastViewedCountry) || c.country === lastViewedCountry;
 
                             return (
                               <tr
                                 key={idx}
                                 onClick={() => handleCountryClick(c)}
-                                className="hover:bg-emerald-500/10 cursor-pointer transition-colors group"
-                                title="Click to view ad unit details for this country"
+                                className={`cursor-pointer transition-colors group ${
+                                  isLastViewed
+                                    ? 'bg-sky-950/20 hover:bg-sky-900/30'
+                                    : 'hover:bg-emerald-500/10'
+                                }`}
+                                title={isLastViewed ? "Negara terakhir dibuka (klik untuk melihat kembali)" : "Click to view ad unit details for this country"}
                               >
                                 {activeVisibleCols.name && (
                                   <td
-                                    className="px-3 py-2.5 font-semibold text-white whitespace-nowrap"
+                                    className={`px-3 py-2.5 font-semibold text-white whitespace-nowrap transition-all ${
+                                      isLastViewed ? 'border-l-2 border-sky-400' : 'border-l-2 border-transparent'
+                                    }`}
                                     title={`Country: ${c.country} (${c.country_code})`}
                                   >
                                     <div className="flex items-center space-x-1.5">
