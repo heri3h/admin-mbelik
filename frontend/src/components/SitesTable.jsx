@@ -182,11 +182,8 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Globe className="w-5 h-5 text-emerald-400" />
-            <span>Performance & Profitability Report by Site (Domain)</span>
+            <span>Performance & Profitability Report by Site</span>
           </h3>
-          <p className="text-slate-400 text-xs mt-0.5">
-            Spend, Revenue, Ad Requests, Matched Requests, MR AdX, Net Profit, ROI, and eCPM per domain.
-          </p>
         </div>
 
         <div className="flex items-center space-x-3 w-full sm:w-auto">
