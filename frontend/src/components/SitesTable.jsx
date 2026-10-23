@@ -25,6 +25,21 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
   const [localSites, setLocalSites] = useState(sites || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState(null);
+  const [lastViewedDomain, setLastViewedDomain] = useState(() => {
+    try {
+      return sessionStorage.getItem('last_viewed_domain') || null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const handleOpenDomain = (domain) => {
+    setSelectedDomain(domain);
+    setLastViewedDomain(domain);
+    try {
+      sessionStorage.setItem('last_viewed_domain', domain);
+    } catch (e) {}
+  };
   const [sortColumn, setSortColumn] = useState('total_revenue');
   const [sortDirection, setSortDirection] = useState('desc');
   const [editingNoteDomain, setEditingNoteDomain] = useState(null);
@@ -311,19 +326,38 @@ export default function SitesTable({ sites, startDate, endDate, mccId }) {
               const hasSpend = site.total_spend > 0;
               const isProfitable = site.net_profit >= 0;
               const compLabel = site.comparison_period_label || 'vs previous period';
+              const isLastViewed = site.domain === lastViewedDomain;
 
               return (
-                <tr key={idx} className="hover:bg-slate-700/40 transition-colors group">
+                <tr 
+                  key={idx} 
+                  className={`transition-colors group ${
+                    isLastViewed 
+                      ? 'bg-sky-950/20 hover:bg-sky-900/30' 
+                      : 'hover:bg-slate-700/40'
+                  }`}
+                >
                   {visibleColumns.domain && (
-                    <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">
+                    <td className={`px-3 py-2.5 font-semibold text-white whitespace-nowrap transition-all ${
+                      isLastViewed ? 'border-l-2 border-sky-400' : 'border-l-2 border-transparent'
+                    }`}>
                       <div className="flex flex-col space-y-1">
                         <button
-                          onClick={() => setSelectedDomain(site.domain)}
+                          onClick={() => handleOpenDomain(site.domain)}
                           className="flex items-center space-x-2 text-left hover:text-emerald-400 transition-colors focus:outline-none cursor-pointer"
-                          title="Click to view country breakdown"
+                          title={isLastViewed ? "Situs terakhir dibuka (klik untuk membuka kembali)" : "Click to view country breakdown"}
                         >
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:scale-125 transition-transform"></span>
-                          <span className="text-sm font-bold hover:underline decoration-emerald-400 underline-offset-4">
+                          <span 
+                            className={`w-2 h-2 rounded-full shrink-0 transition-all ${
+                              isLastViewed
+                                ? 'bg-sky-400 ring-2 ring-sky-400/50 shadow-sm shadow-sky-400/50'
+                                : 'bg-emerald-400 group-hover:scale-125'
+                            }`}
+                            title={isLastViewed ? "Situs terakhir dibuka" : undefined}
+                          ></span>
+                          <span className={`text-sm font-bold hover:underline decoration-emerald-400 underline-offset-4 ${
+                            isLastViewed ? 'text-sky-200' : ''
+                          }`}>
                             {site.domain}
                           </span>
                           {site.has_auto_export && (
