@@ -422,7 +422,7 @@ export default function AdUnitPricingOverrideModal({
                     <div>
                       <div className="text-xs font-bold flex items-center gap-1.5">
                         <Zap className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Auto (Cascade Bawaan)</span>
+                        <span>🟢 Auto (Cascade Bawaan)</span>
                       </div>
                       <p className="text-[10px] text-slate-400 mt-0.5">Mengikuti kalkulasi dinamis harian bawaan.</p>
                     </div>
@@ -448,7 +448,7 @@ export default function AdUnitPricingOverrideModal({
                       <div>
                         <div className="text-xs font-bold flex items-center gap-1.5">
                           <Target className="w-3.5 h-3.5 text-sky-400" />
-                          <span>Target CPM</span>
+                          <span>🔵 Target CPM</span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">Optimasi lelang di sekitar target CPM.</p>
                       </div>
@@ -492,7 +492,7 @@ export default function AdUnitPricingOverrideModal({
                       <div>
                         <div className="text-xs font-bold flex items-center gap-1.5">
                           <Shield className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Target Floor (Hard Floor)</span>
+                          <span>🟣 Target Floor (Hard Floor)</span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">Tolak lelang di bawah batas harga minimum.</p>
                       </div>
@@ -536,7 +536,7 @@ export default function AdUnitPricingOverrideModal({
                       <div>
                         <div className="text-xs font-bold flex items-center gap-1.5">
                           <Percent className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Target MR (Match Rate)</span>
+                          <span>🟠 Target MR (Match Rate)</span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">Otomatis tentukan floor agar keterisian mencapai target MR.</p>
                       </div>
@@ -591,7 +591,7 @@ export default function AdUnitPricingOverrideModal({
                     <div>
                       <div className="text-xs font-bold flex items-center gap-1.5">
                         <Zap className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Auto (Cascade Bawaan)</span>
+                        <span>🟢 Auto (Cascade Bawaan)</span>
                       </div>
                       <p className="text-[10px] text-slate-400 mt-0.5">Mengikuti kalkulasi dinamis harian bawaan.</p>
                     </div>
@@ -617,7 +617,7 @@ export default function AdUnitPricingOverrideModal({
                       <div>
                         <div className="text-xs font-bold flex items-center gap-1.5">
                           <Target className="w-3.5 h-3.5 text-sky-400" />
-                          <span>Target CPM</span>
+                          <span>🔵 Target CPM</span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">Optimasi lelang di sekitar target CPM.</p>
                       </div>
@@ -661,7 +661,7 @@ export default function AdUnitPricingOverrideModal({
                       <div>
                         <div className="text-xs font-bold flex items-center gap-1.5">
                           <Shield className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Target Floor (Hard Floor)</span>
+                          <span>🟣 Target Floor (Hard Floor)</span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">Tolak lelang di bawah batas harga minimum.</p>
                       </div>
@@ -705,7 +705,7 @@ export default function AdUnitPricingOverrideModal({
                       <div>
                         <div className="text-xs font-bold flex items-center gap-1.5">
                           <Percent className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Target MR (Match Rate)</span>
+                          <span>🟠 Target MR (Match Rate)</span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">Otomatis tentukan floor agar keterisian mencapai target MR.</p>
                       </div>

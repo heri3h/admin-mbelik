@@ -242,7 +242,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     return LEVEL2_COLUMNS.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
   });
 
-  const isOverrideSupported = domain && domain.toLowerCase() === 'gemol.me';
+  const isOverrideSupported = Boolean(domain);
   const effectiveLevel2Columns = isOverrideSupported ? LEVEL2_COLUMNS : LEVEL2_COLUMNS.filter(c => c.key !== 'pricing_override');
   const activeColumns = selectedCountry ? effectiveLevel2Columns : LEVEL1_COLUMNS;
   const activeVisibleCols = selectedCountry ? level2VisibleCols : level1VisibleCols;
@@ -416,12 +416,14 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
   });
 
   // Level 2: Filter & Sort Ad Units within Selected Country
+  const level2TotalRev = adUnits.reduce((sum, p) => sum + (p.total_revenue || 0), 0);
   const level2TotalAdReqs = adUnits.reduce((sum, p) => sum + (p.ad_requests || 0), 0);
   const level2TotalMatchedReqs = adUnits.reduce((sum, p) => sum + (p.matched_requests || 0), 0);
   const level2AvgMatchRate = level2TotalAdReqs > 0 ? (level2TotalMatchedReqs / level2TotalAdReqs * 100) : 0;
   const level2TotalImps = adUnits.reduce((sum, p) => sum + (p.impressions || 0), 0);
   const level2TotalClicks = adUnits.reduce((sum, p) => sum + (p.clicks || 0), 0);
   const level2AvgCtr = level2TotalImps > 0 ? (level2TotalClicks / level2TotalImps * 100) : 0;
+  const level2AvgEcpm = level2TotalImps > 0 ? (level2TotalRev / (level2TotalImps / 1000)) : 0;
 
   const filteredAdUnits = adUnits.filter(p =>
     p.ad_unit.toLowerCase().includes(searchTerm.toLowerCase())
@@ -437,12 +439,39 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
     return adUnitSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
   });
 
+  // Find updated country metadata matching the active deviceFilter
+  const currentCountryData = selectedCountry
+    ? (countries.find(c =>
+        (c.country && selectedCountry.country && c.country.toLowerCase() === selectedCountry.country.toLowerCase()) ||
+        (c.country_code && selectedCountry.country_code && c.country_code.toUpperCase() === selectedCountry.country_code.toUpperCase())
+      ) || selectedCountry)
+    : null;
+
+  // Level 2 Metrics:
+  // When adUnits are loaded, total revenue and ecpm come directly from the ad units list.
+  // If adUnits are still fetching (or empty), fallback to the currentCountryData revenue/ecpm.
+  const level2ActiveRev = (adUnits.length > 0 || !loadingAdUnits)
+    ? level2TotalRev
+    : (currentCountryData?.revenue || 0);
+
+  const level2ActiveImps = (adUnits.length > 0 || !loadingAdUnits)
+    ? level2TotalImps
+    : (currentCountryData?.impressions || 0);
+
+  const level2ActiveEcpm = level2ActiveImps > 0
+    ? (level2ActiveRev / (level2ActiveImps / 1000))
+    : (currentCountryData?.ecpm || 0);
+
+  const level2Spend = currentCountryData ? (currentCountryData.spend || 0) : 0;
+  const level2Profit = level2ActiveRev - level2Spend;
+  const level2Roi = level2Spend > 0 ? (level2ActiveRev / level2Spend * 100) : 0;
+
   // Calculate active summary metrics based on Level 1 (All Countries) or Level 2 (Selected Country)
-  const activeRev = selectedCountry ? selectedCountry.revenue : totalRev;
-  const activeSpend = selectedCountry ? selectedCountry.spend : totalSpend;
-  const activeProfit = activeRev - activeSpend;
-  const activeEcpm = selectedCountry ? selectedCountry.ecpm : avgEcpm;
-  const activeRoi = selectedCountry ? selectedCountry.roi : overallRoi;
+  const activeRev = selectedCountry ? level2ActiveRev : totalRev;
+  const activeSpend = selectedCountry ? level2Spend : totalSpend;
+  const activeProfit = selectedCountry ? level2Profit : netProfit;
+  const activeEcpm = selectedCountry ? level2ActiveEcpm : avgEcpm;
+  const activeRoi = selectedCountry ? level2Roi : overallRoi;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-1 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -786,7 +815,10 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                           </th>
                         )}
                         {selectedCountry && isOverrideSupported && activeVisibleCols.pricing_override && (
-                          <th className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right">
+                          <th
+                            className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-help"
+                            title="Status Badge: 🟢 Auto (Hijau) | 🟣 Target Floor (Ungu) | 🔵 Target CPM (Biru) | 🟠 Target MR (Amber)"
+                          >
                             <div className="flex items-center justify-end space-x-1 leading-tight">
                               <span>Override<br/>Pricing</span>
                             </div>
@@ -1014,40 +1046,51 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                       title="Klik untuk membuka modal pengaturan CPM Override Ad Unit"
                                     >
                                       {(() => {
-                                        const formatLabel = (ov) => {
-                                          if (!ov || ov.pricing_mode === 'auto') return 'Auto';
-                                          if (ov.pricing_mode === 'target_mr') return `MR ${ov.target_mr || 65}%`;
-                                          if (ov.pricing_mode === 'target_floor') return ov.target_floor_key || 'Floor';
-                                          if (ov.pricing_mode === 'target_cpm') return ov.target_key || ov.target_cpm || 'Target';
-                                          return 'Auto';
+                                        const renderPricingBadge = (ov, deviceIcon) => {
+                                          const mode = ov?.pricing_mode || 'auto';
+                                          let badgeCls = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+                                          let icon = "🟢";
+                                          let text = "Auto";
+
+                                          if (mode === 'target_floor') {
+                                            badgeCls = "bg-purple-500/15 text-purple-300 border-purple-500/35";
+                                            icon = "🟣";
+                                            text = ov.target_floor_key || 'Floor';
+                                          } else if (mode === 'target_cpm') {
+                                            badgeCls = "bg-sky-500/15 text-sky-300 border-sky-500/35";
+                                            icon = "🔵";
+                                            const rawVal = ov.target_key || ov.target_cpm;
+                                            if (rawVal && !isNaN(Number(rawVal))) {
+                                              text = `CPM ${Number(rawVal).toLocaleString('id-ID')}`;
+                                            } else {
+                                              text = rawVal ? `CPM ${rawVal}` : "Target CPM";
+                                            }
+                                          } else if (mode === 'target_mr') {
+                                            badgeCls = "bg-amber-500/15 text-amber-300 border-amber-500/35";
+                                            icon = "🟠";
+                                            text = `MR ${ov.target_mr || 65}%`;
+                                          }
+
+                                          return (
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-mono shadow-xs transition-colors ${badgeCls}`}>
+                                              {deviceIcon && <span className="text-[10px] opacity-80 mr-0.5">{deviceIcon}</span>}
+                                              <span className="text-[9px] leading-none">{icon}</span>
+                                              <span className="font-semibold tracking-tight">{text}</span>
+                                            </span>
+                                          );
                                         };
-                                        const isAct = (ov) => ov && ov.pricing_mode && ov.pricing_mode !== 'auto';
 
                                         if (deviceFilter === 'mobile') {
-                                          return (
-                                            <span className={`flex items-center gap-1 ${isAct(p.mobile_override) ? 'font-bold text-sky-400 font-mono' : 'text-slate-400 font-sans'}`}>
-                                              <span>📱</span>
-                                              <span>{formatLabel(p.mobile_override)}</span>
-                                            </span>
-                                          );
+                                          return renderPricingBadge(p.mobile_override, '📱');
                                         }
                                         if (deviceFilter === 'desktop') {
-                                          return (
-                                            <span className={`flex items-center gap-1 ${isAct(p.desktop_override) ? 'font-bold text-indigo-400 font-mono' : 'text-slate-400 font-sans'}`}>
-                                              <span>💻</span>
-                                              <span>{formatLabel(p.desktop_override)}</span>
-                                            </span>
-                                          );
+                                          return renderPricingBadge(p.desktop_override, '💻');
                                         }
                                         return (
                                           <div className="flex items-center space-x-1.5 text-[11px] font-mono">
-                                            <span className={isAct(p.mobile_override) ? "font-bold text-amber-400" : "text-slate-400"}>
-                                              📱 {formatLabel(p.mobile_override)}
-                                            </span>
+                                            {renderPricingBadge(p.mobile_override, '📱')}
                                             <span className="text-slate-600">|</span>
-                                            <span className={isAct(p.desktop_override) ? "font-bold text-indigo-400" : "text-slate-400"}>
-                                              💻 {formatLabel(p.desktop_override)}
-                                            </span>
+                                            {renderPricingBadge(p.desktop_override, '💻')}
                                           </div>
                                         );
                                       })()}
