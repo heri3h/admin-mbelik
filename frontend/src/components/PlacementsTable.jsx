@@ -20,6 +20,7 @@ const ALL_COLUMNS = [
 const formatPricingRuleName = (rule) => {
   if (!rule || rule === 'All Rules') return 'All Rules';
   if (rule === '(No pricing rule applied)' || rule === 'No pricing rule applied' || rule === '(No Rule)') return 'No Rule';
+  if (rule.toLowerCase() === 'google_optimize') return 'G-Opt';
   return rule;
 };
 
@@ -420,7 +421,10 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
                   )}
 
                   {visibleColumns.pricing_rule_name && (
-                    <td className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap">
+                    <td 
+                      className="px-3 py-2.5 text-right font-medium text-amber-300 whitespace-nowrap"
+                      title={item.pricing_rule_name?.toLowerCase() === 'google_optimize' ? 'Google Optimized Pricing (google_optimize)' : undefined}
+                    >
                       {formatPricingRuleName(item.pricing_rule_name)}
                     </td>
                   )}
