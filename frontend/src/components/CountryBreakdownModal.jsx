@@ -1132,7 +1132,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         <tr>
                           {activeVisibleCols.name && (
                             <td className="px-3 py-2.5 font-bold whitespace-nowrap">
-                              Total Ad Units ({selectedCountry.country})
+                              Total Ad Units
                             </td>
                           )}
                           {activeVisibleCols.revenue && (
