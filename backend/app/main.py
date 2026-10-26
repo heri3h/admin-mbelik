@@ -240,7 +240,7 @@ async def unified_sync_and_pricing_task():
     Unified Sync & AutoPricing Worker:
     Runs every 30 minutes (1800s).
     - Every 30 minutes: Pulls fresh GAM data for today and exports current_pricing.json (0ms impact on web).
-    - Every 60 minutes (every 2nd cycle: 0, 2, 4...): Also pulls Google Ads spend (protects GAds quota).
+    - Every 30 minutes: Pulls Google Ads spend & real-time account balances with 0.5s polite pacing.
     - Every 12 hours (every 24th cycle: 0, 24, 48...): Re-syncs yesterday's data for complete audit reconciliation.
     """
     await asyncio.sleep(10)  # Wait 10 seconds after server startup
@@ -250,8 +250,8 @@ async def unified_sync_and_pricing_task():
             today = date.today()
             yesterday = today - timedelta(days=1)
 
-            # Sync Google Ads spend every 1 hour (cycle 0, 2, 4...)
-            should_sync_gads = (cycle % 2 == 0)
+            # Sync Google Ads spend and balance every 30 minutes (tested with polite pacing delay)
+            should_sync_gads = True
 
             # Sync yesterday on first run or every 12 hours (cycle 0, 24, 48...)
             sync_yesterday = (cycle % 24 == 0)

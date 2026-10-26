@@ -128,7 +128,7 @@ class GoogleAdsService:
 
         for cid in cids:
             clean_cid = cid.replace("-", "")
-            time.sleep(0.05)
+            time.sleep(0.5)  # Polite pacing delay to prevent rate limits
             try:
                 stream = self._search_stream_with_retry(ga_service, clean_cid, query)
                 if not stream:
@@ -529,6 +529,8 @@ class GoogleAdsService:
         balances = {}
         for cid in cids:
             clean_cid = cid.replace("-", "")
+            time.sleep(0.5)  # Polite pacing delay
+            self._track_op()
             try:
                 res = ga_service.search(customer_id=clean_cid, query=query)
                 for r in res:
@@ -541,6 +543,7 @@ class GoogleAdsService:
                 logger.warning(f"Notice fetching account_budget for CID {cid}: {ex}")
                 continue
 
+        logger.info(f"[GoogleAds] Account balances fetched for {len(balances)} accounts. Daily Ops: {self.daily_ops_count}/15000 ({self.quota_used_pct}%)")
         return balances
 
 google_ads_service = GoogleAdsService()
