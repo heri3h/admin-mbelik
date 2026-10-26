@@ -387,6 +387,9 @@ class SyncService:
                     )
                     db.add(new_d_gads)
 
+            # Flush all pending deletes/inserts to transaction so SQL aggregations see fresh records
+            db.flush()
+
             # 2g. Calculate daily profit summaries per date in the range
             curr_date = start_date
             while curr_date <= end_date:
