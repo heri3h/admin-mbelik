@@ -42,23 +42,37 @@ HOURLY_WEIGHTS = SPEND_HOURLY_WEIGHTS
 def get_wib_today() -> date:
     return datetime.now(WIB).date()
 
-def classify_placement_format(unit_name: str, target_record = None) -> str:
+def classify_placement_format(unit_name: str, pricing_config = None) -> str:
     """
     Universal placement format classifier for Dashboard display.
     Maps ad units to: 'Interstitial', 'Anchor / Sticky', 'Vignette', 'In-Feed', 'Header', 'Sidebar 1', 'Sidebar 2', 'Footer', 'Banner'
+    Resolution order:
+    1. Explicit pricing_config ad_units (interstitial, anchor, header, feed, side1, side2)
+    2. Format keyword heuristics
+    3. Numeric slot position suffixes
+    4. Default fallback -> 'Banner'
     """
     if not unit_name:
         return "Banner"
     u = str(unit_name).lower().strip()
     norm_u = re.sub(r'[^a-z0-9]', '', u)
 
-    if target_record:
-        int_slot = str(getattr(target_record, "slot_interstitial", None) or "").lower().strip()
-        anc_slot = str(getattr(target_record, "slot_anchor", None) or "").lower().strip()
-        hdr_slot = str(getattr(target_record, "slot_header", None) or "").lower().strip()
-        feed_slot = str(getattr(target_record, "slot_feed", None) or "").lower().strip()
-        side1_slot = str(getattr(target_record, "slot_side1", None) or "").lower().strip()
-        side2_slot = str(getattr(target_record, "slot_side2", None) or "").lower().strip()
+    if pricing_config:
+        if isinstance(pricing_config, dict):
+            ad_units = pricing_config.get("ad_units", {})
+            int_slot = str(ad_units.get("interstitial") or pricing_config.get("slot_interstitial") or "").lower().strip()
+            anc_slot = str(ad_units.get("anchor") or pricing_config.get("slot_anchor") or "").lower().strip()
+            hdr_slot = str(ad_units.get("header") or pricing_config.get("slot_header") or "").lower().strip()
+            feed_slot = str(ad_units.get("feed") or pricing_config.get("slot_feed") or "").lower().strip()
+            side1_slot = str(ad_units.get("side") or pricing_config.get("slot_side1") or "").lower().strip()
+            side2_slot = str(ad_units.get("side2") or pricing_config.get("slot_side2") or "").lower().strip()
+        else:
+            int_slot = str(getattr(pricing_config, "slot_interstitial", None) or "").lower().strip()
+            anc_slot = str(getattr(pricing_config, "slot_anchor", None) or "").lower().strip()
+            hdr_slot = str(getattr(pricing_config, "slot_header", None) or "").lower().strip()
+            feed_slot = str(getattr(pricing_config, "slot_feed", None) or "").lower().strip()
+            side1_slot = str(getattr(pricing_config, "slot_side1", None) or "").lower().strip()
+            side2_slot = str(getattr(pricing_config, "slot_side2", None) or "").lower().strip()
 
         if int_slot:
             last_seg = int_slot.split("/")[-1]
@@ -1034,7 +1048,7 @@ def get_placements_breakdown(
         items.append(PlacementBreakdownItem(
             domain=item["domain"],
             ad_unit=item["ad_unit"],
-            placement_format=classify_placement_format(item["ad_unit"], target_record=target_rec),
+            placement_format=classify_placement_format(item["ad_unit"], pricing_config=target_rec),
             total_revenue=round(tot_rev, 2),
             impressions=tot_imps,
             clicks=tot_clicks,
@@ -1619,7 +1633,7 @@ def get_site_country_placements_breakdown(
         items.append(PlacementBreakdownItem(
             domain=domain_name,
             ad_unit=item["ad_unit"],
-            placement_format=classify_placement_format(item["ad_unit"], target_record=target_rec),
+            placement_format=classify_placement_format(item["ad_unit"], pricing_config=target_rec),
             total_revenue=round(tot_rev, 2),
             impressions=tot_imps,
             clicks=tot_clicks,

@@ -493,7 +493,7 @@ def atomic_write_json(target_filepath: str, data: dict, indent: int = 2):
                 pass
         raise e
 
-def universal_classify_ad_format(unit_name: str, target_record = None) -> str:
+def universal_classify_ad_format(unit_name: str, pricing_config = None) -> str:
     """
     Universal ad format classifier that maps ad unit names to pricing format codes:
     - 'int': Interstitial / Vignette
@@ -501,7 +501,7 @@ def universal_classify_ad_format(unit_name: str, target_record = None) -> str:
     - 'bnr': Banner (Header, In-Feed, Sidebar 1 & 2, Footer, Display)
 
     Resolution order:
-    1. Explicit domain target configuration (slot_interstitial, slot_anchor, etc.)
+    1. Explicit pricing_config ad_units (interstitial, anchor, etc.)
     2. Format keyword heuristics (int, vignet, interstitial, popup, sticky, anchor, anc, etc.)
     3. Numeric slot position suffixes (slot 5 -> int, slot 6 -> anc, slots 1-4, 7 -> bnr)
     4. Default fallback -> 'bnr'
@@ -511,9 +511,15 @@ def universal_classify_ad_format(unit_name: str, target_record = None) -> str:
     u = str(unit_name).lower().strip()
     norm_u = re.sub(r'[^a-z0-9]', '', u)
 
-    if target_record:
-        int_slot = str(getattr(target_record, "slot_interstitial", None) or "").lower().strip()
-        anc_slot = str(getattr(target_record, "slot_anchor", None) or "").lower().strip()
+    if pricing_config:
+        if isinstance(pricing_config, dict):
+            ad_units = pricing_config.get("ad_units", {})
+            int_slot = str(ad_units.get("interstitial") or pricing_config.get("slot_interstitial") or "").lower().strip()
+            anc_slot = str(ad_units.get("anchor") or pricing_config.get("slot_anchor") or "").lower().strip()
+        else:
+            int_slot = str(getattr(pricing_config, "slot_interstitial", None) or "").lower().strip()
+            anc_slot = str(getattr(pricing_config, "slot_anchor", None) or "").lower().strip()
+
         if int_slot:
             last_seg = int_slot.split("/")[-1]
             norm_int = re.sub(r'[^a-z0-9]', '', last_seg)
@@ -746,7 +752,7 @@ def export_site_today_json(
         hist_summary_dev_map[dev_cat] = {"match_rate": mr, "ecpm": ecpm}
 
     def classify_unit(unit_name: str) -> str:
-        return universal_classify_ad_format(unit_name, target_record=target_record)
+        return universal_classify_ad_format(unit_name, pricing_config=target_record)
 
     # Alias so any call to classify_ad_format inside export_site_today_json uses domain targets
     classify_ad_format = classify_unit
