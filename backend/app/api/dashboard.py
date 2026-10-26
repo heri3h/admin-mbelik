@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, Query, HTTPException, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
@@ -101,7 +102,6 @@ def classify_placement_format(unit_name: str, target_record = None) -> str:
     if any(k in u for k in ["footer"]):
         return "Footer"
 
-    import re
     match = re.search(r'(?:[ _\-\./]|^)(\d+)[a-z]?$', u)
     if match:
         num = match.group(1)
