@@ -493,7 +493,7 @@ def atomic_write_json(target_filepath: str, data: dict, indent: int = 2):
                 pass
         raise e
 
-def classify_ad_format(unit_name: str, target_record = None) -> str:
+def universal_classify_ad_format(unit_name: str, target_record = None) -> str:
     """
     Universal ad format classifier that maps ad unit names to pricing format codes:
     - 'int': Interstitial / Vignette
@@ -541,6 +541,8 @@ def classify_ad_format(unit_name: str, target_record = None) -> str:
             return "bnr"
 
     return "bnr"
+
+classify_ad_format = universal_classify_ad_format
 
 def export_site_today_json(
     db: Session,
@@ -744,7 +746,7 @@ def export_site_today_json(
         hist_summary_dev_map[dev_cat] = {"match_rate": mr, "ecpm": ecpm}
 
     def classify_unit(unit_name: str) -> str:
-        return classify_ad_format(unit_name, target_record=target_record)
+        return universal_classify_ad_format(unit_name, target_record=target_record)
 
     # Alias so any call to classify_ad_format inside export_site_today_json uses domain targets
     classify_ad_format = classify_unit
