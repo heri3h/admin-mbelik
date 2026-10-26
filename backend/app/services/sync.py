@@ -493,6 +493,22 @@ def atomic_write_json(target_filepath: str, data: dict, indent: int = 2):
                 pass
         raise e
 
+def _matches_slot(unit: str, norm_unit: str, slot: str) -> bool:
+    if not slot or not unit:
+        return False
+    s = str(slot).strip().rstrip("/")
+    if not s:
+        return False
+    if unit == s or s.endswith(f"/{unit}") or s.endswith(f"-{unit}"):
+        return True
+    last_seg = s.split("/")[-1]
+    if last_seg and unit.endswith(last_seg):
+        return True
+    norm_seg = re.sub(r'[^a-z0-9]', '', last_seg)
+    if norm_seg and norm_unit and norm_unit == norm_seg:
+        return True
+    return False
+
 def universal_classify_ad_format(unit_name: str, pricing_config = None) -> str:
     """
     Universal ad format classifier that maps ad unit names to pricing format codes:
@@ -520,16 +536,10 @@ def universal_classify_ad_format(unit_name: str, pricing_config = None) -> str:
             int_slot = str(getattr(pricing_config, "slot_interstitial", None) or "").lower().strip()
             anc_slot = str(getattr(pricing_config, "slot_anchor", None) or "").lower().strip()
 
-        if int_slot:
-            last_seg = int_slot.split("/")[-1]
-            norm_int = re.sub(r'[^a-z0-9]', '', last_seg)
-            if norm_u == norm_int or u == int_slot or int_slot.endswith(f"/{u}") or int_slot.endswith(f"-{u}") or u.endswith(last_seg):
-                return "int"
-        if anc_slot:
-            last_seg = anc_slot.split("/")[-1]
-            norm_anc = re.sub(r'[^a-z0-9]', '', last_seg)
-            if norm_u == norm_anc or u == anc_slot or anc_slot.endswith(f"/{u}") or anc_slot.endswith(f"-{u}") or u.endswith(last_seg):
-                return "anc"
+        if _matches_slot(u, norm_u, int_slot):
+            return "int"
+        if _matches_slot(u, norm_u, anc_slot):
+            return "anc"
 
     if any(k in u for k in ["int", "vignet", "interstitial", "popup"]):
         return "int"

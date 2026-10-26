@@ -42,6 +42,22 @@ HOURLY_WEIGHTS = SPEND_HOURLY_WEIGHTS
 def get_wib_today() -> date:
     return datetime.now(WIB).date()
 
+def _matches_slot(unit: str, norm_unit: str, slot: str) -> bool:
+    if not slot or not unit:
+        return False
+    s = str(slot).strip().rstrip("/")
+    if not s:
+        return False
+    if unit == s or s.endswith(f"/{unit}") or s.endswith(f"-{unit}"):
+        return True
+    last_seg = s.split("/")[-1]
+    if last_seg and unit.endswith(last_seg):
+        return True
+    norm_seg = re.sub(r'[^a-z0-9]', '', last_seg)
+    if norm_seg and norm_unit and norm_unit == norm_seg:
+        return True
+    return False
+
 def classify_placement_format(unit_name: str, pricing_config = None) -> str:
     """
     Universal placement format classifier for Dashboard display.
@@ -74,30 +90,18 @@ def classify_placement_format(unit_name: str, pricing_config = None) -> str:
             side1_slot = str(getattr(pricing_config, "slot_side1", None) or "").lower().strip()
             side2_slot = str(getattr(pricing_config, "slot_side2", None) or "").lower().strip()
 
-        if int_slot:
-            last_seg = int_slot.split("/")[-1]
-            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == int_slot or int_slot.endswith(f"/{u}") or int_slot.endswith(f"-{u}") or u.endswith(last_seg):
-                return "Interstitial"
-        if anc_slot:
-            last_seg = anc_slot.split("/")[-1]
-            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == anc_slot or anc_slot.endswith(f"/{u}") or anc_slot.endswith(f"-{u}") or u.endswith(last_seg):
-                return "Anchor / Sticky"
-        if hdr_slot:
-            last_seg = hdr_slot.split("/")[-1]
-            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == hdr_slot or hdr_slot.endswith(f"/{u}") or hdr_slot.endswith(f"-{u}") or u.endswith(last_seg):
-                return "Header"
-        if feed_slot:
-            last_seg = feed_slot.split("/")[-1]
-            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == feed_slot or feed_slot.endswith(f"/{u}") or feed_slot.endswith(f"-{u}") or u.endswith(last_seg):
-                return "In-Feed"
-        if side1_slot:
-            last_seg = side1_slot.split("/")[-1]
-            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == side1_slot or side1_slot.endswith(f"/{u}") or side1_slot.endswith(f"-{u}") or u.endswith(last_seg):
-                return "Sidebar 1"
-        if side2_slot:
-            last_seg = side2_slot.split("/")[-1]
-            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == side2_slot or side2_slot.endswith(f"/{u}") or side2_slot.endswith(f"-{u}") or u.endswith(last_seg):
-                return "Sidebar 2"
+        if _matches_slot(u, norm_u, int_slot):
+            return "Interstitial"
+        if _matches_slot(u, norm_u, anc_slot):
+            return "Anchor / Sticky"
+        if _matches_slot(u, norm_u, hdr_slot):
+            return "Header"
+        if _matches_slot(u, norm_u, feed_slot):
+            return "In-Feed"
+        if _matches_slot(u, norm_u, side1_slot):
+            return "Sidebar 1"
+        if _matches_slot(u, norm_u, side2_slot):
+            return "Sidebar 2"
 
     if "vignet" in u:
         return "Vignette"
