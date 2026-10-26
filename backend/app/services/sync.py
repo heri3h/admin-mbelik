@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import re
 from datetime import date, datetime, timedelta
 
 
@@ -492,6 +493,55 @@ def atomic_write_json(target_filepath: str, data: dict, indent: int = 2):
                 pass
         raise e
 
+def classify_ad_format(unit_name: str, target_record = None) -> str:
+    """
+    Universal ad format classifier that maps ad unit names to pricing format codes:
+    - 'int': Interstitial / Vignette
+    - 'anc': Anchor / Sticky
+    - 'bnr': Banner (Header, In-Feed, Sidebar 1 & 2, Footer, Display)
+
+    Resolution order:
+    1. Explicit domain target configuration (slot_interstitial, slot_anchor, etc.)
+    2. Format keyword heuristics (int, vignet, interstitial, popup, sticky, anchor, anc, etc.)
+    3. Numeric slot position suffixes (slot 5 -> int, slot 6 -> anc, slots 1-4, 7 -> bnr)
+    4. Default fallback -> 'bnr'
+    """
+    if not unit_name:
+        return "bnr"
+    u = str(unit_name).lower().strip()
+    norm_u = re.sub(r'[^a-z0-9]', '', u)
+
+    if target_record:
+        int_slot = str(getattr(target_record, "slot_interstitial", None) or "").lower().strip()
+        anc_slot = str(getattr(target_record, "slot_anchor", None) or "").lower().strip()
+        if int_slot:
+            last_seg = int_slot.split("/")[-1]
+            norm_int = re.sub(r'[^a-z0-9]', '', last_seg)
+            if norm_u == norm_int or u == int_slot or int_slot.endswith(f"/{u}") or int_slot.endswith(f"-{u}") or u.endswith(last_seg):
+                return "int"
+        if anc_slot:
+            last_seg = anc_slot.split("/")[-1]
+            norm_anc = re.sub(r'[^a-z0-9]', '', last_seg)
+            if norm_u == norm_anc or u == anc_slot or anc_slot.endswith(f"/{u}") or anc_slot.endswith(f"-{u}") or u.endswith(last_seg):
+                return "anc"
+
+    if any(k in u for k in ["int", "vignet", "interstitial", "popup"]):
+        return "int"
+    if any(k in u for k in ["sticky", "anchor", "anc", "bottom", "floater"]):
+        return "anc"
+
+    m = re.search(r'(?:[ _\-\./]|^)(\d+)[a-z]?$', u)
+    if m:
+        num = m.group(1)
+        if num == "5":
+            return "int"
+        elif num == "6":
+            return "anc"
+        else:
+            return "bnr"
+
+    return "bnr"
+
 def export_site_today_json(
     db: Session,
     domain: str = "spotgames.top",
@@ -516,6 +566,11 @@ def export_site_today_json(
     today_date = wib_now.date()
     yesterday_date = today_date - timedelta(days=1)
     today_str = today_date.strftime("%Y-%m-%d")
+
+    from app.models import JSONExportTarget
+    target_record = db.query(JSONExportTarget).filter(
+        func.lower(JSONExportTarget.domain) == domain.lower()
+    ).first()
 
     # Fetch GAM metrics for domain today to assess current volume
     gam_row_today = db.query(
@@ -688,15 +743,11 @@ def export_site_today_json(
         ecpm = round((rev / imps * 1000.0), 2) if imps > 0 else 0.0
         hist_summary_dev_map[dev_cat] = {"match_rate": mr, "ecpm": ecpm}
 
-    def classify_ad_format(unit_name: str) -> str:
-        if not unit_name:
-            return "bnr"
-        u = str(unit_name).lower().strip()
-        if any(k in u for k in ["int", "vignet", "interstitial"]):
-            return "int"
-        if any(k in u for k in ["sticky", "anchor", "anc"]):
-            return "anc"
-        return "bnr"
+    def classify_unit(unit_name: str) -> str:
+        return classify_ad_format(unit_name, target_record=target_record)
+
+    # Alias so any call to classify_ad_format inside export_site_today_json uses domain targets
+    classify_ad_format = classify_unit
 
     # 7-day historical format breakdown summary
     hist_fmt_summary_rows = db.query(

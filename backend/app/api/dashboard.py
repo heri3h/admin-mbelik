@@ -41,29 +41,68 @@ HOURLY_WEIGHTS = SPEND_HOURLY_WEIGHTS
 def get_wib_today() -> date:
     return datetime.now(WIB).date()
 
-def classify_placement_format(unit_name: str) -> str:
+def classify_placement_format(unit_name: str, target_record = None) -> str:
+    """
+    Universal placement format classifier for Dashboard display.
+    Maps ad units to: 'Interstitial', 'Anchor / Sticky', 'Vignette', 'In-Feed', 'Header', 'Sidebar 1', 'Sidebar 2', 'Footer', 'Banner'
+    """
     if not unit_name:
         return "Banner"
     u = str(unit_name).lower().strip()
+    norm_u = re.sub(r'[^a-z0-9]', '', u)
+
+    if target_record:
+        int_slot = str(getattr(target_record, "slot_interstitial", None) or "").lower().strip()
+        anc_slot = str(getattr(target_record, "slot_anchor", None) or "").lower().strip()
+        hdr_slot = str(getattr(target_record, "slot_header", None) or "").lower().strip()
+        feed_slot = str(getattr(target_record, "slot_feed", None) or "").lower().strip()
+        side1_slot = str(getattr(target_record, "slot_side1", None) or "").lower().strip()
+        side2_slot = str(getattr(target_record, "slot_side2", None) or "").lower().strip()
+
+        if int_slot:
+            last_seg = int_slot.split("/")[-1]
+            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == int_slot or int_slot.endswith(f"/{u}") or int_slot.endswith(f"-{u}") or u.endswith(last_seg):
+                return "Interstitial"
+        if anc_slot:
+            last_seg = anc_slot.split("/")[-1]
+            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == anc_slot or anc_slot.endswith(f"/{u}") or anc_slot.endswith(f"-{u}") or u.endswith(last_seg):
+                return "Anchor / Sticky"
+        if hdr_slot:
+            last_seg = hdr_slot.split("/")[-1]
+            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == hdr_slot or hdr_slot.endswith(f"/{u}") or hdr_slot.endswith(f"-{u}") or u.endswith(last_seg):
+                return "Header"
+        if feed_slot:
+            last_seg = feed_slot.split("/")[-1]
+            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == feed_slot or feed_slot.endswith(f"/{u}") or feed_slot.endswith(f"-{u}") or u.endswith(last_seg):
+                return "In-Feed"
+        if side1_slot:
+            last_seg = side1_slot.split("/")[-1]
+            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == side1_slot or side1_slot.endswith(f"/{u}") or side1_slot.endswith(f"-{u}") or u.endswith(last_seg):
+                return "Sidebar 1"
+        if side2_slot:
+            last_seg = side2_slot.split("/")[-1]
+            if norm_u == re.sub(r'[^a-z0-9]', '', last_seg) or u == side2_slot or side2_slot.endswith(f"/{u}") or side2_slot.endswith(f"-{u}") or u.endswith(last_seg):
+                return "Sidebar 2"
+
     if "vignet" in u:
         return "Vignette"
-    if any(k in u for k in ["int", "interstitial"]):
+    if any(k in u for k in ["int", "interstitial", "popup"]):
         return "Interstitial"
-    if any(k in u for k in ["sticky", "anchor", "anc"]):
+    if any(k in u for k in ["sticky", "anchor", "anc", "bottom", "floater"]):
         return "Anchor / Sticky"
-    if any(k in u for k in ["feed"]):
+    if any(k in u for k in ["feed", "inline", "infeed", "native", "mid"]):
         return "In-Feed"
-    if any(k in u for k in ["header"]):
+    if any(k in u for k in ["header", "hero", "top"]):
         return "Header"
-    if any(k in u for k in ["side-2", "side 2", "sidebar2", "sidebar 2"]):
+    if any(k in u for k in ["side-2", "side 2", "side_2", "sidebar2", "sidebar 2"]):
         return "Sidebar 2"
     if any(k in u for k in ["side", "sidebar"]):
         return "Sidebar 1"
-    if any(k in u for k in ["footer", "bottom"]):
+    if any(k in u for k in ["footer"]):
         return "Footer"
 
     import re
-    match = re.search(r'(?:[ _\-\.]|^)(\d+)[a-z]?$', u)
+    match = re.search(r'(?:[ _\-\./]|^)(\d+)[a-z]?$', u)
     if match:
         num = match.group(1)
         if num == "1":
@@ -964,6 +1003,13 @@ def get_placements_breakdown(
         elif item["_max_rule_rev"] < 0 and p_rule:
             item["pricing_rule_name"] = p_rule
 
+    targets_by_domain = {}
+    try:
+        from app.models import JSONExportTarget
+        targets_by_domain = {t.domain.lower(): t for t in db.query(JSONExportTarget).all()}
+    except Exception:
+        pass
+
     items = []
     for item in unit_map.values():
         tot_rev = item["total_revenue"]
@@ -984,10 +1030,11 @@ def get_placements_breakdown(
         rev_change = round(((tot_rev - prev_rev) / prev_rev * 100.0), 2) if prev_rev > 0 else (100.0 if tot_rev > 0 else 0.0)
         ecpm_change = round(((ecpm - prev_ecpm) / prev_ecpm * 100.0), 2) if prev_ecpm > 0 else (100.0 if ecpm > 0 else 0.0)
 
+        target_rec = targets_by_domain.get((item.get("domain") or "").lower())
         items.append(PlacementBreakdownItem(
             domain=item["domain"],
             ad_unit=item["ad_unit"],
-            placement_format=classify_placement_format(item["ad_unit"]),
+            placement_format=classify_placement_format(item["ad_unit"], target_record=target_rec),
             total_revenue=round(tot_rev, 2),
             impressions=tot_imps,
             clicks=tot_clicks,
@@ -1540,6 +1587,13 @@ def get_site_country_placements_breakdown(
             "target_mr": ov.target_mr
         }
 
+    target_rec = None
+    try:
+        from app.models import JSONExportTarget
+        target_rec = db.query(JSONExportTarget).filter(func.lower(JSONExportTarget.domain) == domain_name.lower()).first()
+    except Exception:
+        pass
+
     items = []
     for item in unit_map.values():
         tot_rev = item["total_revenue"]
@@ -1565,7 +1619,7 @@ def get_site_country_placements_breakdown(
         items.append(PlacementBreakdownItem(
             domain=domain_name,
             ad_unit=item["ad_unit"],
-            placement_format=classify_placement_format(item["ad_unit"]),
+            placement_format=classify_placement_format(item["ad_unit"], target_record=target_rec),
             total_revenue=round(tot_rev, 2),
             impressions=tot_imps,
             clicks=tot_clicks,
