@@ -35,7 +35,7 @@ def normalize_canonical_domain(raw_domain: str) -> str:
     if "skuy" in d:
         return "dpr.skuy.me"
     if "nubmaster" in d:
-        return "2b.nubmaster.com"
+        return "nubmaster.com"
     if "spotgames" in d:
         return "spotgames.top"
     if "polpasulsa" in d:
@@ -61,15 +61,63 @@ def parse_gam_date(v_str: Any, default_date: date) -> date:
             pass
     return default_date
 
+_TARGET_SLOTS_CACHE: Dict[str, str] = {}
+_TARGET_SLOTS_CACHE_TIME: float = 0.0
+
+def get_target_slots_map() -> Dict[str, str]:
+    """
+    Build cached lookup dictionary mapping slot names and leaves to authoritative target domain
+    from active JSONExportTarget records. Refreshed every 5 minutes.
+    """
+    global _TARGET_SLOTS_CACHE, _TARGET_SLOTS_CACHE_TIME
+    now = time.time()
+    if _TARGET_SLOTS_CACHE and (now - _TARGET_SLOTS_CACHE_TIME < 300):
+        return _TARGET_SLOTS_CACHE
+
+    slot_map: Dict[str, str] = {}
+    try:
+        from app.database import SessionLocal
+        from app.models import JSONExportTarget
+        db = SessionLocal()
+        try:
+            targets = db.query(JSONExportTarget).filter(JSONExportTarget.is_active == True).all()
+            for t in targets:
+                if not t.domain:
+                    continue
+                dom = t.domain.lower().strip()
+                for s in [t.slot_header, t.slot_feed, t.slot_side1, t.slot_side2, t.slot_interstitial, t.slot_anchor]:
+                    if not s:
+                        continue
+                    s_clean = s.strip().lower()
+                    slot_map[s_clean] = dom
+                    leaf = s_clean.split('/')[-1].strip()
+                    if leaf:
+                        slot_map[leaf] = dom
+                        slot_map[leaf.replace('-', ' ').replace('_', ' ')] = dom
+                        slot_map[leaf.replace('-', '_')] = dom
+                        slot_map[leaf.replace('_', '-')] = dom
+                        slot_map[leaf.replace('-', '').replace('_', '')] = dom
+            if slot_map:
+                _TARGET_SLOTS_CACHE = slot_map
+                _TARGET_SLOTS_CACHE_TIME = now
+        finally:
+            db.close()
+    except Exception as e:
+        logger.debug(f"Target slots map fetch notice: {e}")
+    return _TARGET_SLOTS_CACHE
+
 def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     """
     Extract site domain directly from GAM API response row:
     1. Dimension.SITE_NAME / AD_EXCHANGE_URL_NAME / DOMAIN_NAME / URL_NAME
-    2. CUSTOM_TARGETING_VALUE_PAIR
-    3. Known domain matching in ad_unit string
-    4. Custom SITE_MAPPING in .env
-    5. Built-in token prefix mapping
-    6. Fallback domain
+    2. JSONExportTarget slot mapping (authoritative database configuration)
+    3. CUSTOM_TARGETING_VALUE_PAIR
+    4. Exact ad unit exceptions
+    5. Known domain matching in ad_unit string
+    6. Custom SITE_MAPPING in .env
+    7. Built-in token prefix mapping (DEFAULT_PREFIX_MAP)
+    8. General TLD domain regex extraction
+    9. Fallback domain
     """
     for k, v in row.items():
         if not k or not v:
@@ -98,6 +146,7 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
 
     unit_str = ad_unit.strip() if ad_unit else ""
     unit_lower = unit_str.lower()
+    clean_unit = unit_lower.split('(')[0].strip()
 
     # Exact full ad unit exceptions
     EXACT_MAP = {
@@ -110,8 +159,33 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
     if unit_lower in EXACT_MAP:
         return EXACT_MAP[unit_lower]
 
-    # Check known domain names directly in ad_unit string
-    for known_dom in ["spotgames.top", "2b.nubmaster.com", "baleq.me", "dpr.skuy.me", "polpasulsa.com", "play.gemol.me", "gemol.me"]:
+    # Authoritative slot lookup from JSONExportTarget
+    target_slots = get_target_slots_map()
+    if target_slots:
+        if clean_unit in target_slots:
+            return target_slots[clean_unit]
+        if unit_lower in target_slots:
+            return target_slots[unit_lower]
+        norm_space = clean_unit.replace('-', ' ').replace('_', ' ')
+        if norm_space in target_slots:
+            return target_slots[norm_space]
+        norm_hyphen = clean_unit.replace(' ', '-').replace('_', '-')
+        if norm_hyphen in target_slots:
+            return target_slots[norm_hyphen]
+
+    # Check known domain names directly in ad_unit string (ordered specific to general)
+    for known_dom in [
+        "xdr.nubmaster.com", "2b.nubmaster.com", "nubmaster.com",
+        "enew.spotgames.top", "yay.spotgames.top", "wew.spotgames.top", "spotgames.top",
+        "alt.polpasulsa.com", "wknd.polpasulsa.com", "polpasulsa.com",
+        "play.gemol.me", "joy.gemol.me", "gemol.me",
+        "dpr.skuy.me", "nub.skuy.me", "skuy.me",
+        "mko.baleq.me", "pnt.baleq.me", "baleq.me",
+        "vinn.henden.top", "mvp.henden.top", "henden.top",
+        "zse.ugames.top", "glee.mbelik.com", "hot.mbelik.com",
+        "jest.kiew.top", "kiew.top",
+        "pow.fun4kids.top", "fun4kids.top", "kedung.net"
+    ]:
         if known_dom in unit_lower:
             return known_dom
 
@@ -121,22 +195,22 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
         if prefix.lower() in unit_lower:
             return mapped_domain.lower().strip()
 
-    # Built-in tokenized prefix mappings
+    # Built-in tokenized prefix mappings (authoritative 1-to-1 target mapping)
     DEFAULT_PREFIX_MAP = [
         ('gml', 'gemol.me'),
+        ('gemol', 'gemol.me'),
         ('play', 'play.gemol.me'),
         ('gm', 'play.gemol.me'),
-        ('gemol', 'gemol.me'),
         ('skuy', 'skuy.me'),
         ('dpr', 'dpr.skuy.me'),
         ('nub', 'nub.skuy.me'),
-        ('nmas', 'nub.skuy.me'),
+        ('nmas', 'nubmaster.com'),
+        ('nubmaster', 'nubmaster.com'),
         ('xdr', 'xdr.nubmaster.com'),
+        ('2b', '2b.nubmaster.com'),
         ('spotgames', 'spotgames.top'),
         ('spot', 'spotgames.top'),
         ('sg', 'spotgames.top'),
-        ('2b', '2b.nubmaster.com'),
-        ('nubmaster', '2b.nubmaster.com'),
         ('alt', 'alt.polpasulsa.com'),
         ('polpasulsa', 'polpasulsa.com'),
         ('polpa', 'polpasulsa.com'),
@@ -151,11 +225,19 @@ def extract_domain_from_row(row: Dict[str, str], ad_unit: str = "") -> str:
         ('henden', 'henden.top'),
         ('zse', 'zse.ugames.top'),
         ('ugames', 'zse.ugames.top'),
-        ('vinn', 'mbelik.com'),
-        ('mko', 'mbelik.com'),
-        ('pow', 'mbelik.com'),
-        ('wew', 'mbelik.com'),
-        ('mvp', 'mbelik.com'),
+        ('vinn', 'vinn.henden.top'),
+        ('mko', 'mko.baleq.me'),
+        ('pow', 'pow.fun4kids.top'),
+        ('wew', 'wew.spotgames.top'),
+        ('joy', 'joy.gemol.me'),
+        ('kiew', 'kiew.top'),
+        ('jst', 'jest.kiew.top'),
+        ('jest', 'jest.kiew.top'),
+        ('f4k', 'fun4kids.top'),
+        ('fun4kids', 'fun4kids.top'),
+        ('kedung', 'kedung.net'),
+        ('pnt', 'pnt.baleq.me'),
+        ('mvp', 'mvp.henden.top'),
         ('ses', 'mbelik.com'),
         ('gg', 'mbelik.com'),
         ('dwnld', 'mbelik.com'),
@@ -772,7 +854,7 @@ class GAMService:
                         report_job_id = report_job['id']
                         
                         attempts = 0
-                        while attempts < 90:
+                        while attempts < 120:
                             job_status = report_service.getReportJobStatus(report_job_id)
                             if job_status == 'COMPLETED':
                                 break
@@ -781,8 +863,8 @@ class GAMService:
                             time.sleep(1)
                             attempts += 1
 
-                        if attempts >= 90:
-                            raise Exception("GAM Report Job Timed Out after 90s")
+                        if attempts >= 120:
+                            raise Exception("GAM Report Job Timed Out after 120s")
 
                         export_format = 'CSV_DUMP'
                         report_download_url = report_service.getReportDownloadUrlWithOptions(
@@ -1205,7 +1287,7 @@ class GAMService:
                         report_job_id = report_job['id']
 
                         attempts = 0
-                        while attempts < 90:
+                        while attempts < 120:
                             job_status = report_service.getReportJobStatus(report_job_id)
                             if job_status == 'COMPLETED':
                                 break
@@ -1214,8 +1296,8 @@ class GAMService:
                             time.sleep(1)
                             attempts += 1
 
-                        if attempts >= 90:
-                            raise Exception("GAM Country Report Job Timed Out after 90s")
+                        if attempts >= 120:
+                            raise Exception("GAM Country Report Job Timed Out after 120s")
 
                         report_download_url = report_service.getReportDownloadUrlWithOptions(
                             report_job_id, 'CSV_DUMP'
