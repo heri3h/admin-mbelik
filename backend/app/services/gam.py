@@ -788,12 +788,15 @@ class GAMService:
                     ['DATE', 'SITE_NAME', 'UNIFIED_PRICING_RULE_NAME', 'DEVICE_CATEGORY_NAME'],
                     ['DATE', 'SITE_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'DEVICE_CATEGORY_NAME'],
-                    ['DATE', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'DEVICE_CATEGORY_NAME', 'DOMAIN_NAME'],
-                    ['DATE', 'DEVICE_CATEGORY_NAME']
+                    ['DATE', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME']
                 ],
                 'column_sets': [
                     LOCKED_PRIMARY_GAM_COLUMNS,
+                    [
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS'
+                    ],
                     [
                         'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
                         'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
@@ -810,15 +813,17 @@ class GAMService:
                     ['DATE', 'SITE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME'],
                     ['DATE', 'DOMAIN_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'DOMAIN_NAME'],
                     ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR', 'AD_UNIT_NAME'],
-                    ['DATE', 'CUSTOM_TARGETING_VALUE_PAIR'],
                     ['DATE', 'PLATFORM_NAME', 'SITE_NAME'],
-                    ['DATE', 'AD_UNIT_NAME'],
-                    ['DATE']
+                    ['DATE', 'AD_UNIT_NAME']
                 ],
                 'column_sets': [
                     LOCKED_PRIMARY_GAM_COLUMNS,
+                    [
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS'
+                    ],
                     [
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
@@ -1082,10 +1087,16 @@ class GAMService:
                             seen_domains_per_date.add(domain_date_key)
                             found_any_row = True
 
+                        has_site_attribution = ('SITE_NAME' in dims or 'AD_UNIT_NAME' in dims)
                         if found_any_row:
-                            successful_dim = True
-                            successful_config = True
-                            break
+                            if not has_site_attribution and len(seen_domains_per_date) <= 1:
+                                logger.warning(f"Dim set {dims} only parsed 1 domain without SITE_NAME or AD_UNIT_NAME. Rejecting degenerate report.")
+                                aggregated_results.clear()
+                                seen_domains_per_date.clear()
+                            else:
+                                successful_dim = True
+                                successful_config = True
+                                break
 
                     except Exception as e:
                         last_error = e
@@ -1228,11 +1239,15 @@ class GAMService:
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME']
+                    ['DATE', 'COUNTRY_NAME', 'DEVICE_CATEGORY_NAME', 'AD_UNIT_NAME']
                 ],
                 'column_sets': [
                     LOCKED_PRIMARY_GAM_COLUMNS,
+                    [
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS'
+                    ],
                     [
                         'TOTAL_LINE_ITEM_LEVEL_CPM_AND_CPC_REVENUE',
                         'TOTAL_LINE_ITEM_LEVEL_IMPRESSIONS',
@@ -1248,11 +1263,15 @@ class GAMService:
                     ['DATE', 'COUNTRY_NAME', 'UNIFIED_PRICING_RULE_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
                     ['DATE', 'SITE_NAME', 'COUNTRY_NAME'],
-                    ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME'],
-                    ['DATE', 'COUNTRY_NAME']
+                    ['DATE', 'COUNTRY_NAME', 'AD_UNIT_NAME']
                 ],
                 'column_sets': [
                     LOCKED_PRIMARY_GAM_COLUMNS,
+                    [
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',
+                        'AD_EXCHANGE_LINE_ITEM_LEVEL_CLICKS'
+                    ],
                     [
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_REVENUE',
                         'AD_EXCHANGE_LINE_ITEM_LEVEL_IMPRESSIONS',

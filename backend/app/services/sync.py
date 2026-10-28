@@ -59,6 +59,52 @@ class SyncService:
             logger.error(f"GAM API Error: {err_msg}")
             messages.append(f"GAM API Error: {err_msg}")
 
+        # Safety Layer: If Country data fetched more domains than Daily data
+        # (e.g. Daily data dropped domains or fell back due to API glitch),
+        # synthesize complete Daily data directly from Country data records!
+        gam_domains = set(item.get("domain") for item in gam_data if item.get("domain"))
+        country_domains = set(item.get("domain") for item in gam_country_data if item.get("domain"))
+
+        if len(country_domains) > len(gam_domains):
+            logger.warning(
+                f"[Sync Guard] Daily GAM data only had {len(gam_domains)} domain(s), but Country data has {len(country_domains)} domains! "
+                "Synthesizing accurate daily GAM metrics from Country records."
+            )
+            synth_map = {}
+            for c_row in gam_country_data:
+                dom = (c_row.get("domain") or "").strip().lower()
+                if not dom:
+                    continue
+                s_key = (
+                    c_row.get("date"),
+                    dom,
+                    c_row.get("ad_unit") or "Standard Ad Unit",
+                    c_row.get("pricing_rule_name") or "All Rules",
+                    (c_row.get("device_category") or "mobile").strip().lower()
+                )
+                if s_key not in synth_map:
+                    synth_map[s_key] = {
+                        "date": c_row.get("date"),
+                        "domain": dom,
+                        "ad_unit": c_row.get("ad_unit") or "Standard Ad Unit",
+                        "pricing_rule_name": c_row.get("pricing_rule_name") or "All Rules",
+                        "device_category": (c_row.get("device_category") or "mobile").strip().lower(),
+                        "revenue": 0.0,
+                        "impressions": 0,
+                        "clicks": 0,
+                        "ad_requests": 0,
+                        "matched_requests": 0
+                    }
+                agg = synth_map[s_key]
+                agg["revenue"] += c_row.get("revenue", 0.0)
+                agg["impressions"] += c_row.get("impressions", 0)
+                agg["clicks"] += c_row.get("clicks", 0)
+                agg["ad_requests"] += c_row.get("ad_requests", 0)
+                agg["matched_requests"] += c_row.get("matched_requests", 0)
+
+            gam_data = list(synth_map.values())
+            logger.info(f"[Sync Guard] Successfully synthesized {len(gam_data)} daily records covering {len(country_domains)} domains from Country data.")
+
         gads_data = []
         gads_country_data = []
         gads_device_data = []
@@ -111,72 +157,85 @@ class SyncService:
         try:
             # 2a. Save GAM Daily Metrics
             if gam_data:
-                db.query(GAMMetric).filter(
+                domains_in_new_batch = set(item.get("domain") for item in gam_data if item.get("domain"))
+                existing_domain_count = db.query(func.count(func.distinct(GAMMetric.domain))).filter(
                     GAMMetric.date >= gam_sync_start,
                     GAMMetric.date <= end_date
-                ).delete(synchronize_session=False)
+                ).scalar() or 0
 
-                aggregated_gam = {}
-                for item in gam_data:
-                    dom = (item.get("domain") or "").strip().lower()
-                    unit = (item.get("ad_unit") or "Standard Ad Unit").strip()
-                    p_rule = (item.get("pricing_rule_name") or "All Rules").strip()
-                    dev_cat = (item.get("device_category") or "mobile").strip().lower()
-                    if not dom:
-                        continue
-                    norm_key = (item["date"], dom, unit.lower(), p_rule.lower(), dev_cat)
-                    if norm_key not in aggregated_gam:
-                        aggregated_gam[norm_key] = {
-                            "date": item["date"],
-                            "domain": dom,
-                            "ad_unit": unit,
-                            "pricing_rule_name": p_rule,
-                            "device_category": dev_cat,
-                            "revenue": 0.0,
-                            "impressions": 0,
-                            "clicks": 0,
-                            "ad_requests": 0,
-                            "matched_requests": 0
-                        }
-                    agg = aggregated_gam[norm_key]
-                    agg["revenue"] += item.get("revenue", 0.0)
-                    agg["impressions"] += item.get("impressions", 0)
-                    agg["clicks"] += item.get("clicks", 0)
-                    agg["ad_requests"] += item.get("ad_requests", 0)
-                    agg["matched_requests"] += item.get("matched_requests", 0)
-
-                new_gam_metrics = []
-                for item in aggregated_gam.values():
-                    raw_rev = item.get("revenue", 0.0)
-                    adj_rev = round(raw_rev * 0.92, 2)  # Deducts 8% fee
-                    imps = item.get("impressions", 0)
-                    clicks = item.get("clicks", 0)
-                    adj_ecpm = round((adj_rev / imps) * 1000.0, 2) if imps > 0 else 0.0
-
-                    ad_reqs = item.get("ad_requests", 0)
-                    matched_reqs = item.get("matched_requests", 0)
-                    mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
-
-                    new_metric = GAMMetric(
-                        date=item["date"],
-                        domain=item["domain"],
-                        ad_unit=item["ad_unit"],
-                        pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
-                        device_category=item.get("device_category", "mobile"),
-                        revenue=adj_rev,
-                        impressions=imps,
-                        ecpm=adj_ecpm,
-                        clicks=clicks,
-                        match_rate=round(mr, 2),
-                        ad_requests=ad_reqs,
-                        matched_requests=matched_reqs,
-                        synced_at=unified_sync_time
+                if existing_domain_count > 5 and len(domains_in_new_batch) <= 1:
+                    logger.error(
+                        f"[Sync Guard] BLOCKED destructive overwrite! New GAM batch has only {len(domains_in_new_batch)} domain ({domains_in_new_batch}), "
+                        f"while DB already has {existing_domain_count} domains. Keeping existing records intact!"
                     )
-                    new_gam_metrics.append(new_metric)
-                    records_synced += 1
+                    messages.append("Warning: Degenerate single-domain GAM batch blocked by sync guard.")
+                else:
+                    db.query(GAMMetric).filter(
+                        GAMMetric.date >= gam_sync_start,
+                        GAMMetric.date <= end_date
+                    ).delete(synchronize_session=False)
 
-                if new_gam_metrics:
-                    db.add_all(new_gam_metrics)
+                    aggregated_gam = {}
+                    for item in gam_data:
+                        dom = (item.get("domain") or "").strip().lower()
+                        unit = (item.get("ad_unit") or "Standard Ad Unit").strip()
+                        p_rule = (item.get("pricing_rule_name") or "All Rules").strip()
+                        dev_cat = (item.get("device_category") or "mobile").strip().lower()
+                        if not dom:
+                            continue
+                        norm_key = (item["date"], dom, unit.lower(), p_rule.lower(), dev_cat)
+                        if norm_key not in aggregated_gam:
+                            aggregated_gam[norm_key] = {
+                                "date": item["date"],
+                                "domain": dom,
+                                "ad_unit": unit,
+                                "pricing_rule_name": p_rule,
+                                "device_category": dev_cat,
+                                "revenue": 0.0,
+                                "impressions": 0,
+                                "clicks": 0,
+                                "ad_requests": 0,
+                                "matched_requests": 0
+                            }
+                        agg = aggregated_gam[norm_key]
+                        agg["revenue"] += item.get("revenue", 0.0)
+                        agg["impressions"] += item.get("impressions", 0)
+                        agg["clicks"] += item.get("clicks", 0)
+                        agg["ad_requests"] += item.get("ad_requests", 0)
+                        agg["matched_requests"] += item.get("matched_requests", 0)
+
+                    new_gam_metrics = []
+                    for item in aggregated_gam.values():
+                        raw_rev = item.get("revenue", 0.0)
+                        adj_rev = round(raw_rev * 0.92, 2)  # Deducts 8% fee
+                        imps = item.get("impressions", 0)
+                        clicks = item.get("clicks", 0)
+                        adj_ecpm = round((adj_rev / imps) * 1000.0, 2) if imps > 0 else 0.0
+
+                        ad_reqs = item.get("ad_requests", 0)
+                        matched_reqs = item.get("matched_requests", 0)
+                        mr = (matched_reqs / ad_reqs * 100.0) if ad_reqs > 0 else 0.0
+
+                        new_metric = GAMMetric(
+                            date=item["date"],
+                            domain=item["domain"],
+                            ad_unit=item["ad_unit"],
+                            pricing_rule_name=item.get("pricing_rule_name", "All Rules"),
+                            device_category=item.get("device_category", "mobile"),
+                            revenue=adj_rev,
+                            impressions=imps,
+                            ecpm=adj_ecpm,
+                            clicks=clicks,
+                            match_rate=round(mr, 2),
+                            ad_requests=ad_reqs,
+                            matched_requests=matched_reqs,
+                            synced_at=unified_sync_time
+                        )
+                        new_gam_metrics.append(new_metric)
+                        records_synced += 1
+
+                    if new_gam_metrics:
+                        db.add_all(new_gam_metrics)
 
             # 2b. Save GAM Country Metrics
             if gam_country_data:
