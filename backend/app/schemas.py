@@ -143,11 +143,40 @@ class PricingOverrideRequest(BaseModel):
     target_key: Optional[str] = None
     target_cpm: Optional[int] = None
     target_mr: Optional[float] = None
+    duration: Optional[str] = "indefinite"  # 'indefinite', '6h', '12h', '24h', '3d', '7d'
+    expires_at: Optional[datetime] = None
 
 class PricingOverrideResponse(BaseModel):
     status: str
     message: str
     override: Optional[Dict[str, Any]] = None
+
+class AdUnitPricingLogItem(BaseModel):
+    id: int
+    domain: str
+    country_code: str
+    device_category: str
+    ad_unit: str
+    old_mode: Optional[str] = None
+    new_mode: str
+    details: Optional[str] = None
+    changed_by: str = "Admin"
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class DashboardNotificationItem(BaseModel):
+    id: int
+    title: str
+    message: str
+    type: str = "override_expired"
+    domain: Optional[str] = None
+    is_read: bool = False
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class CountryBreakdownItem(BaseModel):
     country: str

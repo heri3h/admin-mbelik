@@ -30,7 +30,7 @@ const LEVEL2_COLUMNS = [
   { key: 'ad_requests', label: 'Ad Requests' },
   { key: 'matched_requests', label: 'Matched Requests' },
   { key: 'pricing_rule_name', label: 'PRICING_RULE_NAME' },
-  { key: 'placement_format', label: 'Format Iklan (Placement)' },
+  { key: 'placement_format', label: 'Ad Format (Placement)' },
   { key: 'pricing_override', label: 'Override Pricing' },
 ];
 
@@ -824,7 +824,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         {selectedCountry && activeVisibleCols.placement_format && (
                           <th onClick={() => handleSort('placement_format')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                             <div className="flex items-center justify-end space-x-1 leading-tight">
-                              <span>Format Iklan<br/>(Placement)</span>
+                              <span>Ad Format<br/>(Placement)</span>
                               {renderSortIndicator('placement_format')}
                             </div>
                           </th>
@@ -832,7 +832,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                         {selectedCountry && isOverrideSupported && activeVisibleCols.pricing_override && (
                           <th
                             className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-help"
-                            title="Status Badge: 🟢 Auto (Hijau) | 🟣 Target Floor (Ungu) | 🔵 Target CPM (Biru) | 🟠 Target MR (Amber)"
+                            title="Status: 🟢 Dynamic Auto | 🟣 Target Floor | 🔵 Target CPM | 🟠 Target MR | ⏱️ Timer Active"
                           >
                             <div className="flex items-center justify-end space-x-1 leading-tight">
                               <span>Override<br/>Pricing</span>
@@ -1071,7 +1071,7 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                       type="button"
                                       onClick={() => setSelectedOverrideAdUnit(p)}
                                       className="group inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono transition-all cursor-pointer shadow-sm bg-slate-800/90 hover:bg-slate-800 border-slate-700/80 hover:border-purple-500/60"
-                                      title="Klik untuk membuka modal pengaturan CPM Override Ad Unit"
+                                      title="Click to configure Ad Unit Pricing Override"
                                     >
                                       {(() => {
                                         const renderPricingBadge = (ov, deviceIcon) => {
@@ -1104,6 +1104,9 @@ export default function CountryBreakdownModal({ domain, startDate, endDate, onCl
                                               {deviceIcon && <span className="text-[10px] opacity-80 mr-0.5">{deviceIcon}</span>}
                                               <span className="text-[9px] leading-none">{icon}</span>
                                               <span className="font-semibold tracking-tight">{text}</span>
+                                              {ov?.expires_at && (
+                                                <span className="text-[10px] text-amber-300" title={`Timer active (expires ${new Date(ov.expires_at).toLocaleTimeString()})`}>⏱️</span>
+                                              )}
                                             </span>
                                           );
                                         };

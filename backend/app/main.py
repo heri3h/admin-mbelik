@@ -63,6 +63,11 @@ def auto_migrate_db():
                 if "device_category" not in c_columns:
                     conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN device_category VARCHAR(20) DEFAULT 'all';"))
 
+                res_p = conn.execute(text("PRAGMA table_info(ad_unit_pricing_configs);"))
+                p_columns = [row[1] for row in res_p.fetchall()]
+                if "expires_at" not in p_columns:
+                    conn.execute(text("ALTER TABLE ad_unit_pricing_configs ADD COLUMN expires_at DATETIME;"))
+
                 conn.commit()
             else:
                 conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS match_rate FLOAT DEFAULT 0.0;"))
@@ -72,6 +77,7 @@ def auto_migrate_db():
                 conn.execute(text("ALTER TABLE gam_metrics ADD COLUMN IF NOT EXISTS device_category VARCHAR(20) DEFAULT 'all';"))
                 conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN IF NOT EXISTS pricing_rule_name VARCHAR(150) DEFAULT 'All Rules';"))
                 conn.execute(text("ALTER TABLE gam_country_metrics ADD COLUMN IF NOT EXISTS device_category VARCHAR(20) DEFAULT 'all';"))
+                conn.execute(text("ALTER TABLE ad_unit_pricing_configs ADD COLUMN IF NOT EXISTS expires_at DATETIME;"))
                 conn.commit()
     except Exception as e:
         print(f"Auto DB migration notice: {e}")
@@ -277,18 +283,39 @@ async def unified_sync_and_pricing_task():
         # Sleep exactly 30 minutes (1800s) until next cycle
         await asyncio.sleep(1800)
 
+async def check_expired_overrides_task():
+    """Checks for expired pricing overrides every 60 seconds with zero overhead."""
+    await asyncio.sleep(5)
+    while True:
+        try:
+            def run_check():
+                db = SessionLocal()
+                try:
+                    from app.services.sync import check_and_expire_pricing_overrides
+                    check_and_expire_pricing_overrides(db)
+                finally:
+                    db.close()
+            await asyncio.to_thread(run_check)
+        except Exception as e:
+            logger.debug(f"[AutoExpireTask] Error: {e}")
+        await asyncio.sleep(60)
+
 _unified_sync_task = None
+_auto_expire_task = None
 
 @app.on_event("startup")
 def start_background_tasks():
-    global _unified_sync_task
+    global _unified_sync_task, _auto_expire_task
     _unified_sync_task = asyncio.create_task(unified_sync_and_pricing_task())
+    _auto_expire_task = asyncio.create_task(check_expired_overrides_task())
 
 @app.on_event("shutdown")
 def stop_background_tasks():
-    global _unified_sync_task
+    global _unified_sync_task, _auto_expire_task
     if _unified_sync_task:
         _unified_sync_task.cancel()
+    if _auto_expire_task:
+        _auto_expire_task.cancel()
 
 
 # CORS Configuration

@@ -114,6 +114,22 @@ export const dashboardService = {
     const res = await api.post('/api/dashboard/pricing-override', overrideData);
     return res.data;
   },
+  getPricingOverrideHistory: async (domain, params = {}) => {
+    const res = await api.get(`/api/dashboard/sites/${encodeURIComponent(domain)}/pricing-overrides/history`, { params });
+    return res.data;
+  },
+  getNotifications: async () => {
+    const res = await api.get('/api/dashboard/notifications');
+    return res.data;
+  },
+  markNotificationRead: async (id = null) => {
+    const res = await api.post('/api/dashboard/notifications/mark-read', id ? { id } : {});
+    return res.data;
+  },
+  clearNotifications: async () => {
+    const res = await api.delete('/api/dashboard/notifications/clear');
+    return res.data;
+  },
   getSitePricingRules: async (domain) => {
     const res = await api.get(`/api/dashboard/sites/${encodeURIComponent(domain)}/pricing-rules`);
     return res.data;

@@ -3,16 +3,16 @@ from fastapi import APIRouter, Depends, Query, HTTPException, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from datetime import date, datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from app.config import settings
 from app.database import get_db
-from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, GoogleAdsDeviceMetric, User, GoogleAdsAccount, JSONExportTarget, SiteNote, AdUnitPricingConfig
+from app.models import DailyProfitSummary, GoogleAdsMetric, GAMMetric, GAMCountryMetric, GoogleAdsCountryMetric, GoogleAdsDeviceMetric, User, GoogleAdsAccount, JSONExportTarget, SiteNote, AdUnitPricingConfig, AdUnitPricingLog, DashboardNotification
 
 from app.schemas import (
     SummaryMetrics, DailyTrendItem, AccountBreakdownItem, CampaignBreakdownItem,
     SiteBreakdownItem, PlacementBreakdownItem, CountryBreakdownItem, SiteNoteUpdate,
-    PricingOverrideRequest, PricingOverrideResponse
+    PricingOverrideRequest, PricingOverrideResponse, AdUnitPricingLogItem, DashboardNotificationItem
 )
 from app.services.auth import get_current_user
 from app.services.sync import sync_service, _sync_lock
@@ -1584,6 +1584,12 @@ def get_site_country_placements_breakdown(
         elif item["_max_rule_rev"] < 0 and p_rule:
             item["pricing_rule_name"] = p_rule
 
+    from app.services.sync import check_and_expire_pricing_overrides
+    try:
+        check_and_expire_pricing_overrides(db)
+    except Exception as e:
+        pass
+
     from app.models import AdUnitPricingConfig
     overrides = db.query(AdUnitPricingConfig).filter(
         func.lower(AdUnitPricingConfig.domain) == domain_name.lower(),
@@ -1602,7 +1608,8 @@ def get_site_country_placements_breakdown(
             "target_floor_key": ov.target_floor_key,
             "target_key": ov.target_key,
             "target_cpm": ov.target_cpm,
-            "target_mr": ov.target_mr
+            "target_mr": ov.target_mr,
+            "expires_at": ov.expires_at.isoformat() if ov.expires_at else None
         }
 
     target_rec = None
@@ -1672,12 +1679,33 @@ def set_pricing_override(
     unit = req.ad_unit.strip()
     mode = req.pricing_mode.strip().lower()
 
+    # Calculate auto-expiry
+    expires_at = None
+    if mode != "auto" and req.duration and req.duration != "indefinite":
+        now_utc = datetime.utcnow()
+        if req.duration == "6h":
+            expires_at = now_utc + timedelta(hours=6)
+        elif req.duration == "12h":
+            expires_at = now_utc + timedelta(hours=12)
+        elif req.duration == "24h":
+            expires_at = now_utc + timedelta(hours=24)
+        elif req.duration == "3d":
+            expires_at = now_utc + timedelta(days=3)
+        elif req.duration == "7d":
+            expires_at = now_utc + timedelta(days=7)
+    elif mode == "auto":
+        expires_at = None
+    elif req.expires_at:
+        expires_at = req.expires_at
+
     existing = db.query(AdUnitPricingConfig).filter(
         func.lower(AdUnitPricingConfig.domain) == dom.lower(),
         func.upper(AdUnitPricingConfig.country_code) == cc,
         AdUnitPricingConfig.device_category == dev,
         AdUnitPricingConfig.ad_unit == unit
     ).first()
+
+    old_mode = existing.pricing_mode if existing else "auto"
 
     if not existing:
         existing = AdUnitPricingConfig(
@@ -1690,6 +1718,7 @@ def set_pricing_override(
             target_key=req.target_key,
             target_cpm=req.target_cpm,
             target_mr=req.target_mr,
+            expires_at=expires_at,
             is_active=True
         )
         db.add(existing)
@@ -1699,8 +1728,40 @@ def set_pricing_override(
         existing.target_key = req.target_key
         existing.target_cpm = req.target_cpm
         existing.target_mr = req.target_mr
+        existing.expires_at = expires_at
         existing.is_active = True
         existing.updated_at = datetime.utcnow()
+
+    # Create audit log entry
+    details_desc = ""
+    if mode == "target_floor":
+        details_desc = f"Target Floor: {req.target_floor_key}"
+    elif mode == "target_cpm":
+        details_desc = f"Target CPM: {req.target_key or req.target_cpm}"
+    elif mode == "target_mr":
+        details_desc = f"Target MR: {req.target_mr}%"
+    elif mode == "auto":
+        details_desc = "Reverted to Dynamic Auto"
+
+    if expires_at:
+        dur_label = req.duration or "Timer"
+        details_desc += f" (Expires in {dur_label})"
+    elif mode != "auto":
+        details_desc += " (Permanent)"
+
+    changed_user = getattr(current_user, "username", "Admin") or "Admin"
+    log_entry = AdUnitPricingLog(
+        domain=dom,
+        country_code=cc,
+        device_category=dev,
+        ad_unit=unit,
+        old_mode=old_mode,
+        new_mode=mode,
+        details=details_desc,
+        changed_by=changed_user,
+        created_at=datetime.utcnow()
+    )
+    db.add(log_entry)
 
     db.commit()
 
@@ -1727,6 +1788,8 @@ def set_pricing_override(
             "target_key": req.target_key,
             "target_cpm": req.target_cpm,
             "target_mr": req.target_mr,
+            "duration": req.duration or "indefinite",
+            "expires_at": expires_at.isoformat() if expires_at else None
         }
     )
 
@@ -1786,4 +1849,69 @@ def save_site_note(
         raise HTTPException(status_code=500, detail=str(e))
 
     return {"status": "success", "domain": domain_clean, "note": note_text}
+
+@router.get("/sites/{domain}/pricing-overrides/history", response_model=List[AdUnitPricingLogItem])
+def get_pricing_override_history(
+    domain: str,
+    ad_unit: Optional[str] = None,
+    country_code: Optional[str] = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    q = db.query(AdUnitPricingLog).filter(func.lower(AdUnitPricingLog.domain) == domain.strip().lower())
+    if ad_unit:
+        q = q.filter(AdUnitPricingLog.ad_unit == ad_unit.strip())
+    if country_code and country_code.upper() != "ALL":
+        q = q.filter(func.upper(AdUnitPricingLog.country_code) == country_code.strip().upper())
+
+    logs = q.order_by(AdUnitPricingLog.created_at.desc()).limit(limit).all()
+    return logs
+
+@router.get("/notifications")
+def get_notifications(
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    notifs = db.query(DashboardNotification).order_by(DashboardNotification.created_at.desc()).limit(limit).all()
+    unread_count = db.query(DashboardNotification).filter(DashboardNotification.is_read == False).count()
+    return {
+        "unread_count": unread_count,
+        "notifications": [
+            {
+                "id": n.id,
+                "title": n.title,
+                "message": n.message,
+                "type": n.type,
+                "domain": n.domain,
+                "is_read": n.is_read,
+                "created_at": n.created_at.isoformat() if n.created_at else None
+            }
+            for n in notifs
+        ]
+    }
+
+@router.post("/notifications/mark-read")
+def mark_notifications_read(
+    payload: Optional[Dict[str, Any]] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    notif_id = payload.get("id") if payload else None
+    if notif_id:
+        db.query(DashboardNotification).filter(DashboardNotification.id == notif_id).update({"is_read": True})
+    else:
+        db.query(DashboardNotification).filter(DashboardNotification.is_read == False).update({"is_read": True})
+    db.commit()
+    return {"status": "success", "message": "Notifications marked as read"}
+
+@router.delete("/notifications/clear")
+def clear_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db.query(DashboardNotification).delete()
+    db.commit()
+    return {"status": "success", "message": "All notifications cleared"}
 

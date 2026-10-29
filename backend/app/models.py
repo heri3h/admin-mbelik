@@ -189,6 +189,7 @@ class AdUnitPricingConfig(Base):
     target_cpm = Column(Integer, nullable=True)
     target_mr = Column(Float, nullable=True)
     is_active = Column(Boolean, default=True)
+    expires_at = Column(DateTime, nullable=True)  # Auto-expiry timestamp (UTC)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -196,6 +197,44 @@ class AdUnitPricingConfig(Base):
         UniqueConstraint('domain', 'country_code', 'device_category', 'ad_unit', name='_domain_country_dev_adunit_uc'),
         Index('idx_adunit_pricing_dom_cntry_dev', 'domain', 'country_code', 'device_category'),
     )
+
+
+class AdUnitPricingLog(Base):
+    """
+    Audit log / change history for Ad Unit Pricing Overrides.
+    """
+    __tablename__ = "ad_unit_pricing_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    domain = Column(String(100), nullable=False, index=True)
+    country_code = Column(String(10), nullable=False, index=True)
+    device_category = Column(String(20), nullable=False, default="mobile")
+    ad_unit = Column(String(255), nullable=False)
+    old_mode = Column(String(30), nullable=True)
+    new_mode = Column(String(30), nullable=False)
+    details = Column(String(255), nullable=True)
+    changed_by = Column(String(50), default="Admin")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_adunit_log_lookup', 'domain', 'country_code', 'ad_unit'),
+    )
+
+
+class DashboardNotification(Base):
+    """
+    In-app dashboard notification system (bell icon alerts).
+    """
+    __tablename__ = "dashboard_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(100), nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String(30), default="override_expired")  # 'override_expired', 'system_alert'
+    domain = Column(String(100), nullable=True, index=True)
+    is_read = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 
 
 

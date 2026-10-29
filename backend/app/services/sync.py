@@ -491,6 +491,12 @@ class SyncService:
             logger.error(f"[AtomicSync] Error during atomic commit: {e}", exc_info=True)
             messages.append(f"Atomic commit error: {e}")
 
+        # Check and expire any overdue overrides before exporting
+        try:
+            check_and_expire_pricing_overrides(db)
+        except Exception as e:
+            logger.warning(f"Error checking expired overrides in sync: {e}")
+
         # Auto-export today's data for all active target domains to their specified paths
         try:
             from app.models import JSONExportTarget
@@ -551,6 +557,75 @@ def atomic_write_json(target_filepath: str, data: dict, indent: int = 2):
             except Exception:
                 pass
         raise e
+
+def check_and_expire_pricing_overrides(db: Session) -> int:
+    """
+    Checks for expired AdUnitPricingConfig overrides and reverts them to 'auto'.
+    Logs each expiration to AdUnitPricingLog and generates a DashboardNotification.
+    """
+    from app.models import AdUnitPricingConfig, AdUnitPricingLog, DashboardNotification
+    now = datetime.utcnow()
+    try:
+        expired_configs = db.query(AdUnitPricingConfig).filter(
+            AdUnitPricingConfig.is_active == True,
+            AdUnitPricingConfig.pricing_mode != 'auto',
+            AdUnitPricingConfig.expires_at.isnot(None),
+            AdUnitPricingConfig.expires_at <= now
+        ).all()
+
+        if not expired_configs:
+            return 0
+
+        affected_domains = set()
+        for ov in expired_configs:
+            old_mode = ov.pricing_mode
+            ov.pricing_mode = "auto"
+            ov.expires_at = None
+            ov.updated_at = now
+            affected_domains.add(ov.domain)
+
+            # Add audit log
+            log_entry = AdUnitPricingLog(
+                domain=ov.domain,
+                country_code=ov.country_code,
+                device_category=ov.device_category,
+                ad_unit=ov.ad_unit,
+                old_mode=old_mode,
+                new_mode="auto",
+                details="Override duration expired (auto-reverted to Dynamic Auto)",
+                changed_by="System (Auto-Expiry)",
+                created_at=now
+            )
+            db.add(log_entry)
+
+            # Add dashboard notification (in English)
+            notif = DashboardNotification(
+                title="Override Expired",
+                message=f"Override for '{ov.ad_unit}' ({ov.device_category.title()}) in {ov.country_code} on {ov.domain} has expired and reverted to Dynamic Auto.",
+                type="override_expired",
+                domain=ov.domain,
+                is_read=False,
+                created_at=now
+            )
+            db.add(notif)
+
+        db.commit()
+        logger.info(f"[AutoExpiry] Reverted {len(expired_configs)} expired pricing overrides to auto.")
+
+        # Re-export current_pricing.json for affected domains
+        for dom in affected_domains:
+            try:
+                from app.models import JSONExportTarget
+                target = db.query(JSONExportTarget).filter(func.lower(JSONExportTarget.domain) == dom.lower()).first()
+                target_path = target.target_filepath if target else f"/home/mbummm/web/{dom}/public_html/current_pricing.json"
+                export_site_today_json(db, domain=dom, target_filepath=target_path, force=True)
+            except Exception as e:
+                logger.warning(f"[AutoExpiry] Failed to re-export current_pricing.json for {dom}: {e}")
+
+        return len(expired_configs)
+    except Exception as e:
+        logger.error(f"[AutoExpiry] Error checking expired overrides: {e}")
+        return 0
 
 def _matches_slot(unit: str, norm_unit: str, slot: str) -> bool:
     if not slot or not unit:
@@ -1350,10 +1425,13 @@ def export_site_today_json(
     overrides_payload = {}
     try:
         from app.models import AdUnitPricingConfig
+        from sqlalchemy import or_
+        now_dt = datetime.utcnow()
         active_overrides = db.query(AdUnitPricingConfig).filter(
             func.lower(AdUnitPricingConfig.domain) == domain.lower(),
             AdUnitPricingConfig.is_active == True,
-            AdUnitPricingConfig.pricing_mode != 'auto'
+            AdUnitPricingConfig.pricing_mode != 'auto',
+            or_(AdUnitPricingConfig.expires_at == None, AdUnitPricingConfig.expires_at > now_dt)
         ).all()
         for ov in active_overrides:
             cc = ov.country_code.upper()

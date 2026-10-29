@@ -14,7 +14,7 @@ const ALL_COLUMNS = [
   { key: 'impressions', label: 'AdX Impressions' },
   { key: 'clicks', label: 'Clicks' },
   { key: 'pricing_rule_name', label: 'PRICING_RULE_NAME' },
-  { key: 'placement_format', label: 'Format Iklan (Placement)' },
+  { key: 'placement_format', label: 'Ad Format (Placement)' },
 ];
 
 const formatPricingRuleName = (rule) => {
@@ -356,7 +356,7 @@ export default function PlacementsTable({ placements, startDate, endDate, onDate
               {visibleColumns.placement_format && (
                 <th onClick={() => handleSort('placement_format')} className="sticky top-0 z-30 bg-slate-900 px-3 py-2.5 border-b border-slate-700/60 text-right cursor-pointer hover:text-white transition-colors">
                   <div className="flex items-center justify-end space-x-1 leading-tight">
-                    <span>Format Iklan<br/>(Placement)</span>
+                    <span>Ad Format<br/>(Placement)</span>
                     {renderSortIndicator('placement_format')}
                   </div>
                 </th>
