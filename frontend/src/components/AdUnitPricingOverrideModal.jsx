@@ -137,6 +137,12 @@ export default function AdUnitPricingOverrideModal({
   const [desktopDuration, setDesktopDuration] = useState('indefinite');
   const [desktopExpiresAt, setDesktopExpiresAt] = useState(null);
 
+  // Initial config tracking to only send dirty / modified devices
+  const [initialConfig, setInitialConfig] = useState({
+    mobile: { mode: 'auto', floorKey: 'f15000', targetKey: '15000', mr: 65.0, duration: 'indefinite' },
+    desktop: { mode: 'auto', floorKey: 'f20000', targetKey: '20000', mr: 65.0, duration: 'indefinite' },
+  });
+
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -250,49 +256,62 @@ export default function AdUnitPricingOverrideModal({
     if (!isOpen || !adUnitItem) return;
 
     // Mobile state
+    const initMob = {
+      mode: 'auto',
+      floorKey: 'f15000',
+      targetKey: '15000',
+      mr: 65.0,
+      duration: 'indefinite',
+    };
     const mob = adUnitItem.mobile_override;
     if (mob && mob.pricing_mode) {
-      setMobileMode(mob.pricing_mode);
+      initMob.mode = mob.pricing_mode;
       if (mob.pricing_mode === 'target_floor') {
-        setMobileFloorKey(mob.target_floor_key || 'f15000');
+        initMob.floorKey = mob.target_floor_key || 'f15000';
       } else if (mob.pricing_mode === 'target_cpm') {
-        setMobileTargetKey(mob.target_key || (mob.target_cpm ? String(mob.target_cpm) : '15000'));
+        initMob.targetKey = mob.target_key || (mob.target_cpm ? String(mob.target_cpm) : '15000');
       } else if (mob.pricing_mode === 'target_mr') {
-        setMobileMr(mob.target_mr || 65.0);
+        initMob.mr = mob.target_mr || 65.0;
       }
-      setMobileExpiresAt(mob.expires_at || null);
-      setMobileDuration(mob.expires_at ? '24h' : 'indefinite');
-    } else {
-      setMobileMode('auto');
-      setMobileFloorKey('f15000');
-      setMobileTargetKey('15000');
-      setMobileMr(65.0);
-      setMobileExpiresAt(null);
-      setMobileDuration('indefinite');
+      initMob.duration = mob.expires_at ? '24h' : 'indefinite';
     }
+
+    setMobileMode(initMob.mode);
+    setMobileFloorKey(initMob.floorKey);
+    setMobileTargetKey(initMob.targetKey);
+    setMobileMr(initMob.mr);
+    setMobileExpiresAt(mob?.expires_at || null);
+    setMobileDuration(initMob.duration);
 
     // Desktop state
+    const initDesk = {
+      mode: 'auto',
+      floorKey: 'f20000',
+      targetKey: '20000',
+      mr: 65.0,
+      duration: 'indefinite',
+    };
     const desk = adUnitItem.desktop_override;
     if (desk && desk.pricing_mode) {
-      setDesktopMode(desk.pricing_mode);
+      initDesk.mode = desk.pricing_mode;
       if (desk.pricing_mode === 'target_floor') {
-        setDesktopFloorKey(desk.target_floor_key || 'f20000');
+        initDesk.floorKey = desk.target_floor_key || 'f20000';
       } else if (desk.pricing_mode === 'target_cpm') {
-        setDesktopTargetKey(desk.target_key || (desk.target_cpm ? String(desk.target_cpm) : '20000'));
+        initDesk.targetKey = desk.target_key || (desk.target_cpm ? String(desk.target_cpm) : '20000');
       } else if (desk.pricing_mode === 'target_mr') {
-        setDesktopMr(desk.target_mr || 65.0);
+        initDesk.mr = desk.target_mr || 65.0;
       }
-      setDesktopExpiresAt(desk.expires_at || null);
-      setDesktopDuration(desk.expires_at ? '24h' : 'indefinite');
-    } else {
-      setDesktopMode('auto');
-      setDesktopFloorKey('f20000');
-      setDesktopTargetKey('20000');
-      setDesktopMr(65.0);
-      setDesktopExpiresAt(null);
-      setDesktopDuration('indefinite');
+      initDesk.duration = desk.expires_at ? '24h' : 'indefinite';
     }
 
+    setDesktopMode(initDesk.mode);
+    setDesktopFloorKey(initDesk.floorKey);
+    setDesktopTargetKey(initDesk.targetKey);
+    setDesktopMr(initDesk.mr);
+    setDesktopExpiresAt(desk?.expires_at || null);
+    setDesktopDuration(initDesk.duration);
+
+    setInitialConfig({ mobile: initMob, desktop: initDesk });
     setSavedSuccess(false);
     setErrorMsg(null);
   }, [isOpen, adUnitItem]);
@@ -315,6 +334,29 @@ export default function AdUnitPricingOverrideModal({
   if (!isOpen || !adUnitItem) return null;
 
   const handleSave = async () => {
+    // Dirty checking: Determine which devices actually changed
+    const isMobDirty = (
+      mobileMode !== initialConfig.mobile.mode ||
+      (mobileMode === 'target_floor' && mobileFloorKey !== initialConfig.mobile.floorKey) ||
+      (mobileMode === 'target_cpm' && mobileTargetKey !== initialConfig.mobile.targetKey) ||
+      (mobileMode === 'target_mr' && mobileMr !== initialConfig.mobile.mr) ||
+      (mobileMode !== 'auto' && mobileDuration !== initialConfig.mobile.duration)
+    );
+
+    const isDeskDirty = (
+      desktopMode !== initialConfig.desktop.mode ||
+      (desktopMode === 'target_floor' && desktopFloorKey !== initialConfig.desktop.floorKey) ||
+      (desktopMode === 'target_cpm' && desktopTargetKey !== initialConfig.desktop.targetKey) ||
+      (desktopMode === 'target_mr' && desktopMr !== initialConfig.desktop.mr) ||
+      (desktopMode !== 'auto' && desktopDuration !== initialConfig.desktop.duration)
+    );
+
+    // If nothing changed at all, just close without making unnecessary API calls
+    if (!isMobDirty && !isDeskDirty) {
+      onClose();
+      return;
+    }
+
     setSaving(true);
     setErrorMsg(null);
     try {
@@ -331,39 +373,56 @@ export default function AdUnitPricingOverrideModal({
       const deskCpm = desktopMode === 'target_cpm' && deskTarget ? parseInt(deskTarget, 10) : null;
       const deskMrVal = desktopMode === 'target_mr' ? desktopMr : null;
 
-      const [mobRes, deskRes] = await Promise.all([
-        dashboardService.setPricingOverride({
-          domain,
-          country_code: cc,
-          device_category: 'mobile',
-          ad_unit: unit,
-          pricing_mode: mobileMode,
-          target_floor_key: mobFloor,
-          target_key: mobTarget,
-          target_cpm: mobCpm,
-          target_mr: mobMrVal,
-          duration: mobileMode === 'auto' ? 'indefinite' : mobileDuration,
-        }),
-        dashboardService.setPricingOverride({
-          domain,
-          country_code: cc,
-          device_category: 'desktop',
-          ad_unit: unit,
-          pricing_mode: desktopMode,
-          target_floor_key: deskFloor,
-          target_key: deskTarget,
-          target_cpm: deskCpm,
-          target_mr: deskMrVal,
-          duration: desktopMode === 'auto' ? 'indefinite' : desktopDuration,
-        }),
-      ]);
+      let latestMob = adUnitItem.mobile_override;
+      let latestDesk = adUnitItem.desktop_override;
+      const tasks = [];
+
+      if (isMobDirty) {
+        tasks.push(
+          dashboardService.setPricingOverride({
+            domain,
+            country_code: cc,
+            device_category: 'mobile',
+            ad_unit: unit,
+            pricing_mode: mobileMode,
+            target_floor_key: mobFloor,
+            target_key: mobTarget,
+            target_cpm: mobCpm,
+            target_mr: mobMrVal,
+            duration: mobileMode === 'auto' ? 'indefinite' : mobileDuration,
+          }).then((res) => {
+            if (res && res.override) latestMob = res.override;
+          })
+        );
+      }
+
+      if (isDeskDirty) {
+        tasks.push(
+          dashboardService.setPricingOverride({
+            domain,
+            country_code: cc,
+            device_category: 'desktop',
+            ad_unit: unit,
+            pricing_mode: desktopMode,
+            target_floor_key: deskFloor,
+            target_key: deskTarget,
+            target_cpm: deskCpm,
+            target_mr: deskMrVal,
+            duration: desktopMode === 'auto' ? 'indefinite' : desktopDuration,
+          }).then((res) => {
+            if (res && res.override) latestDesk = res.override;
+          })
+        );
+      }
+
+      await Promise.all(tasks);
 
       setSavedSuccess(true);
       if (onSaved) {
         onSaved({
           adUnit: unit,
-          mobileOverride: mobRes.override,
-          desktopOverride: deskRes.override,
+          mobileOverride: latestMob,
+          desktopOverride: latestDesk,
         });
       }
       setTimeout(() => {

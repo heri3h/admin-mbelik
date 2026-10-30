@@ -1705,7 +1705,71 @@ def set_pricing_override(
         AdUnitPricingConfig.ad_unit == unit
     ).first()
 
+    # 1. If no existing config and incoming is 'auto', no change needed
+    if not existing and mode == "auto":
+        return PricingOverrideResponse(
+            status="success",
+            message=f"Ad unit {unit} ({dev}) is already in Dynamic Auto",
+            override={
+                "domain": dom,
+                "country_code": cc,
+                "device_category": dev,
+                "ad_unit": unit,
+                "pricing_mode": "auto",
+                "mode": "auto",
+                "target_floor_key": None,
+                "target_key": None,
+                "target_cpm": None,
+                "target_mr": None,
+                "duration": "indefinite",
+                "expires_at": None
+            }
+        )
+
     old_mode = existing.pricing_mode if existing else "auto"
+
+    # 2. Check if configuration has actually changed (Smart Diff Guard)
+    has_changed = False
+    if not existing:
+        has_changed = (mode != "auto")
+    else:
+        if mode != old_mode:
+            has_changed = True
+        elif mode == "target_floor":
+            has_changed = (existing.target_floor_key != req.target_floor_key)
+        elif mode == "target_cpm":
+            has_changed = (existing.target_key != req.target_key or existing.target_cpm != req.target_cpm)
+        elif mode == "target_mr":
+            has_changed = (existing.target_mr != req.target_mr)
+
+        # Check if duration/expiry timestamp changed
+        if not has_changed and mode != "auto":
+            if (existing.expires_at is None and expires_at is not None) or (existing.expires_at is not None and expires_at is None):
+                has_changed = True
+            elif existing.expires_at and expires_at:
+                if abs((existing.expires_at - expires_at).total_seconds()) > 60:
+                    has_changed = True
+
+    # 3. If nothing changed, return early without creating redundant audit log
+    if not has_changed:
+        return PricingOverrideResponse(
+            status="success",
+            message=f"Override for {unit} ({dev}) unchanged",
+            override={
+                "domain": dom,
+                "country_code": cc,
+                "device_category": dev,
+                "ad_unit": unit,
+                "pricing_mode": mode,
+                "mode": mode,
+                "target_floor_key": existing.target_floor_key if existing else req.target_floor_key,
+                "target_key": existing.target_key if existing else req.target_key,
+                "target_cpm": existing.target_cpm if existing else req.target_cpm,
+                "target_mr": existing.target_mr if existing else req.target_mr,
+                "duration": req.duration or "indefinite",
+                "expires_at": existing.expires_at.isoformat() if (existing and existing.expires_at) else None
+            }
+        )
 
     if not existing:
         existing = AdUnitPricingConfig(
@@ -1732,7 +1796,7 @@ def set_pricing_override(
         existing.is_active = True
         existing.updated_at = datetime.utcnow()
 
-    # Create audit log entry
+    # Create audit log entry ONLY when actual changes occurred
     details_desc = ""
     if mode == "target_floor":
         details_desc = f"Target Floor: {req.target_floor_key}"
@@ -1859,7 +1923,10 @@ def get_pricing_override_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    q = db.query(AdUnitPricingLog).filter(func.lower(AdUnitPricingLog.domain) == domain.strip().lower())
+    q = db.query(AdUnitPricingLog).filter(
+        func.lower(AdUnitPricingLog.domain) == domain.strip().lower(),
+        or_(AdUnitPricingLog.old_mode != 'auto', AdUnitPricingLog.new_mode != 'auto')
+    )
     if ad_unit:
         q = q.filter(AdUnitPricingLog.ad_unit == ad_unit.strip())
     if country_code and country_code.upper() != "ALL":
